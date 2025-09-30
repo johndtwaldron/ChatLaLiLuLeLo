@@ -21,19 +21,25 @@ export const ChatScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Codec connection established. This is a test transmission.',
+      text: 'Codec connection established. Four modes available.',
+      speaker: 'colonel',
+      timestamp: Date.now() - 45000,
+    },
+    {
+      id: '2', 
+      text: 'MGS2 MEME Philosophy, Bitcoin, Haywire, or MGS Lore?',
       speaker: 'colonel',
       timestamp: Date.now() - 30000,
     },
     {
-      id: '2', 
-      text: 'Signal is clear. Beginning intellectual discourse protocol.',
+      id: '3',
+      text: 'Initiating Philosophy mode... What is truth?',
       speaker: 'user',
-      timestamp: Date.now() - 15000,
+      timestamp: Date.now() - 20000,
     },
     {
-      id: '3',
-      text: 'What is truth? A question that has haunted philosophers for millennia. In this digital age, the line between authentic reality and simulation grows ever thinner.',
+      id: '4',
+      text: 'Information control becomes reality control. The digital age has blurred the line between authentic experience and manufactured consensus.',
       speaker: 'colonel',
       timestamp: Date.now() - 5000,
     },
