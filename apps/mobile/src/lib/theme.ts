@@ -1,50 +1,95 @@
 // Theme definitions for different codec styles
 export const themePresets = {
-  // Authentic MGS2 Codec (Black/Cyan) - Default
-  mgs2: {
-    primary: '#00FFFF',      // Cyan blue (authentic MGS2)
+  // Cyan - Default (MGS2 authentic)
+  cyan: {
+    primary: '#00FFFF',      // Cyan blue
     secondary: '#0099CC',    // Darker cyan
     tertiary: '#006699',     // Deep blue
     background: '#000000',   // Pure black
     surface: '#001122',      // Very dark blue
-    text: '#FFFFFF',         // White text (as seen in screenshots)
+    text: '#FFFFFF',         // White text
     textSecondary: '#CCCCCC', // Light gray
     border: '#004466',       // Dark cyan borders
     scanline: '#002244',     // Dark blue scanlines
     glow: '#00FFFF40',       // Cyan glow (with alpha)
   },
   
-  // Classic Green Terminal
+  // Hot Purple
+  purple: {
+    primary: '#FF00FF',      // Hot magenta/purple
+    secondary: '#CC00CC',    // Darker purple
+    tertiary: '#990099',     // Deep purple
+    background: '#000000',   // Pure black
+    surface: '#220022',      // Very dark purple
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
+    border: '#664466',       // Dark purple borders
+    scanline: '#220022',     // Purple scanlines
+    glow: '#FF00FF40',       // Purple glow (with alpha)
+  },
+  
+  // Gold
+  gold: {
+    primary: '#FFD700',      // Gold
+    secondary: '#DAA520',    // Goldenrod
+    tertiary: '#B8860B',     // Dark goldenrod
+    background: '#000000',   // Pure black
+    surface: '#222200',      // Very dark gold
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
+    border: '#666600',       // Dark gold borders
+    scanline: '#333300',     // Gold scanlines
+    glow: '#FFD70040',       // Gold glow (with alpha)
+  },
+  
+  // Green Terminal
   green: {
     primary: '#00FF00',      // Bright green
     secondary: '#00CC00',    // Medium green  
     tertiary: '#008800',     // Dark green
     background: '#000000',   // Pure black
     surface: '#001100',      // Very dark green
-    text: '#00FF00',         // Green text
-    textSecondary: '#00AA00', // Dimmer green
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
     border: '#004400',       // Dark green borders
     scanline: '#002200',     // Scanline overlay
     glow: '#00FF0040',       // Green glow (with alpha)
   },
   
-  // Amber Terminal
-  amber: {
-    primary: '#FFAA00',      // Bright amber
-    secondary: '#CC8800',    // Medium amber
-    tertiary: '#996600',     // Dark amber
+  // Yellow
+  yellow: {
+    primary: '#FFFF00',      // Bright yellow
+    secondary: '#CCCC00',    // Medium yellow
+    tertiary: '#999900',     // Dark yellow
     background: '#000000',   // Pure black
-    surface: '#221100',      // Very dark amber
-    text: '#FFBB00',         // Amber text
-    textSecondary: '#CC9900', // Dimmer amber
-    border: '#664400',       // Dark amber borders
-    scanline: '#332200',     // Amber scanlines
-    glow: '#FFAA0040',       // Amber glow (with alpha)
+    surface: '#222200',      // Very dark yellow
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
+    border: '#666600',       // Dark yellow borders
+    scanline: '#333300',     // Yellow scanlines
+    glow: '#FFFF0040',       // Yellow glow (with alpha)
+  },
+  
+  // Crimson
+  crimson: {
+    primary: '#DC143C',      // Crimson
+    secondary: '#B22222',    // Fire brick
+    tertiary: '#8B0000',     // Dark red
+    background: '#000000',   // Pure black
+    surface: '#220011',      // Very dark red
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
+    border: '#664433',       // Dark red borders
+    scanline: '#330011',     // Red scanlines
+    glow: '#DC143C40',       // Crimson glow (with alpha)
   },
 };
 
-// Current active theme - starts with MGS2 authentic
-let currentTheme: keyof typeof themePresets = 'mgs2';
+// Current active theme - starts with cyan (default)
+let currentTheme: keyof typeof themePresets = 'cyan';
+
+// Theme cycle order
+const themeOrder: Array<keyof typeof themePresets> = ['cyan', 'purple', 'gold', 'green', 'yellow', 'crimson'];
 
 // CRT effects toggle state
 let crtEnabled = true;
@@ -131,6 +176,26 @@ const notifyThemeChange = () => {
 export const changeTheme = (theme: keyof typeof themePresets) => {
   setTheme(theme);
   notifyThemeChange();
+};
+
+// Theme cycling function
+export const cycleTheme = () => {
+  const currentIndex = themeOrder.indexOf(currentTheme);
+  const nextIndex = (currentIndex + 1) % themeOrder.length;
+  const nextTheme = themeOrder[nextIndex];
+  changeTheme(nextTheme);
+};
+
+export const getThemeDisplayName = (theme: keyof typeof themePresets): string => {
+  const displayNames: Record<keyof typeof themePresets, string> = {
+    cyan: 'CYAN',
+    purple: 'PURPLE',
+    gold: 'GOLD', 
+    green: 'GREEN',
+    yellow: 'YELLOW',
+    crimson: 'CRIMSON'
+  };
+  return displayNames[theme];
 };
 
 // CRT toggle functions
