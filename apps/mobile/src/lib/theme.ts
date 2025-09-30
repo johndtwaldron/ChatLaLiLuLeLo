@@ -46,9 +46,15 @@ export const themePresets = {
 // Current active theme - starts with MGS2 authentic
 let currentTheme: keyof typeof themePresets = 'mgs2';
 
+// CRT effects toggle state
+let crtEnabled = true;
+
 // Dynamic theme getter
 export const getCodecTheme = () => ({
   colors: themePresets[currentTheme],
+  
+  // CRT effects toggle
+  crt: crtEnabled,
   
   fonts: {
     mono: 'Courier New', // Monospace for authentic terminal feel
@@ -126,3 +132,16 @@ export const changeTheme = (theme: keyof typeof themePresets) => {
   setTheme(theme);
   notifyThemeChange();
 };
+
+// CRT toggle functions
+export const toggleCRT = () => {
+  crtEnabled = !crtEnabled;
+  notifyThemeChange();
+};
+
+export const setCRT = (enabled: boolean) => {
+  crtEnabled = enabled;
+  notifyThemeChange();
+};
+
+export const getCRTState = () => crtEnabled;

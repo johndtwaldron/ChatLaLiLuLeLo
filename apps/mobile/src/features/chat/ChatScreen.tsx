@@ -8,6 +8,7 @@ import {
 import { CodecFrame } from '@/components/CodecFrame';
 import { Portrait } from '@/components/Portrait';
 import { SubtitleStream } from '@/components/SubtitleStream';
+import { CRTToggle } from '@/components/CRTToggle';
 import { codecTheme } from '@/lib/theme';
 
 interface Message {
@@ -51,6 +52,9 @@ export const ChatScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <CodecFrame haywireMode={haywireMode}>
+        {/* CRT Toggle Button */}
+        <CRTToggle />
+        
         <View style={styles.content}>
           {/* Portrait Section */}
           <View style={styles.portraitSection}>
