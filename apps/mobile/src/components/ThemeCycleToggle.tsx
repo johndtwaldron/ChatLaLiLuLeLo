@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: '50%',
-    marginLeft: 60, // Position to the right of CRT toggle
+    marginLeft: 100, // Move further right to prevent overlap
     zIndex: 100,
   },
   

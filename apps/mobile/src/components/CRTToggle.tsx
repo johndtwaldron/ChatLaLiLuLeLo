@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: '50%',
-    marginLeft: -60, // Half of button width to center it
+    marginLeft: -50, // Adjust center position slightly
     zIndex: 100,
   },
   

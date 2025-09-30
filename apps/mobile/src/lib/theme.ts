@@ -83,20 +83,49 @@ export const themePresets = {
     scanline: '#330011',     // Red scanlines
     glow: '#DC143C40',       // Crimson glow (with alpha)
   },
+  
+  // Orange (Bitcoin "orange pill" theme - only available in Bitcoin mode)
+  orange: {
+    primary: '#FF8C00',      // Bitcoin orange
+    secondary: '#FF7F00',    // Slightly darker orange
+    tertiary: '#CC6600',     // Dark orange
+    background: '#000000',   // Pure black
+    surface: '#221100',      // Very dark orange
+    text: '#FFFFFF',         // White text
+    textSecondary: '#CCCCCC', // Light gray
+    border: '#664400',       // Dark orange borders
+    scanline: '#332200',     // Orange scanlines
+    glow: '#FF8C0040',       // Orange glow (with alpha)
+  },
 };
 
 // Current active theme - starts with cyan (default)
 let currentTheme: keyof typeof themePresets = 'cyan';
 
-// Theme cycle order
+// Theme cycle order (excludes orange - Bitcoin mode only)
 const themeOrder: Array<keyof typeof themePresets> = ['cyan', 'purple', 'gold', 'green', 'yellow', 'crimson'];
 
 // CRT effects toggle state
 let crtEnabled = true;
 
-// Dynamic theme getter
-export const getCodecTheme = () => ({
-  colors: themePresets[currentTheme],
+// Conversation mode system
+export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin';
+let currentMode: ConversationMode = 'haywire';
+
+export const conversationModes = {
+  haywire: 'GW [haywire]',
+  jd: 'JD [Colonel AI]',
+  lore: 'MGS [LORE]',
+  bitcoin: 'BTC [Orange Pill]',
+} as const;
+
+// Dynamic theme getter - handles Bitcoin mode orange override
+export const getCodecTheme = () => {
+  // If in Bitcoin mode, force orange theme
+  const activeTheme = currentMode === 'bitcoin' ? 'orange' : currentTheme;
+  
+  return {
+    colors: themePresets[activeTheme],
   
   // CRT effects toggle
   crt: crtEnabled,
@@ -141,7 +170,8 @@ export const getCodecTheme = () => ({
       sharp: 'ease-in-out',
     },
   },
-});
+  };
+};
 
 // Theme switching functions
 export const setTheme = (theme: keyof typeof themePresets) => {
@@ -178,24 +208,47 @@ export const changeTheme = (theme: keyof typeof themePresets) => {
   notifyThemeChange();
 };
 
-// Theme cycling function
+// Theme cycling function - locked during Bitcoin mode
 export const cycleTheme = () => {
+  // If in Bitcoin mode, theme cycling is locked to orange
+  if (currentMode === 'bitcoin') {
+    return; // Don't cycle when in Bitcoin mode
+  }
+  
   const currentIndex = themeOrder.indexOf(currentTheme);
   const nextIndex = (currentIndex + 1) % themeOrder.length;
   const nextTheme = themeOrder[nextIndex];
   changeTheme(nextTheme);
 };
 
-export const getThemeDisplayName = (theme: keyof typeof themePresets): string => {
+export const getThemeDisplayName = (theme?: keyof typeof themePresets): string => {
+  // Show current effective theme (Bitcoin mode shows ORANGE)
+  const effectiveTheme = currentMode === 'bitcoin' ? 'orange' : (theme || currentTheme);
+  
   const displayNames: Record<keyof typeof themePresets, string> = {
     cyan: 'CYAN',
     purple: 'PURPLE',
     gold: 'GOLD', 
     green: 'GREEN',
     yellow: 'YELLOW',
-    crimson: 'CRIMSON'
+    crimson: 'CRIMSON',
+    orange: 'ORANGE' // Bitcoin mode only
   };
-  return displayNames[theme];
+  return displayNames[effectiveTheme];
+};
+
+// Mode management functions
+export const getCurrentMode = () => currentMode;
+
+export const cycleMode = () => {
+  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin'];
+  const currentIndex = modes.indexOf(currentMode);
+  currentMode = modes[(currentIndex + 1) % modes.length];
+  notifyThemeChange(); // Theme may change based on mode
+};
+
+export const getModeDisplayName = (mode: ConversationMode = currentMode) => {
+  return conversationModes[mode];
 };
 
 // CRT toggle functions

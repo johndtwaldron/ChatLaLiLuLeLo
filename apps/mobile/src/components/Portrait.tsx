@@ -129,32 +129,36 @@ export const Portrait: React.FC<PortraitProps> = ({
   );
 
   const renderUserPortrait = () => (
-    <View style={styles.portraitContent}>
+    <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
       {/* User silhouette */}
       <View style={[styles.spriteContainer, styles.userSprite]}>
-        <View style={styles.silhouette}>
-          <Text style={styles.silhouetteText}>USER</Text>
+        <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
+          <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
         </View>
       </View>
       
       {/* ID Label */}
-      <View style={styles.idLabel}>
-        <Text style={styles.idText}>SOLDIER</Text>
+      <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>SOLDIER</Text>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.portraitFrame, animatedContainerStyle]}>
+    <View style={[styles.container, { margin: currentTheme.spacing.sm }]}>
+      <Animated.View style={[
+        styles.portraitFrame, 
+        animatedContainerStyle,
+        { backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }
+      ]}>
         {/* Glow effect */}
-        <Animated.View style={[styles.glow, animatedGlowStyle]} />
+        <Animated.View style={[styles.glow, animatedGlowStyle, { backgroundColor: currentTheme.colors.primary }]} />
         
         {/* Portrait content */}
         {type === 'colonel' ? renderColonelPortrait() : renderUserPortrait()}
         
         {/* Frame border */}
-        <View style={styles.frameBorder} />
+        <View style={[styles.frameBorder, { borderColor: currentTheme.colors.primary }]} />
       </Animated.View>
     </View>
   );
