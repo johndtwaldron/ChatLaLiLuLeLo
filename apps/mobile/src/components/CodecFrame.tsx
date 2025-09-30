@@ -15,7 +15,7 @@ import Animated, {
 
 import { codecTheme } from '@/lib/theme';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CodecFrameProps {
   children: React.ReactNode;

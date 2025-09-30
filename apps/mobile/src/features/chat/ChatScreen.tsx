@@ -18,7 +18,7 @@ interface Message {
 }
 
 export const ChatScreen: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages] = useState<Message[]>([
     {
       id: '1',
       text: 'Codec connection established. Four modes available.',
@@ -45,8 +45,8 @@ export const ChatScreen: React.FC = () => {
     },
   ]);
 
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [haywireMode, setHaywireMode] = useState(false);
+  const [isStreaming] = useState(false);
+  const [haywireMode] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -4,19 +4,17 @@ import {
   StyleSheet,
   Text,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  interpolate,
   runOnJS,
 } from 'react-native-reanimated';
 
 import { codecTheme } from '@/lib/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SubtitleStreamProps {
   messages: Array<{
@@ -38,7 +36,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   
-  const typingProgress = useSharedValue(0);
+  // const typingProgress = useSharedValue(0);
   const blinkOpacity = useSharedValue(1);
 
   // Typewriter effect for streaming text

@@ -96,7 +96,7 @@ export const integrationHelpers = {
   },
   
   // Test conversation flow
-  simulateConversation: async (messages: any[]) => {
+  simulateConversation: async (_messages: any[]) => {
     // TODO: Test complete conversation flows
   },
 };

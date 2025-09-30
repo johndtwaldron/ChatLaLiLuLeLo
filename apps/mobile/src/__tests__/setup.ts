@@ -1,14 +1,11 @@
 // Testing setup for React Native components
 
-// Mock React Native Reanimated
+// Mock React Native Reanimated with basic implementation
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  
-  // Mock specific reanimated functions we use
-  Reanimated.default.call = () => {};
-  
   return {
-    ...Reanimated,
+    default: {
+      View: require('react-native').View,
+    },
     useSharedValue: (initial: any) => ({ value: initial }),
     useAnimatedStyle: (styleFunction: () => any) => styleFunction(),
     withTiming: (value: any) => value,
@@ -16,6 +13,8 @@ jest.mock('react-native-reanimated', () => {
     withSequence: (...values: any[]) => values[0],
     interpolate: (value: number, inputRange: number[], outputRange: number[]) => outputRange[0],
     runOnJS: (fn: () => void) => fn,
+    withDelay: (value: any) => value,
+    withSpring: (value: any) => value,
   };
 });
 
@@ -31,15 +30,63 @@ jest.mock('expo-status-bar', () => ({
   StatusBar: () => null,
 }));
 
-// Mock Dimensions
-jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
-  get: jest.fn(() => ({ width: 375, height: 812 })),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-}));
+// Mock Dimensions globally
+jest.mock('react-native/Libraries/Utilities/Dimensions', () => {
+  const dimensions = {
+    get: jest.fn(() => ({ width: 375, height: 812 })),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  };
+  return dimensions;
+});
+
+// Mock PixelRatio globally
+jest.mock('react-native/Libraries/Utilities/PixelRatio', () => {
+  const pixelRatio = {
+    get: jest.fn(() => 2),
+    getFontScale: jest.fn(() => 1),
+    getPixelSizeForLayoutSize: jest.fn((layoutSize: number) => layoutSize * 2),
+    roundToNearestPixel: jest.fn((layoutSize: number) => Math.round(layoutSize)),
+    startDetecting: jest.fn(),
+  };
+  return pixelRatio;
+});
+
+// Mock React Native Gesture Handler
+jest.mock('react-native-gesture-handler', () => {
+  const View = jest.fn(() => null);
+  return {
+    Swipeable: View,
+    DrawerLayout: View,
+    State: {},
+    ScrollView: View,
+    Slider: View,
+    Switch: View,
+    TextInput: View,
+    ToolbarAndroid: View,
+    ViewPagerAndroid: View,
+    DrawerLayoutAndroid: View,
+    WebView: View,
+    NativeViewGestureHandler: View,
+    TapGestureHandler: View,
+    FlingGestureHandler: View,
+    ForceTouchGestureHandler: View,
+    LongPressGestureHandler: View,
+    PanGestureHandler: View,
+    PinchGestureHandler: View,
+    RotationGestureHandler: View,
+    RawButton: View,
+    BaseButton: View,
+    RectButton: View,
+    BorderlessButton: View,
+    FlatList: View,
+    gestureHandlerRootHOC: jest.fn(component => component),
+    Directions: {},
+  };
+});
 
 // Silence console warnings in tests
-global.console = {
+(global as any).console = {
   ...console,
   warn: jest.fn(),
   log: jest.fn(),

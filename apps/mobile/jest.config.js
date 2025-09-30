@@ -9,11 +9,16 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/.expo/',
     '<rootDir>/dist/',
+    '<rootDir>/src/__tests__/setup.ts',
+    '<rootDir>/src/__tests__/utils/',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|react-native-reanimated|react-native-gesture-handler|expo|@expo)/)',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -25,5 +30,5 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
 };

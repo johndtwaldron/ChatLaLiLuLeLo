@@ -1,9 +1,25 @@
 module.exports = {
-  extends: ['expo', '@react-native'],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
+  extends: [
+    'eslint:recommended',
+  ],
+  parserOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
   rules: {
-    // Allow unused vars that start with underscore
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    // Prefer const assertions over generic parameters
+    // Basic rules that work everywhere
     'prefer-const': 'error',
+    'no-unused-vars': 'off', // Turn off base rule
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+  },
+  env: {
+    jest: true,
+    node: true,
+    es6: true,
   },
 };
