@@ -51,7 +51,7 @@ jobs:
       - name: Build for production
         run: |
           cd apps/mobile
-          npx expo export:web
+          npx expo export --platform web
 
       - name: Upload test coverage
         uses: codecov/codecov-action@v3
@@ -97,7 +97,7 @@ jobs:
       - name: Build web demo
         run: |
           cd apps/mobile
-          npx expo export:web
+          npx expo export --platform web
 
       - name: Upload demo artifacts
         uses: actions/upload-artifact@v3
