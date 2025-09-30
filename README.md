@@ -42,14 +42,16 @@ ChatLaLiLuLeLo is an iOS-first React Native app that recreates the codec interfa
 ### Local Development
 
 ```bash
-# Install dependencies
+# Install dependencies (from project root)
 npm ci
 
-# Start Expo development server
-npm run dev
+# Navigate to mobile app
+cd apps/mobile
 
-# Run on iOS Simulator
-npm run ios
+# Start web development server
+npx @expo/cli start --web
+
+# Opens at http://localhost:8081
 ```
 
 ### Gitpod Development
@@ -106,10 +108,12 @@ npm run e2e        # Detox E2E tests (future)
 
 ## Roadmap
 
-- [x] Basic codec UI components
-- [x] Portrait animations and subtitle streaming
+- [x] Basic codec UI components ✅
+- [x] Portrait animations and subtitle streaming ✅
+- [x] Working web demo with authentic codec aesthetic ✅
+- [x] Monorepo structure with proper Metro configuration ✅
 - [ ] OpenAI integration for conversations
-- [ ] Multiple conversation modes
+- [ ] 4 conversation modes (MGS2 MEME Philosophy, Bitcoin, Haywire, MGS Lore)
 - [ ] TTS with lip-sync animation
 - [ ] TestFlight beta release
 - [ ] Android version via Expo
@@ -129,5 +133,11 @@ This project:
 Any resemblance to existing properties is purely for parody and educational purposes under fair use.
 
 ---
+
+## Development Credits
+
+**Core Development**: JDW  
+**AI Engineering Partner**: [Warp AI](https://warp.dev) - Claude 4 Sonnet  
+**Additional Debugging**: GPT-4
 
 **Developed with ❤️ and respect for the source material**
