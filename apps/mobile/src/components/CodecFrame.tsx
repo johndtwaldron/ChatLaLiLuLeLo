@@ -15,8 +15,6 @@ import Animated, {
 
 import { codecTheme } from '@/lib/theme';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 interface CodecFrameProps {
   children: React.ReactNode;
   haywireMode?: boolean;
@@ -64,6 +62,7 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
   });
 
   const animatedScanlineStyle = useAnimatedStyle(() => {
+    const { height: SCREEN_HEIGHT } = Dimensions.get('window');
     const translateY = interpolate(
       scanlineOffset.value,
       [0, 1],
@@ -89,7 +88,7 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
 
       {/* Scanlines overlay */}
       <View style={styles.scanlinesContainer}>
-        {Array.from({ length: Math.ceil(SCREEN_HEIGHT / codecTheme.effects.scanlineSpacing) }).map((_, index) => (
+        {Array.from({ length: Math.ceil(Dimensions.get('window').height / codecTheme.effects.scanlineSpacing) }).map((_, index) => (
           <View
             key={index}
             style={[
