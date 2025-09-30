@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,7 +13,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 
-import { codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
 
 interface CodecFrameProps {
   children: React.ReactNode;
@@ -24,9 +24,18 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
   children, 
   haywireMode = false 
 }) => {
+  const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const jitterX = useSharedValue(0);
   const jitterY = useSharedValue(0);
   const scanlineOffset = useSharedValue(0);
+  
+  // Subscribe to theme changes (including CRT toggle)
+  useEffect(() => {
+    const unsubscribe = subscribeToThemeChanges(() => {
+      setCurrentTheme(getCodecTheme());
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     // Subtle screen jitter animation
@@ -75,10 +84,10 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.colors.background }]}>
       <StatusBar 
         barStyle="light-content" 
-        backgroundColor={codecTheme.colors.background}
+        backgroundColor={currentTheme.colors.background}
       />
       
       {/* Main content with jitter */}
@@ -86,27 +95,40 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
         {children}
       </Animated.View>
 
-      {/* Scanlines overlay */}
-      <View style={styles.scanlinesContainer}>
-        {Array.from({ length: Math.ceil(Dimensions.get('window').height / codecTheme.effects.scanlineSpacing) }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.scanline,
-              { top: index * codecTheme.effects.scanlineSpacing },
-            ]}
-          />
-        ))}
-      </View>
+      {/* CRT Effects - only show when CRT is enabled */}
+      {currentTheme.crt && (
+        <>
+          {/* Scanlines overlay */}
+          <View style={styles.scanlinesContainer}>
+            {Array.from({ length: Math.ceil(Dimensions.get('window').height / currentTheme.effects.scanlineSpacing) }).map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.scanline,
+                  { 
+                    top: index * currentTheme.effects.scanlineSpacing,
+                    height: currentTheme.effects.scanlineHeight,
+                    backgroundColor: currentTheme.colors.scanline,
+                  },
+                ]}
+              />
+            ))}
+          </View>
 
-      {/* Moving scanline effect */}
-      <Animated.View style={[styles.movingScanline, animatedScanlineStyle]} />
+          {/* Moving scanline effect */}
+          <Animated.View style={[
+            styles.movingScanline, 
+            animatedScanlineStyle, 
+            { backgroundColor: currentTheme.colors.primary }
+          ]} />
 
-      {/* CRT glow overlay */}
-      <View style={styles.glowOverlay} />
-      
-      {/* Border frame */}
-      <View style={styles.borderFrame} />
+          {/* CRT glow overlay */}
+          <View style={[styles.glowOverlay, { backgroundColor: currentTheme.colors.glow }]} />
+          
+          {/* Border frame */}
+          <View style={[styles.borderFrame, { borderColor: currentTheme.colors.border }]} />
+        </>
+      )}
     </View>
   );
 };
@@ -114,7 +136,6 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: codecTheme.colors.background,
     position: 'relative',
   },
   
@@ -137,8 +158,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    height: codecTheme.effects.scanlineHeight,
-    backgroundColor: codecTheme.colors.scanline,
     opacity: 0.3,
   },
   
@@ -147,7 +166,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: codecTheme.colors.primary,
     opacity: 0.1,
     pointerEvents: 'none',
     zIndex: 3,
@@ -159,7 +177,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: codecTheme.colors.glow,
     pointerEvents: 'none',
     zIndex: 4,
   },
@@ -171,7 +188,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: codecTheme.colors.border,
     pointerEvents: 'none',
     zIndex: 5,
   },

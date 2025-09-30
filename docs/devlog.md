@@ -406,3 +406,519 @@ interface PortraitProps {
 **Status:** 🐛 **ACTIVE DEBUGGING SESSION** - Portrait component enhancements implemented, investigating integration issues with JDW
 
 ---
+
+## Session 10 - 2025-09-30T20:50:00Z
+
+**Objective:** 🌈 Priority 2: Live Theme Color Cycling Implementation
+
+### ✅ **PRIORITY 2 COMPLETE: LIVE THEME CYCLING SYSTEM**
+
+**Requirements Met:**
+- ✅ Theme button that cycles through 6 distinct color themes live
+- ✅ Global application of themes across ALL UI elements
+- ✅ Instant visual updates when theme changes
+- ✅ Themes affect CRT effects, text, portraits, backgrounds, borders
+- ✅ Button displays current theme name
+- ✅ **User Validation**: "fantastic the colours are great!"
+
+### 🎨 **Six Themes Implemented:**
+1. **Cyan** (classic MGS green-blue)
+2. **Hot Purple** (vibrant magenta-purple)
+3. **Gold** (warm amber-yellow)
+4. **Green** (traditional terminal green)
+5. **Yellow** (bright electric yellow)
+6. **Crimson** (deep red-orange)
+
+### 🔧 **Technical Architecture Success:**
+
+**Theme System Extension:**
+```typescript
+// Extended theme.ts with 6 new color palettes
+const themes = {
+  cyan: { colors: { primary: '#00FFFF', secondary: '#00CCCC', ... } },
+  hotPurple: { colors: { primary: '#FF1493', secondary: '#DA70D6', ... } },
+  gold: { colors: { primary: '#FFD700', secondary: '#FFA500', ... } },
+  // ... 3 more themes
+};
+
+export const cycleTheme = () => {
+  const themeNames = Object.keys(themes);
+  currentThemeIndex = (currentThemeIndex + 1) % themeNames.length;
+  notifyThemeChange();
+};
+```
+
+**ThemeCycleToggle Component:**
+```typescript
+// New component shows current theme and cycles on press
+<TouchableOpacity onPress={cycleTheme}>
+  <Text style={dynamicStyles}>
+    THEME: {getThemeDisplayName(getCurrentTheme())}
+  </Text>
+</TouchableOpacity>
+```
+
+### 🌐 **Global Theme Reactivity Implementation:**
+
+**All Components Made Theme-Reactive:**
+1. **SubtitleStream**: Background, text colors, borders, signal bars
+2. **ChatScreen**: Container, sections, control areas
+3. **Portrait**: Borders, glows, text, silhouettes, shadows
+4. **CodecFrame**: CRT effects, overlays, borders, status bar
+
+**Reactive Pattern Applied:**
+```typescript
+// Every component now subscribes to theme changes
+const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+useEffect(() => {
+  const unsubscribe = subscribeToThemeChanges(() => {
+    setCurrentTheme(getCodecTheme());
+  });
+  return unsubscribe;
+}, []);
+
+// Dynamic styling with current theme
+<View style={[staticStyles, { backgroundColor: currentTheme.colors.background }]} />
+```
+
+### 🎯 **Key Achievements:**
+
+**User Experience:**
+- **Live Cycling**: Press button → instant theme change across entire app
+- **Visual Feedback**: Button shows current theme name with theme colors
+- **Global Coverage**: Every UI element responds to theme changes
+- **Performance**: Smooth transitions using efficient subscription pattern
+- **6 Distinct Aesthetics**: Each theme creates unique visual identity
+
+**Technical Excellence:**
+- **Zero Breaking Changes**: Built on proven Session 9 architecture
+- **TypeScript Safety**: Full type checking maintained
+- **Efficient Updates**: Subscription pattern prevents unnecessary re-renders
+- **Maintainable Code**: Clean separation of static vs dynamic styles
+- **Scalable System**: Easy to add more themes in future
+
+### 📊 **Implementation Statistics:**
+- **Files Modified**: 6 components made theme-reactive
+- **New Component**: ThemeCycleToggle.tsx created
+- **Theme System**: Extended with 6 complete color palettes
+- **Lines of Code**: ~200 lines added for theme cycling functionality
+- **Compilation**: TypeScript passes with zero errors
+- **Testing**: Live theme cycling confirmed working
+
+**Status:** 🌈 **PRIORITY 2 COMPLETE** - Live theme cycling system operational with 6 themes globally applied to all UI elements
+
+---
+
+## Session 11 - 2025-09-30T21:25:00Z
+
+**Objective:** 🎯 Priority 3: Enhanced Dual Draggable Portraits with Mutual Collision Detection
+
+### ✅ **PRIORITY 3 COMPLETE: DUAL DRAGGABLE PORTRAITS WITH COLLISION BOUNDARIES**
+
+**Enhanced Requirements Met:**
+- ✅ Both Colonel AND User portraits are fully draggable
+- ✅ Mutual collision detection prevents overlapping between portraits
+- ✅ Shared container boundaries for both portraits
+- ✅ Layout preservation (subtitle stream stays in original position)
+- ✅ Smooth collision resolution with minimal displacement algorithm
+- ✅ **User Validation**: "perfect thank you! great stuff!"
+
+### 🔧 **Technical Architecture Enhanced:**
+
+**Dual Draggable System:**
+```typescript
+// Updated DraggablePortrait component
+interface DraggablePortraitProps {
+  type: 'colonel' | 'user';
+  otherPortraitPosition?: { x: number; y: number };
+  onPositionChange?: (x: number, y: number) => void;
+  container: Rect;
+}
+
+// Mutual collision detection
+const avoidOtherPortrait = (x: number, y: number) => {
+  // AABB collision detection with minimal displacement
+  // Pushes away using shortest distance (left/right/up/down)
+};
+```
+
+**ChatScreen State Management:**
+```typescript
+// Track both portrait positions
+const [colonelPosition, setColonelPosition] = useState({ x: 0, y: 0 });
+const [userPosition, setUserPosition] = useState({ x: 0, y: 0 });
+
+// Cross-communication for collision awareness
+<DraggablePortrait 
+  otherPortraitPosition={userPosition}
+  onPositionChange={(x, y) => setColonelPosition({ x, y })}
+/>
+```
+
+### 🎯 **Key Problem Solved: Layout Preservation**
+
+**Issue Identified:**
+- Draggable portraits became absolutely positioned
+- Subtitle stream (140.85) moved up to fill empty space
+- Layout collapsed because flex system couldn't see absolute elements
+
+**Solution Implemented:**
+```typescript
+// Invisible placeholders maintain layout space
+<View style={staticStyles.portraitPlaceholder} /> // Colonel placeholder
+<View style={staticStyles.portraitPlaceholder} /> // User placeholder
+
+// Draggable portraits positioned over placeholders
+<DraggablePortrait ... /> // Absolutely positioned
+<DraggablePortrait ... /> // Absolutely positioned
+
+// Placeholder style
+portraitPlaceholder: {
+  width: 120,
+  height: 140,
+  opacity: 0, // Invisible but takes up layout space
+}
+```
+
+### 🎮 **Enhanced User Experience:**
+
+**Dual Dragging:**
+- **Both portraits draggable**: Colonel and User portraits respond to touch/cursor
+- **Mutual collision prevention**: Cannot overlap - smooth push-away behavior
+- **Container boundaries**: Neither can leave the portrait section
+- **Layout stability**: All other UI elements stay in original positions
+
+**Collision Physics:**
+- **Real-time detection**: Live position tracking with cross-communication
+- **Minimal displacement**: Uses shortest push distance for natural feel
+- **Spring settling**: Smooth animations to final integer pixel positions
+- **Boundary respect**: Re-clamps to container after collision resolution
+
+### 📊 **Implementation Statistics:**
+- **Files Modified**: 2 components (DraggablePortrait.tsx, ChatScreen.tsx)
+- **State Variables Added**: 2 position trackers + layout measurement
+- **Collision Algorithm**: AABB with minimal displacement calculation
+- **Layout Fix**: Invisible placeholder system for flex layout preservation
+- **TypeScript**: All compilation passes with zero errors
+- **User Testing**: Confirmed working with layout preserved
+
+### 💡 **Architecture Success Factors:**
+
+1. **Dynamic Mutual Awareness**: Each portrait knows other's real-time position
+2. **State Synchronization**: Position changes immediately update collision detection
+3. **Layout Preservation**: Invisible placeholders maintain original flex layout
+4. **Physics-Based Resolution**: Natural collision handling with spring animations
+5. **Container Constraints**: Shared boundary system for consistent behavior
+
+**Next Phase Ready:**
+With sophisticated draggable portrait system operational:
+- ✅ **Interactive UI foundation** established for advanced interactions
+- ✅ **Collision detection system** ready for expansion to other draggable elements  
+- ✅ **Layout stability** maintained while adding interactive features
+- ✅ **State management patterns** proven for complex UI interactions
+
+**Status:** 🎯 **PRIORITY 3 ENHANCED COMPLETE** - Dual draggable portraits with mutual collision detection and layout preservation operational!
+
+---
+
+## Session 12 - 2025-09-30T22:30:00Z
+
+**Objective:** 🎯 Complete Remaining Frontend Priorities: Interactive Chat, Multi-line Input, Mode Toggle System
+
+### ✅ **PRIORITY 4 COMPLETE: INTERACTIVE TEXT ENTRY WITH LIVE CHAT**
+
+**Requirements Met:**
+- ✅ Text input component with proper styling and send functionality
+- ✅ Live updates to main chat log with "USER: " prefixed messages
+- ✅ Enter key support for quick message sending
+- ✅ Character counting and visual feedback
+- ✅ Placeholder backend responses to simulate conversation flow
+- ✅ Message deduplication to prevent React StrictMode double-rendering issues
+
+**Technical Implementation:**
+```typescript
+// TextInput component with send functionality
+const handleSendMessage = (messageText: string) => {
+  const userMessage: Message = {
+    id: `user-${timestamp}-${randomSuffix}`,
+    text: `USER: ${messageText}`,
+    speaker: 'user',
+    timestamp,
+  };
+  // Deduplication logic prevents duplicate messages
+};
+```
+
+**Chat Integration:**
+- Messages stored in React state and displayed in SubtitleStream
+- Unique IDs with timestamps prevent duplicate rendering
+- Backend response simulation with 1.5s delay
+- Streaming text disabled to prevent conflicts with user input
+
+### ✅ **PRIORITY 5 COMPLETE: MESSAGE DEDUPLICATION SYSTEM**
+
+**Problem Solved:**
+- User messages appearing twice due to React StrictMode double rendering
+- Implemented deduplication logic with 100ms timestamp window
+- Added unique message IDs with random suffixes
+- Console logging for debugging duplicate prevention
+
+### ✅ **PRIORITY 6 COMPLETE: MULTI-LINE TEXT INPUT WITH SHIFT+ENTER**
+
+**Enhanced Input Features:**
+- ✅ Multi-line text input support
+- ✅ Shift+Enter creates new lines instead of submitting
+- ✅ Enter key submits message (without Shift)
+- ✅ Variable height input box that grows with content
+- ✅ Send button aligns with expanding text area
+- ✅ Character count and line count status indicators
+- ✅ Maximum height constraint with scrollable content
+
+**Technical Details:**
+```typescript
+const handleKeyPress = (e: any) => {
+  if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
+  // Shift+Enter allows new lines
+};
+```
+
+### ✅ **PRIORITY 7 COMPLETE: MODE TOGGLE WITH ORANGE PILL EASTER EGG**
+
+**Conversation Mode System:**
+- ✅ Four conversation modes: GW [haywire], JD [Colonel AI], MGS [LORE], BTC [Orange Pill]
+- ✅ Mode cycling button with current mode display
+- ✅ **Orange Pill Easter Egg**: Hidden orange theme exclusive to Bitcoin mode
+- ✅ Theme cycling lockout during Bitcoin mode (orange pill effect)
+- ✅ Proper button spacing to prevent UI overlap
+
+**Mode Implementation:**
+```typescript
+export const conversationModes = {
+  haywire: 'GW [haywire]',
+  jd: 'JD [Colonel AI]',
+  lore: 'MGS [LORE]',
+  bitcoin: 'BTC [Orange Pill]',
+} as const;
+
+// Orange theme forced when Bitcoin mode active
+const activeTheme = currentMode === 'bitcoin' ? 'orange' : currentTheme;
+```
+
+**Easter Egg Mechanics:**
+- **Normal Operation**: Theme button cycles through 6 themes (cyan, purple, gold, green, yellow, crimson)
+- **Bitcoin Mode Active**: Theme locked to orange, cycling disabled
+- **Orange Theme**: Only accessible through Bitcoin conversation mode
+- **Visual Integration**: All UI elements (buttons, borders, text, effects) use orange theme
+
+### 🎨 **UI LAYOUT OPTIMIZATION**
+
+**Button Spacing Resolution:**
+- Fixed button overlap issues with proper marginLeft spacing
+- **Final Layout**: MODE (-200px) | CRT (-50px) | THEME (+100px)
+- Shortened mode names to prevent text overflow
+- Created reference file `ai_modes.txt` for backend integration
+
+**Responsive Design:**
+```typescript
+// Optimized button positioning
+MODE: { left: '50%', marginLeft: -200 },  // Far left
+CRT:  { left: '50%', marginLeft: -50 },   // Center
+THEME: { left: '50%', marginLeft: 100 },  // Right
+```
+
+### 📊 **Complete Frontend Priority Status:**
+
+| Priority | Feature | Status | User Feedback |
+|----------|---------|--------|--------------|
+| 1 | Live CRT Toggle | ✅ Complete | "works perfectly" |
+| 2 | Live Theme Cycling | ✅ Complete | "colours are great!" |
+| 3 | Dual Draggable Portraits | ✅ Complete | "perfect thank you!" |
+| 4 | Interactive Chat Input | ✅ Complete | Working with deduplication |
+| 5 | Message Deduplication | ✅ Complete | No more duplicate messages |
+| 6 | Multi-line Input | ✅ Complete | Shift+Enter functionality |
+| 7 | Mode Toggle + Orange Pill | ✅ Complete | "fantastic. almost done" |
+
+### 🛠️ **Technical Architecture Summary:**
+
+**State Management:**
+- Extended existing theme system (no competing architectures)
+- React state for chat messages and UI interactions  
+- Subscription pattern for live theme updates across all components
+- Position tracking for draggable portraits with collision detection
+
+**Component Integration:**
+- All components theme-reactive with subscription patterns
+- Invisible placeholder system maintains flex layout with absolute positioning
+- Message deduplication prevents React StrictMode conflicts
+- Multi-line input with proper keyboard event handling
+
+**User Experience Features:**
+- **6 Live Themes**: Instant visual updates across entire app
+- **Draggable Portraits**: Both Colonel and User with collision boundaries
+- **Interactive Chat**: Live message updates with backend response simulation
+- **Multi-line Support**: Natural text input with Shift+Enter
+- **4 Conversation Modes**: Including hidden orange pill Easter egg
+- **Orange Pill Effect**: Theme lockout mechanic exclusive to Bitcoin mode
+
+### 🎯 **Files Created/Modified:**
+
+**New Components:**
+- `TextInput.tsx` - Multi-line chat input with send functionality
+- `ThemeCycleToggle.tsx` - Live theme cycling button
+- `ModeToggle.tsx` - Conversation mode cycling with orange pill
+- `ai_modes.txt` - Reference file for backend integration
+
+**Enhanced Components:**
+- `theme.ts` - Extended with 7 themes, mode system, CRT toggle
+- `ChatScreen.tsx` - Integrated all interactive features
+- `SubtitleStream.tsx` - Live message display with deduplication
+- `CodecFrame.tsx` - Live CRT toggle effects
+- `DraggablePortrait.tsx` - Dual portrait collision detection
+
+### 🚀 **Ready for Backend Integration:**
+
+With complete frontend foundation:
+- ✅ **Interactive UI**: All user input mechanisms functional
+- ✅ **Theme System**: Live visual feedback and mode switching
+- ✅ **Message Architecture**: Deduplication and unique ID system ready
+- ✅ **Conversation Modes**: 4 distinct AI personality contexts defined
+- ✅ **Easter Eggs**: Orange pill mechanic for Bitcoin conversations
+- ✅ **Responsive Design**: All components work together without conflicts
+
+**Status:** 🎉 **ALL FRONTEND PRIORITIES COMPLETE** - ChatLaLiLuLeLo UI fully interactive with live theming, draggable portraits, multi-line chat input, and conversation mode system including orange pill Easter egg. Ready for backend v1 development!
+
+---
+
+## Session 9 - 2025-09-30T18:01:21Z
+
+**Objective:** 🎯 Recovery and Implementation - Priority 1: Live CRT Toggle
+
+### ✅ **SUCCESSFUL RECOVERY AND IMPLEMENTATION**
+
+**Recovery Strategy Executed:**
+- Implemented **Option A - Complete Rollback** as recommended in Session 8
+- `git checkout main` → `git branch -D develop` → `git checkout -b develop-v2`
+- Clean slate approach applying lessons learned from architecture failure
+
+### 🎯 **Priority 1 - Live CRT Toggle: COMPLETE ✅**
+
+**Requirements Met:**
+- ✅ Toggle button that turns CRT effect on/off live
+- ✅ Instant visual feedback when clicked
+- ✅ Button shows current state (CRT: ON/OFF)
+- ✅ No white screen or broken functionality
+- ✅ All existing features remain working
+- ✅ **User Validation**: "that is class! it works perfectly"
+
+### 🔧 **Technical Implementation Success:**
+
+**Lessons Applied from Session 8 Failure:**
+1. **Single Source of Truth**: Extended existing `getCodecTheme()` system
+2. **No Competing Architectures**: Built on proven working theme infrastructure
+3. **Minimal Changes**: Modified working components incrementally  
+4. **Progressive Enhancement**: Added features without breaking existing functionality
+5. **Proven Patterns**: Used existing subscription system for reactivity
+
+**Implementation Details:**
+```typescript
+// Extended existing theme system (theme.ts)
+let crtEnabled = true;
+export const toggleCRT = () => {
+  crtEnabled = !crtEnabled;
+  notifyThemeChange(); // Reuse existing notification system
+};
+
+// Made CodecFrame responsive (CodecFrame.tsx)
+const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+useEffect(() => {
+  const unsubscribe = subscribeToThemeChanges(() => {
+    setCurrentTheme(getCodecTheme());
+  });
+  return unsubscribe;
+}, []);
+
+// Conditional CRT effects rendering
+{currentTheme.crt && (
+  <> {/* All CRT effects: scanlines, sweep, glow, border */} </>
+)}
+```
+
+### 🎮 **User Experience Achieved:**
+
+**CRT Toggle Functionality:**
+- **CRT ON**: Full codec experience - scanlines, moving sweep, glow overlay, border frame
+- **CRT OFF**: Clean interface without CRT artifacts, all content remains visible
+- **Live Switching**: Instant toggle with single click, no delays or glitches
+- **Visual Feedback**: Button highlights cyan when CRT is ON, shows current state clearly
+- **Positioning**: Top-right corner (ready for center repositioning)
+
+**Preserved Functionality:**
+- ✅ Colonel portrait with colonel.jpeg image loading
+- ✅ Animated portraits with idle breathing effects
+- ✅ Subtitle stream with typewriter effects
+- ✅ Sample conversations display properly
+- ✅ All theme colors and styling intact
+- ✅ Smooth jitter and sweep animations
+
+### 📊 **Architecture Comparison: Session 8 vs Session 9**
+
+| Aspect | Session 8 (Failed) | Session 9 (Success) |
+|--------|-------------------|---------------------|
+| **Approach** | Replace existing system | Extend existing system |
+| **Architecture** | Dual competing systems | Single extended system |
+| **Changes** | Major refactor (Zustand) | Minimal extension |
+| **Result** | White screen crash | Working live toggle |
+| **Risk** | High complexity | Low risk incremental |
+| **User Feedback** | "stuck...white screen" | "class! works perfectly" |
+
+### 🛠️ **Technical Success Factors:**
+
+1. **Theme System Integration**:
+   - Extended existing `theme.ts` with `crtEnabled: boolean`
+   - Added CRT state to `getCodecTheme()` return object
+   - Reused existing `subscribeToThemeChanges` mechanism
+   - No import conflicts or circular dependencies
+
+2. **Component Architecture**:
+   - `CodecFrame`: Made CRT effects conditional on `currentTheme.crt`
+   - `CRTToggle`: New component following established patterns
+   - `ChatScreen`: Minimal integration maintaining existing layout
+
+3. **Quality Assurance**:
+   - ✅ TypeScript compilation: `npx tsc --noEmit` passes cleanly
+   - ✅ Runtime stability: No crashes or white screens
+   - ✅ Visual consistency: All styling and animations working
+   - ✅ User experience: Immediate positive feedback
+
+### 🔄 **Next Steps - Priority Queue:**
+
+**Immediate:**
+- 🔄 **Button Repositioning**: Move CRT toggle from top-right to center-top
+- ✅ **Mark Priority 1 Complete** after repositioning
+
+**Priority 2 (Next):**
+- 🎯 **Color Theme Dropdown**: hot purple, gold, green, yellow, crimson themes
+- Approach: Extend `themePresets` object in `theme.ts`
+- Create theme selector component using proven CRTToggle patterns
+- Test each color addition incrementally
+
+**Priority 3 (Future):**
+- 🎯 **Draggable Colonel Portrait**: collision detection and sliding movement
+
+### 💡 **Key Success Insights:**
+
+1. **Architecture Recovery**: Clean rollback was the correct strategic decision
+2. **Risk Management**: Extending proven systems vs replacing them
+3. **Incremental Development**: Small changes with frequent validation
+4. **User-Centric Approach**: Priority on working functionality over complexity
+5. **Pattern Reuse**: Leveraging existing subscription and theme systems
+6. **Technical Debt Avoidance**: No competing architectures or fragmented state
+
+**Status:** 🎉 **PRIORITY 1 COMPLETE AND VALIDATED** - Live CRT toggle successfully implemented using lessons learned. User confirmed "works perfectly". Ready for button repositioning and Priority 2 implementation.
+
+---
+ 
+ 

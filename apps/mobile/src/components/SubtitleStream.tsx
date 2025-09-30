@@ -12,7 +12,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import { codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme } from '@/lib/theme';
 
 // const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -32,9 +32,18 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   isStreaming = false,
   currentStreamText = '',
 }) => {
+  const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const scrollViewRef = useRef<ScrollView>(null);
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
+  
+  // Subscribe to theme changes
+  useEffect(() => {
+    const unsubscribe = subscribeToThemeChanges(() => {
+      setCurrentTheme(getCodecTheme());
+    });
+    return unsubscribe;
+  }, []);
   
   // const typingProgress = useSharedValue(0);
   const blinkOpacity = useSharedValue(1);
@@ -103,19 +112,19 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   };
 
   const getSpeakerColor = (speaker: 'colonel' | 'user') => {
-    return speaker === 'colonel' ? codecTheme.colors.primary : codecTheme.colors.secondary;
+    return speaker === 'colonel' ? currentTheme.colors.primary : currentTheme.colors.secondary;
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }]}>
       {/* Header with frequency indicator */}
-      <View style={styles.header}>
-        <Text style={styles.frequency}>140.85</Text>
+      <View style={[styles.header, { backgroundColor: currentTheme.colors.surface, borderBottomColor: currentTheme.colors.border }]}>
+        <Text style={[styles.frequency, { color: currentTheme.colors.primary }]}>140.85</Text>
         <View style={styles.signalIndicator}>
-          <View style={[styles.signalBar, { height: 8 }]} />
-          <View style={[styles.signalBar, { height: 12 }]} />
-          <View style={[styles.signalBar, { height: 10 }]} />
-          <View style={[styles.signalBar, { height: 14 }]} />
+          <View style={[styles.signalBar, { height: 8, backgroundColor: currentTheme.colors.primary }]} />
+          <View style={[styles.signalBar, { height: 12, backgroundColor: currentTheme.colors.primary }]} />
+          <View style={[styles.signalBar, { height: 10, backgroundColor: currentTheme.colors.primary }]} />
+          <View style={[styles.signalBar, { height: 14, backgroundColor: currentTheme.colors.primary }]} />
         </View>
       </View>
 
@@ -132,7 +141,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
               <Text style={[styles.speakerLabel, { color: getSpeakerColor(message.speaker) }]}>
                 {getSpeakerLabel(message.speaker)}
               </Text>
-              <Text style={styles.timestamp}>
+              <Text style={[styles.timestamp, { color: currentTheme.colors.textSecondary }]}>
                 {formatTimestamp(message.timestamp)}
               </Text>
             </View>
@@ -146,29 +155,29 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
         {isStreaming && displayText && (
           <View style={styles.messageContainer}>
             <View style={styles.messageHeader}>
-              <Text style={[styles.speakerLabel, { color: codecTheme.colors.primary }]}>
+              <Text style={[styles.speakerLabel, { color: currentTheme.colors.primary }]}>
                 {'>>>'}
               </Text>
-              <Text style={styles.timestamp}>
+              <Text style={[styles.timestamp, { color: currentTheme.colors.textSecondary }]}>
                 {formatTimestamp(Date.now())}
               </Text>
             </View>
             <View style={styles.streamingContainer}>
-              <Text style={[styles.messageText, { color: codecTheme.colors.primary }]}>
+              <Text style={[styles.messageText, { color: currentTheme.colors.primary }]}>
                 {displayText}
               </Text>
-              <Animated.View style={[styles.cursor, animatedCursorStyle]} />
+              <Animated.View style={[styles.cursor, { backgroundColor: currentTheme.colors.primary }, animatedCursorStyle]} />
             </View>
           </View>
         )}
       </ScrollView>
 
       {/* Footer with status */}
-      <View style={styles.footer}>
-        <Text style={styles.status}>
+      <View style={[styles.footer, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+        <Text style={[styles.status, { color: currentTheme.colors.textSecondary }]}>
           {isStreaming ? '[RECEIVING...]' : '[STANDBY]'}
         </Text>
-        <Text style={styles.messageCount}>
+        <Text style={[styles.messageCount, { color: currentTheme.colors.textSecondary }]}>
           {messages.length} MSG{messages.length !== 1 ? 'S' : ''}
         </Text>
       </View>
