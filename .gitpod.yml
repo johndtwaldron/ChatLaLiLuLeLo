@@ -1,0 +1,28 @@
+image: mcr.microsoft.com/devcontainers/javascript-node:20
+
+ports:
+  - port: 19000 # Expo
+    onOpen: notify
+  - port: 19001
+    onOpen: ignore
+  - port: 19002
+    onOpen: ignore
+  - port: 8081 # Metro
+    onOpen: ignore
+
+tasks:
+  - name: Setup
+    init: |
+      npm install -g @expo/cli eas-cli
+      npm ci
+    command: |
+      echo "🚀 ChatLaLiLuLeLo development environment ready!"
+      echo "Run 'npm run dev' to start the Expo development server"
+
+vscode:
+  extensions:
+    - esbenp.prettier-vscode
+    - dbaeumer.vscode-eslint
+    - bradlc.vscode-tailwindcss
+    - ms-vscode.vscode-typescript-next
+    - expo.vscode-expo-tools

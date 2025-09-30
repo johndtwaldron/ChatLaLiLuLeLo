@@ -1,0 +1,30 @@
+{
+  "name": "chatlalilulelo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A codec-style entertainment companion for intellectual sparring",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "cd apps/mobile && npm run dev",
+    "typecheck": "cd apps/mobile && npm run typecheck",
+    "lint": "cd apps/mobile && npm run lint",
+    "test": "cd apps/mobile && npm run test",
+    "e2e": "cd apps/mobile && npm run e2e",
+    "build:mobile": "cd apps/mobile && npm run build",
+    "build:edge": "cd edge/api && npm run build"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
