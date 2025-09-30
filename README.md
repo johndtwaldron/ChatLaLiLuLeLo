@@ -2,6 +2,8 @@
 
 > A codec-style entertainment companion for intellectual sparring and MGS nostalgia
 
+![concept art](material/ai_gen/GPT.gen.1.col.png)
+
 **⚠️ Legal Notice**: This project is an homage and parody, not affiliated with Konami or Metal Gear Solid. No trademarks, assets, or copyrighted content are used.
 
 ## What is this?
