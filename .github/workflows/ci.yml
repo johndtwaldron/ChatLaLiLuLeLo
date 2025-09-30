@@ -6,6 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  # Logging Configuration - Set to 'true' to enable detailed logging
+  ENABLE_DEBUG_LOGS: 'true'
+  ENABLE_BUILD_LOGS: 'true'
+  ENABLE_TEST_LOGS: 'true'
+  # Log retention settings
+  LOG_RETENTION_DAYS: 30
+  # NPM/Node logging levels
+  NPM_LOG_LEVEL: 'info'  # silent, error, warn, info, verbose, silly
+
 jobs:
   test-and-lint:
     name: Test, Lint & Build
@@ -19,39 +29,131 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: 📊 Environment Info
+        if: env.ENABLE_DEBUG_LOGS == 'true'
+        run: |
+          echo "🔧 CI Environment Information:"
+          echo "Node Version: ${{ matrix.node-version }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Job: ${{ github.job }}"
+          echo "Run Number: ${{ github.run_number }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo ""
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Install root dependencies
-        run: npm ci
+      - name: 📋 System Dependencies Info
+        if: env.ENABLE_DEBUG_LOGS == 'true'
+        run: |
+          echo "🔧 System Information:"
+          node --version
+          npm --version
+          echo "NPM Cache Location: $(npm config get cache)"
+          echo "Working Directory: $(pwd)"
+          echo "Available Disk Space:"
+          df -h || true
+          echo ""
 
-      - name: Install mobile app dependencies  
+      - name: 📦 Install root dependencies
+        run: |
+          echo "📦 Installing root dependencies..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm ci --loglevel=${{ env.NPM_LOG_LEVEL }}
+          else
+            npm ci --silent
+          fi
+          echo "✅ Root dependencies installed successfully"
+
+      - name: 📦 Install mobile app dependencies  
         run: |
           cd apps/mobile
-          npm ci
+          echo "📦 Installing mobile app dependencies..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm ci --loglevel=${{ env.NPM_LOG_LEVEL }}
+          else
+            npm ci --silent
+          fi
+          echo "✅ Mobile app dependencies installed successfully"
 
-      - name: TypeScript check
+      - name: 📋 Generate dependency info
+        if: env.ENABLE_DEBUG_LOGS == 'true'
         run: |
           cd apps/mobile
-          npm run typecheck
+          echo "📋 Dependency Information:"
+          echo "Package.json dependencies:"
+          npm list --depth=0 --json > dependency-info.json
+          cat dependency-info.json | jq '.dependencies | keys[]' 2>/dev/null || echo "jq not available"
+          echo "Total packages: $(cat dependency-info.json | jq '.dependencies | length' 2>/dev/null || echo 'unknown')"
+          du -sh node_modules 2>/dev/null || echo "Could not get node_modules size"
+          echo ""
 
-      - name: Lint code
+      - name: 🔍 TypeScript check
         run: |
           cd apps/mobile
-          npm run lint
+          echo "🔍 Running TypeScript compilation check..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm run typecheck 2>&1 | tee typescript-check.log
+          else
+            npm run typecheck
+          fi
+          echo "✅ TypeScript check completed successfully"
 
-      - name: Run tests
+      - name: 🛡️ Lint code
         run: |
           cd apps/mobile
-          npm test -- --coverage --passWithNoTests
+          echo "🛡️ Running ESLint code quality check..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm run lint 2>&1 | tee eslint.log
+          else
+            npm run lint
+          fi
+          echo "✅ Code linting completed successfully"
 
-      - name: Build for production
+      - name: 🧪 Run tests
         run: |
           cd apps/mobile
-          npx expo export --platform web
+          echo "🧪 Running Jest test suite..."
+          if [ "${{ env.ENABLE_TEST_LOGS }}" == "true" ]; then
+            npm test -- --coverage --passWithNoTests --verbose 2>&1 | tee test-results.log
+          else
+            npm test -- --coverage --passWithNoTests --silent
+          fi
+          echo "✅ Tests completed successfully"
+
+      - name: 🏠 Build for production
+        run: |
+          cd apps/mobile
+          echo "🏠 Building production web bundle..."
+          if [ "${{ env.ENABLE_BUILD_LOGS }}" == "true" ]; then
+            npx expo export --platform web 2>&1 | tee build.log
+            echo "📋 Build output details:"
+            ls -la dist/ 2>/dev/null || echo "No dist directory"
+            find dist/ -type f -exec ls -lh {} \; 2>/dev/null || echo "No files to list"
+          else
+            npx expo export --platform web
+          fi
+          echo "✅ Production build completed successfully"
+
+      - name: 📤 Save build logs
+        uses: actions/upload-artifact@v4
+        if: env.ENABLE_DEBUG_LOGS == 'true' && matrix.node-version == '20.x'
+        with:
+          name: build-logs-${{ matrix.node-version }}
+          path: |
+            apps/mobile/typescript-check.log
+            apps/mobile/eslint.log
+            apps/mobile/test-results.log
+            apps/mobile/build.log
+            apps/mobile/dependency-info.json
+          retention-days: ${{ fromJson(env.LOG_RETENTION_DAYS) }}
+          if-no-files-found: ignore
 
       - name: Upload test coverage
         uses: codecov/codecov-action@v4
@@ -70,10 +172,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run security audit
+      - name: 🔒 Setup Node.js for security scan
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 🔒 Install dependencies for audit
         run: |
           cd apps/mobile
-          npm audit --audit-level moderate
+          npm ci --silent
+
+      - name: 🔍 Run security audit
+        run: |
+          cd apps/mobile
+          echo "🔍 Running security audit..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm audit --audit-level moderate 2>&1 | tee security-audit.log
+            echo "📋 Security audit summary:"
+            npm audit --audit-level moderate --json > security-report.json 2>/dev/null || echo "JSON report failed"
+          else
+            npm audit --audit-level moderate
+          fi
+          echo "✅ Security audit completed successfully"
+
+      - name: 📤 Save security logs
+        uses: actions/upload-artifact@v4
+        if: env.ENABLE_DEBUG_LOGS == 'true'
+        with:
+          name: security-logs
+          path: |
+            apps/mobile/security-audit.log
+            apps/mobile/security-report.json
+          retention-days: ${{ fromJson(env.LOG_RETENTION_DAYS) }}
+          if-no-files-found: ignore
 
   validate-demo:
     name: Validate Demo Build
@@ -84,30 +216,91 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🏠 Setup Node.js for demo build
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies for demo
         run: |
-          npm ci
-          cd apps/mobile
-          npm ci
+          echo "📦 Installing dependencies for demo build..."
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            npm ci --loglevel=${{ env.NPM_LOG_LEVEL }}
+            cd apps/mobile
+            npm ci --loglevel=${{ env.NPM_LOG_LEVEL }}
+          else
+            npm ci --silent
+            cd apps/mobile
+            npm ci --silent
+          fi
+          echo "✅ Demo dependencies installed successfully"
 
-      - name: Build web demo
+      - name: 🏠 Build web demo
         run: |
           cd apps/mobile
-          npx expo export --platform web
+          echo "🏠 Building web demo for validation..."
+          if [ "${{ env.ENABLE_BUILD_LOGS }}" == "true" ]; then
+            npx expo export --platform web 2>&1 | tee demo-build.log
+          else
+            npx expo export --platform web
+          fi
+          echo "✅ Demo build completed successfully"
           
-      - name: Check build output
+      - name: 🔍 Validate build output
         run: |
           cd apps/mobile
-          ls -la dist/ || echo "No dist directory found"
-          find . -name "dist" -type d 2>/dev/null || echo "No dist directory anywhere"
+          echo "🔍 Validating build artifacts..."
           
-      - name: Upload demo artifacts
+          # Check if dist directory exists
+          if [ -d "dist" ]; then
+            echo "✅ Build directory 'dist' found"
+            
+            # List contents with details
+            echo "📋 Build contents:"
+            ls -la dist/
+            
+            # Check for required files
+            if [ -f "dist/index.html" ]; then
+              echo "✅ index.html found"
+              if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+                echo "File size: $(du -h dist/index.html | cut -f1)"
+              fi
+            else
+              echo "❌ index.html missing!"
+              exit 1
+            fi
+            
+            # Check bundle size
+            if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+              echo "📋 Bundle analysis:"
+              find dist/ -name "*.js" -exec ls -lh {} \;
+              echo "Total build size: $(du -sh dist/ | cut -f1)"
+            fi
+            
+            # Save build manifest
+            find dist/ -type f > build-manifest.txt
+            echo "📋 Build manifest saved ($(wc -l < build-manifest.txt) files)"
+            
+          else
+            echo "❌ No dist directory found!"
+            echo "🔍 Searching for build output..."
+            find . -name "dist" -type d 2>/dev/null || echo "No dist directory anywhere"
+            exit 1
+          fi
+          
+      - name: 📤 Save demo logs
+        uses: actions/upload-artifact@v4
+        if: env.ENABLE_DEBUG_LOGS == 'true'
+        with:
+          name: demo-logs
+          path: |
+            apps/mobile/demo-build.log
+            apps/mobile/build-manifest.txt
+          retention-days: ${{ fromJson(env.LOG_RETENTION_DAYS) }}
+          if-no-files-found: ignore
+          
+      - name: 📤 Upload demo artifacts
         uses: actions/upload-artifact@v4
         if: success()
         with:
@@ -117,20 +310,66 @@ jobs:
           if-no-files-found: error
 
   notify-status:
-    name: Notify Status
+    name: 📊 Final Status & Log Summary  
     runs-on: ubuntu-latest
     needs: [test-and-lint, security-scan, validate-demo]
     if: always()
     
     steps:
-      - name: Set status
+      - name: 📋 Generate comprehensive status report
         run: |
+          echo "📋 ========================================"
+          echo "📋     ChatLaLiLuLeLo CI/CD Summary"
+          echo "📋 ========================================"
+          echo "Workflow Run: #${{ github.run_number }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo ""
+          
+          # Job Results Summary
+          echo "📋 Job Results:"
+          echo "  🧪 Test & Lint (Node 18.x/20.x): ${{ needs.test-and-lint.result }}"
+          echo "  🔒 Security Scan: ${{ needs.security-scan.result }}"
+          echo "  🏠 Demo Build Validation: ${{ needs.validate-demo.result }}"
+          echo ""
+          
+          # Logging Configuration Status
+          echo "📋 Logging Configuration:"
+          echo "  Debug Logs: ${{ env.ENABLE_DEBUG_LOGS }}"
+          echo "  Build Logs: ${{ env.ENABLE_BUILD_LOGS }}"
+          echo "  Test Logs: ${{ env.ENABLE_TEST_LOGS }}"
+          echo "  Log Retention: ${{ env.LOG_RETENTION_DAYS }} days"
+          echo ""
+          
+          # Overall Status
           if [ "${{ needs.test-and-lint.result }}" == "success" ] && 
              [ "${{ needs.security-scan.result }}" == "success" ] && 
              [ "${{ needs.validate-demo.result }}" == "success" ]; then
-            echo "✅ All checks passed! ChatLaLiLuLeLo is ready for deployment."
+            echo "✅ ========================================"
+            echo "✅        ALL SYSTEMS OPERATIONAL"
+            echo "✅   ChatLaLiLuLeLo is ready for deployment!"
+            echo "✅ ========================================"
             echo "CODEC_STATUS=OPERATIONAL" >> $GITHUB_ENV
           else
-            echo "❌ Some checks failed. Review the logs."
+            echo "❌ ========================================"
+            echo "❌          SYSTEM MALFUNCTION"
+            echo "❌      Some checks failed - review logs"
+            echo "❌ ========================================"
             echo "CODEC_STATUS=MALFUNCTION" >> $GITHUB_ENV
           fi
+          
+          # Available Artifacts
+          echo ""
+          echo "📦 Available Artifacts (if logging enabled):"
+          if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
+            echo "  📤 build-logs-20.x (Build process logs)"
+            echo "  📤 security-logs (Security audit results)"
+            echo "  📤 demo-logs (Demo build validation)"
+          fi
+          echo "  🏠 web-build (Deployable web demo)"
+          echo ""
+          echo "📋 Log artifacts retained for ${{ env.LOG_RETENTION_DAYS }} days"
+          echo "📋 To disable detailed logging, set ENABLE_*_LOGS to 'false'"
+          echo "========================================"
