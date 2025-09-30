@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   Text,
+  Image,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -13,7 +14,10 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 
-import { codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme } from '@/lib/theme';
+
+// Import colonel portrait
+const colonelImage = require('@/assets/images/colonel.jpeg');
 
 interface PortraitProps {
   type: 'colonel' | 'user';
@@ -28,8 +32,17 @@ export const Portrait: React.FC<PortraitProps> = ({
   isSpeaking = false,
   mouthFrame = 0,
 }) => {
+  const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const idleAnimation = useSharedValue(0);
   const glowIntensity = useSharedValue(0);
+  
+  // Subscribe to theme changes
+  useEffect(() => {
+    const unsubscribe = subscribeToThemeChanges(() => {
+      setCurrentTheme(getCodecTheme());
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     // Subtle idle animation (breathing/swaying)
@@ -80,25 +93,37 @@ export const Portrait: React.FC<PortraitProps> = ({
   });
 
   const renderColonelPortrait = () => (
-    <View style={styles.portraitContent}>
-      {/* Placeholder for colonel sprite */}
-      <View style={[styles.spriteContainer, type === 'colonel' && styles.colonelSprite]}>
-        <View style={styles.face}>
-          <View style={styles.eye} />
-          <View style={styles.eye} />
-          <View style={[styles.mouth, { opacity: isSpeaking ? 1 : 0.7 }]}>
-            {/* Mouth animation frames - simplified for now */}
-            <View style={[
-              styles.mouthShape,
-              isSpeaking && mouthFrame > 0 && styles.mouthOpen
-            ]} />
-          </View>
-        </View>
+    <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
+      {/* Colonel portrait image */}
+      <View style={[styles.spriteContainer, styles.colonelImageContainer]}>
+        <Image 
+          source={colonelImage}
+          style={[
+            styles.colonelImage,
+            {
+              opacity: isSpeaking ? 1 : 0.9,
+              // Add subtle border glow effect when speaking
+              ...(isSpeaking && {
+                shadowColor: currentTheme.colors.primary,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 6,
+                elevation: 8,
+              })
+            }
+          ]}
+          resizeMode="cover"
+        />
+        
+        {/* Speaking indicator overlay */}
+        {isSpeaking && (
+          <View style={[styles.speakingIndicator, { borderColor: currentTheme.colors.primary }]} />
+        )}
       </View>
       
       {/* ID Label */}
-      <View style={styles.idLabel}>
-        <Text style={styles.idText}>???</Text>
+      <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>COLONEL</Text>
       </View>
     </View>
   );
@@ -256,5 +281,30 @@ const styles = StyleSheet.create({
     borderColor: codecTheme.colors.primary,
     opacity: 0.3,
     pointerEvents: 'none',
+  },
+  
+  colonelImageContainer: {
+    width: 80,
+    height: 90,
+    borderRadius: 4,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  
+  colonelImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+  },
+  
+  speakingIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 2,
+    borderRadius: 4,
+    borderStyle: 'solid',
   },
 });
