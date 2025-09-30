@@ -406,3 +406,134 @@ interface PortraitProps {
 **Status:** 🐛 **ACTIVE DEBUGGING SESSION** - Portrait component enhancements implemented, investigating integration issues with JDW
 
 ---
+
+## Session 9 - 2025-09-30T18:01:21Z
+
+**Objective:** 🎯 Recovery and Implementation - Priority 1: Live CRT Toggle
+
+### ✅ **SUCCESSFUL RECOVERY AND IMPLEMENTATION**
+
+**Recovery Strategy Executed:**
+- Implemented **Option A - Complete Rollback** as recommended in Session 8
+- `git checkout main` → `git branch -D develop` → `git checkout -b develop-v2`
+- Clean slate approach applying lessons learned from architecture failure
+
+### 🎯 **Priority 1 - Live CRT Toggle: COMPLETE ✅**
+
+**Requirements Met:**
+- ✅ Toggle button that turns CRT effect on/off live
+- ✅ Instant visual feedback when clicked
+- ✅ Button shows current state (CRT: ON/OFF)
+- ✅ No white screen or broken functionality
+- ✅ All existing features remain working
+- ✅ **User Validation**: "that is class! it works perfectly"
+
+### 🔧 **Technical Implementation Success:**
+
+**Lessons Applied from Session 8 Failure:**
+1. **Single Source of Truth**: Extended existing `getCodecTheme()` system
+2. **No Competing Architectures**: Built on proven working theme infrastructure
+3. **Minimal Changes**: Modified working components incrementally  
+4. **Progressive Enhancement**: Added features without breaking existing functionality
+5. **Proven Patterns**: Used existing subscription system for reactivity
+
+**Implementation Details:**
+```typescript
+// Extended existing theme system (theme.ts)
+let crtEnabled = true;
+export const toggleCRT = () => {
+  crtEnabled = !crtEnabled;
+  notifyThemeChange(); // Reuse existing notification system
+};
+
+// Made CodecFrame responsive (CodecFrame.tsx)
+const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+useEffect(() => {
+  const unsubscribe = subscribeToThemeChanges(() => {
+    setCurrentTheme(getCodecTheme());
+  });
+  return unsubscribe;
+}, []);
+
+// Conditional CRT effects rendering
+{currentTheme.crt && (
+  <> {/* All CRT effects: scanlines, sweep, glow, border */} </>
+)}
+```
+
+### 🎮 **User Experience Achieved:**
+
+**CRT Toggle Functionality:**
+- **CRT ON**: Full codec experience - scanlines, moving sweep, glow overlay, border frame
+- **CRT OFF**: Clean interface without CRT artifacts, all content remains visible
+- **Live Switching**: Instant toggle with single click, no delays or glitches
+- **Visual Feedback**: Button highlights cyan when CRT is ON, shows current state clearly
+- **Positioning**: Top-right corner (ready for center repositioning)
+
+**Preserved Functionality:**
+- ✅ Colonel portrait with colonel.jpeg image loading
+- ✅ Animated portraits with idle breathing effects
+- ✅ Subtitle stream with typewriter effects
+- ✅ Sample conversations display properly
+- ✅ All theme colors and styling intact
+- ✅ Smooth jitter and sweep animations
+
+### 📊 **Architecture Comparison: Session 8 vs Session 9**
+
+| Aspect | Session 8 (Failed) | Session 9 (Success) |
+|--------|-------------------|---------------------|
+| **Approach** | Replace existing system | Extend existing system |
+| **Architecture** | Dual competing systems | Single extended system |
+| **Changes** | Major refactor (Zustand) | Minimal extension |
+| **Result** | White screen crash | Working live toggle |
+| **Risk** | High complexity | Low risk incremental |
+| **User Feedback** | "stuck...white screen" | "class! works perfectly" |
+
+### 🛠️ **Technical Success Factors:**
+
+1. **Theme System Integration**:
+   - Extended existing `theme.ts` with `crtEnabled: boolean`
+   - Added CRT state to `getCodecTheme()` return object
+   - Reused existing `subscribeToThemeChanges` mechanism
+   - No import conflicts or circular dependencies
+
+2. **Component Architecture**:
+   - `CodecFrame`: Made CRT effects conditional on `currentTheme.crt`
+   - `CRTToggle`: New component following established patterns
+   - `ChatScreen`: Minimal integration maintaining existing layout
+
+3. **Quality Assurance**:
+   - ✅ TypeScript compilation: `npx tsc --noEmit` passes cleanly
+   - ✅ Runtime stability: No crashes or white screens
+   - ✅ Visual consistency: All styling and animations working
+   - ✅ User experience: Immediate positive feedback
+
+### 🔄 **Next Steps - Priority Queue:**
+
+**Immediate:**
+- 🔄 **Button Repositioning**: Move CRT toggle from top-right to center-top
+- ✅ **Mark Priority 1 Complete** after repositioning
+
+**Priority 2 (Next):**
+- 🎯 **Color Theme Dropdown**: hot purple, gold, green, yellow, crimson themes
+- Approach: Extend `themePresets` object in `theme.ts`
+- Create theme selector component using proven CRTToggle patterns
+- Test each color addition incrementally
+
+**Priority 3 (Future):**
+- 🎯 **Draggable Colonel Portrait**: collision detection and sliding movement
+
+### 💡 **Key Success Insights:**
+
+1. **Architecture Recovery**: Clean rollback was the correct strategic decision
+2. **Risk Management**: Extending proven systems vs replacing them
+3. **Incremental Development**: Small changes with frequent validation
+4. **User-Centric Approach**: Priority on working functionality over complexity
+5. **Pattern Reuse**: Leveraging existing subscription and theme systems
+6. **Technical Debt Avoidance**: No competing architectures or fragmented state
+
+**Status:** 🎉 **PRIORITY 1 COMPLETE AND VALIDATED** - Live CRT toggle successfully implemented using lessons learned. User confirmed "works perfectly". Ready for button repositioning and Priority 2 implementation.
+
+---
+ 
+ 
