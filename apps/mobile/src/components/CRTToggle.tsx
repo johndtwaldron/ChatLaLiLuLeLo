@@ -40,8 +40,9 @@ export const CRTToggle: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 50,
-    right: 16,
+    top: 20,
+    left: '50%',
+    marginLeft: -60, // Half of button width to center it
     zIndex: 100,
   },
   
