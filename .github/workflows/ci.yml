@@ -1,0 +1,126 @@
+name: ChatLaLiLuLeLo CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-lint:
+    name: Test, Lint & Build
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install mobile app dependencies  
+        run: |
+          cd apps/mobile
+          npm ci
+
+      - name: TypeScript check
+        run: |
+          cd apps/mobile
+          npm run typecheck
+
+      - name: Lint code
+        run: |
+          cd apps/mobile
+          npm run lint
+
+      - name: Run tests
+        run: |
+          cd apps/mobile
+          npm test -- --coverage --passWithNoTests
+
+      - name: Build for production
+        run: |
+          cd apps/mobile
+          npx expo export:web
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        if: matrix.node-version == '20.x'
+        with:
+          file: ./apps/mobile/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security audit
+        run: |
+          cd apps/mobile
+          npm audit --audit-level moderate
+
+  validate-demo:
+    name: Validate Demo Build
+    runs-on: ubuntu-latest
+    needs: [test-and-lint]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/mobile
+          npm ci
+
+      - name: Build web demo
+        run: |
+          cd apps/mobile
+          npx expo export:web
+
+      - name: Upload demo artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: apps/mobile/dist/
+          retention-days: 7
+
+  notify-status:
+    name: Notify Status
+    runs-on: ubuntu-latest
+    needs: [test-and-lint, security-scan, validate-demo]
+    if: always()
+    
+    steps:
+      - name: Set status
+        run: |
+          if [ "${{ needs.test-and-lint.result }}" == "success" ] && 
+             [ "${{ needs.security-scan.result }}" == "success" ] && 
+             [ "${{ needs.validate-demo.result }}" == "success" ]; then
+            echo "✅ All checks passed! ChatLaLiLuLeLo is ready for deployment."
+            echo "CODEC_STATUS=OPERATIONAL" >> $GITHUB_ENV
+          else
+            echo "❌ Some checks failed. Review the logs."
+            echo "CODEC_STATUS=MALFUNCTION" >> $GITHUB_ENV
+          fi
