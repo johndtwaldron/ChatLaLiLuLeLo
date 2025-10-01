@@ -1,0 +1,19 @@
+name = "chatlalilulelo-backend"
+main = "src/index.ts"
+compatibility_date = "2024-03-08"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "chatlalilulelo-backend-prod"
+
+[env.staging]  
+name = "chatlalilulelo-backend-staging"
+
+# Environment variables (secrets set via: wrangler secret put OPENAI_API_KEY)
+# OPENAI_API_KEY - Required
+# OPENAI_MODEL - Optional (default: gpt-4o-mini)
+# TAVILY_API_KEY - Optional (for research feature)
+
+# Local development
+[env.development]
+name = "chatlalilulelo-backend-dev"
