@@ -124,7 +124,8 @@ export default {
         messages,
         model: env.OPENAI_MODEL ?? 'gpt-4o-mini',
         temperature: options.temperature ?? 0.7,
-        max_tokens: options.max_tokens ?? 600
+        max_tokens: options.max_tokens ?? 600,
+        mode
       });
 
       // Set up SSE stream
