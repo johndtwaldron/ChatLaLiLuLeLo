@@ -1144,6 +1144,118 @@ export async function streamChat({
 
 ---
 
+## Session 15 - 2025-10-01T21:42:04Z
+
+**Objective:** 📋 ChatLaLiLuLeLo v3 Development Planning - UI/UX Enhancement Phase
+
+### 🆕 **NEW DEVELOPMENT BRANCH CREATED:**
+
+**Branch**: `develop-v3`  
+**Focus**: Enhanced user experience with authentic MGS2 codec startup sequence and professional desktop integration
+
+### 🎯 **v3 ENHANCEMENT PRIORITIES DEFINED:**
+
+**Priority 1: Debug Panel Toggle** 🔧
+- **Complexity**: Low (1-2 hours)
+- **Requirements**: Debug button next to MODE/CRT/THEME buttons
+- **Features**: Real-time API status, performance metrics, communication logs
+- **Technical**: Extend theme system with `debugEnabled: boolean`
+
+**Priority 2: Colonel Portrait Cycling** 🖼️
+- **Complexity**: Medium (2-3 hours)  
+- **Requirements**: Click colonel portrait to cycle through multiple MGS images
+- **Features**: Smooth transition animations, localStorage persistence
+- **Assets Needed**: 3-5 different Colonel portraits (colonel_1.jpg, colonel_2.jpg, etc.)
+
+**Priority 3: Desktop Launcher Shortcut** ⚡
+- **Complexity**: Medium (2-4 hours)
+- **Requirements**: Single-click desktop deployment (.exe/.bat file)
+- **Features**: Auto-launch frontend/backend, browser opening, custom icon
+- **Options**: Batch script → PowerShell → Node.js executable progression
+
+**Priority 4: MGS2 Codec Startup Animation** 🎬
+- **Complexity**: High (4-6 hours)
+- **Requirements**: Authentic codec startup sequence recreation
+- **Animation Phases**: 
+  1. Frequency scanning (140.85) - 2s
+  2. Scanlines buildup - 1s
+  3. Portrait fade-in - 1s  
+  4. Text streams - 1s
+  5. UI elements slide-in - 1s
+  6. Interactive transition - 0.5s
+- **Features**: Skip button, localStorage preferences, 60fps animations
+
+**Priority 5: CODEC Startup Sound Effect** 🔊
+- **Complexity**: Medium (1-2 hours + audio sourcing)
+- **Requirements**: Synchronized audio with startup animation
+- **Technical**: expo-av integration, volume controls, preloading
+- **Pending**: Authentic MGS2 codec sound file sourcing
+
+### 📊 **DEVELOPMENT STRATEGY:**
+
+**Phase 1: Core Functionality** (1-2 days)
+- Debug panel implementation and testing
+- Colonel portrait cycling system
+- **Outcome**: Enhanced developer experience and user interaction
+
+**Phase 2: Desktop Integration** (1-2 days)
+- Desktop launcher creation and testing  
+- Windows integration with professional deployment
+- **Outcome**: Professional desktop application experience
+
+**Phase 3: Startup Experience** (2-3 days)
+- Codec startup animation implementation
+- Audio integration (pending file sourcing)
+- **Outcome**: Authentic MGS2 codec startup experience
+
+### 🛠️ **TECHNICAL ARCHITECTURE:**
+
+**Design Principles**:
+- Build on proven v1 theme system architecture
+- Maintain existing component patterns and state management
+- Zero breaking changes to current user experience
+- Preserve all v1 functionality while adding enhancements
+
+**Performance Considerations**:
+- Lazy load startup animations for returning users
+- Optimize portrait images for web delivery
+- Minimal impact on current application performance
+- Smooth 60fps animations with React Native Reanimated
+
+### 📋 **SUCCESS CRITERIA ESTABLISHED:**
+
+**Debug Panel**: Functional toggle with real-time status display
+**Portrait Cycling**: 3+ images with smooth transitions and persistence  
+**Desktop Launcher**: Single-click launch with professional Windows integration
+**Startup Animation**: Authentic MGS2 sequence with skip option
+**Startup Audio**: High-quality sound synchronized with animation
+
+### 📄 **DELIVERABLES PLANNED:**
+
+**Code Components**:
+- `DebugPanel.tsx` - Comprehensive debug information display
+- `StartupSequence.tsx` - MGS2 codec startup animation
+- `PortraitCycler.tsx` - Enhanced portrait component with cycling
+- `launch-chatlalilulelo.bat` - Desktop launcher script
+
+**Assets Required**:
+- Multiple colonel portrait images from MGS series
+- Custom desktop application icon with MGS2 aesthetic
+- Codec startup audio file (pending sourcing)
+- Updated documentation and README
+
+### 🎯 **IMMEDIATE NEXT STEPS:**
+
+1. **Asset Preparation**: Source additional Colonel portraits for cycling
+2. **Priority 1 Implementation**: Begin debug panel development
+3. **Desktop Icon Creation**: Design professional launcher icon
+4. **Audio File Sourcing**: Locate/extract MGS2 codec startup sound
+5. **Testing Strategy**: Plan component unit tests and integration testing
+
+**Status:** 📋 **v3 DEVELOPMENT PLAN COMPLETE** - Comprehensive roadmap established for ChatLaLiLueLeLo UI/UX enhancements. Ready to begin Priority 1 (Debug Panel) implementation.
+
+---
+
 ## Session 9 - 2025-09-30T18:01:21Z
 
 **Objective:** 🎯 Recovery and Implementation - Priority 1: Live CRT Toggle
