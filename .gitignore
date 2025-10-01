@@ -80,3 +80,5 @@ edge/api/.wrangler/
 *.secret
 secrets.json
 api-keys.json
+dev.vars
+.dev.vars

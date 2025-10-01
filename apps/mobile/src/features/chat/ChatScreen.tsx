@@ -13,7 +13,8 @@ import { CRTToggle } from '@/components/CRTToggle';
 import { ThemeCycleToggle } from '@/components/ThemeCycleToggle';
 import { ModeToggle } from '@/components/ModeToggle';
 import { TextInput } from '@/components/TextInput';
-import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getModeDisplayName } from '@/lib/theme';
+import { streamReply, type ChatMessage, type ChatRequest } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -51,7 +52,8 @@ export const ChatScreen: React.FC = () => {
     },
   ]);
 
-  const [isStreaming] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [currentStreamText, setCurrentStreamText] = useState('');
   const [haywireMode] = useState(false);
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -88,11 +90,11 @@ export const ChatScreen: React.FC = () => {
   };
 
   // Handle new message from text input
-  const handleSendMessage = (messageText: string) => {
+  const handleSendMessage = async (messageText: string) => {
     const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(7); // Add randomness
+    const randomSuffix = Math.random().toString(36).substring(7);
     const userMessage: Message = {
-      id: `user-${timestamp}-${randomSuffix}`, // Fully unique ID
+      id: `user-${timestamp}-${randomSuffix}`,
       text: `USER: ${messageText}`,
       speaker: 'user',
       timestamp,
@@ -100,46 +102,110 @@ export const ChatScreen: React.FC = () => {
     
     // Add user message with deduplication check
     setMessages(prevMessages => {
-      // Check if message already exists (prevent duplicates)
       const isDuplicate = prevMessages.some(msg => 
         msg.text === userMessage.text && 
-        Math.abs(msg.timestamp - userMessage.timestamp) < 100 // Within 100ms
+        Math.abs(msg.timestamp - userMessage.timestamp) < 100
       );
       
       if (isDuplicate) {
         console.log('Prevented duplicate user message:', userMessage.text);
-        return prevMessages; // Don't add duplicate
+        return prevMessages;
       }
       
       return [...prevMessages, userMessage];
     });
     
-    // Add placeholder backend response after a short delay
-    setTimeout(() => {
-      const responseTimestamp = Date.now();
-      const responseRandomSuffix = Math.random().toString(36).substring(7);
-      const responseMessage: Message = {
-        id: `colonel-${responseTimestamp}-${responseRandomSuffix}`,
-        text: '<backend response>',
-        speaker: 'colonel',
-        timestamp: responseTimestamp,
-      };
-      
-      setMessages(prevMessages => {
-        // Check if response already exists (prevent duplicates)
-        const isDuplicate = prevMessages.some(msg => 
-          msg.text === responseMessage.text && 
-          Math.abs(msg.timestamp - responseMessage.timestamp) < 100
-        );
-        
-        if (isDuplicate) {
-          console.log('Prevented duplicate response message');
-          return prevMessages;
+    // Start streaming response from API
+    setIsStreaming(true);
+    setCurrentStreamText('');
+    
+    // Convert mode mapping
+    const currentMode = getCurrentMode();
+    const modeMap = {
+      'haywire': 'GW',
+      'jd': 'JD', 
+      'lore': 'MGS',
+      'bitcoin': 'BTC'
+    } as const;
+    
+    const apiMode = modeMap[currentMode] || 'JD';
+    
+    // Build conversation history for API
+    const conversationHistory: ChatMessage[] = messages.map(msg => ({
+      role: msg.speaker === 'user' ? 'user' : 'assistant',
+      content: msg.text.replace(/^USER: /, ''), // Remove USER: prefix for API
+    }));
+    
+    // Add the current user message
+    conversationHistory.push({
+      role: 'user',
+      content: messageText
+    });
+    
+    const chatRequest: ChatRequest = {
+      mode: apiMode,
+      messages: conversationHistory,
+      options: {
+        research: false, // TODO: Make this configurable
+        max_tokens: 600,
+        temperature: 0.7
+      },
+      client: {
+        sessionId: `${process.env.EXPO_PUBLIC_SESSION_ID_PREFIX || 'chatlali'}-${Date.now()}`,
+        appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0'
+      }
+    };
+    
+    let fullResponseText = '';
+    
+    try {
+      await streamReply(
+        chatRequest,
+        (token: string) => {
+          // Handle incoming tokens
+          fullResponseText += token;
+          setCurrentStreamText(fullResponseText);
+        },
+        (usage) => {
+          // Handle completion
+          console.log('Stream completed:', usage);
+          
+          const responseTimestamp = Date.now();
+          const responseRandomSuffix = Math.random().toString(36).substring(7);
+          const responseMessage: Message = {
+            id: `colonel-${responseTimestamp}-${responseRandomSuffix}`,
+            text: fullResponseText,
+            speaker: 'colonel',
+            timestamp: responseTimestamp,
+          };
+          
+          setMessages(prev => [...prev, responseMessage]);
+          setIsStreaming(false);
+          setCurrentStreamText('');
+        },
+        (error) => {
+          // Handle errors
+          console.error('Stream error:', error);
+          
+          const errorTimestamp = Date.now();
+          const errorRandomSuffix = Math.random().toString(36).substring(7);
+          const errorMessage: Message = {
+            id: `colonel-${errorTimestamp}-${errorRandomSuffix}`,
+            text: `[ERROR] Connection failed: ${error}`,
+            speaker: 'colonel',
+            timestamp: errorTimestamp,
+          };
+          
+          setMessages(prev => [...prev, errorMessage]);
+          setIsStreaming(false);
+          setCurrentStreamText('');
         }
-        
-        return [...prevMessages, responseMessage];
-      });
-    }, 1500);
+      );
+    } catch (error) {
+      console.error('API request failed:', error);
+      setIsStreaming(false);
+      setCurrentStreamText('');
+    }
   };
 
   const themeStyles = getThemeStyles(currentTheme);
@@ -192,8 +258,8 @@ export const ChatScreen: React.FC = () => {
           <View style={[staticStyles.streamSection, themeStyles.streamSection]}>
             <SubtitleStream
               messages={messages}
-              isStreaming={false}
-              currentStreamText={""}
+              isStreaming={isStreaming}
+              currentStreamText={currentStreamText}
             />
           </View>
 

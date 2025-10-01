@@ -1,0 +1,32 @@
+{
+  "name": "chatlalilulelo-edge",
+  "version": "1.0.0",
+  "description": "ChatLaLiLuLeLo Backend - OpenAI + Modes + Web Search",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openai": "^4.104.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251001.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^3.60.3"
+  },
+  "keywords": [
+    "openai",
+    "chat",
+    "codec",
+    "mgs"
+  ],
+  "author": "JDW",
+  "license": "MIT",
+  "directories": {
+    "lib": "lib"
+  }
+}

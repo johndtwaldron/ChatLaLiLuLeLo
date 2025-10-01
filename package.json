@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/mobile && npm run dev",
+    "dev": "concurrently -n EDGE,MOBILE -c blue,green \"cd apps/edge && npx wrangler dev --local --env=development --port=8787\" \"cd apps/mobile && npx expo start --web --port=8082\"",
     "typecheck": "cd apps/mobile && npm run typecheck",
     "lint": "cd apps/mobile && npm run lint",
     "test": "cd apps/mobile && npm run test",
@@ -20,6 +20,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "concurrently": "^9.2.1",
     "eslint": "^8.50.0",
     "prettier": "^3.0.0",
     "typescript": "^5.2.0"
