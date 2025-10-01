@@ -862,17 +862,40 @@ cd apps/edge && npx wrangler dev --local --env=development
 cd apps/mobile && npx expo start --web --port=8082
 ```
 
-### ❌ **Current Issue: Frontend Connection Still Failing**
+### 🔧 **BUNDLING ISSUE RESOLVED: Component Import Path Fix**
 
-**Symptoms Observed:**
-- ✅ Backend health endpoint accessible via direct HTTP request
-- ✅ Backend shows proper CORS headers and API key status
-- ❌ Frontend still shows "[ERROR] Connection failed: Failed to fetch"
-- 🔍 **New Behavior**: Connection now takes time before failing (was instant before)
+**Issue Encountered:**
+- ❌ Expo web build failing with "Unable to resolve DraggablePortrait" error
+- ❌ Import path mismatch: `@/components/ui/DraggablePortrait` vs actual location
+- ❌ ConnectionDebug component added but bundling broke before testing
 
-**User Report:**
-- "Backend still doesn't connect and we still get the error"
-- "It does take a little while for the response to come now, where it was instant before"
+**Root Cause:**
+- DraggablePortrait.tsx located at `apps/mobile/src/components/DraggablePortrait.tsx`
+- Import path incorrectly referenced `@/components/ui/DraggablePortrait`
+- Missing `ui` subdirectory in component structure
+
+**Resolution Applied:**
+```typescript
+// Fixed import in ChatScreen.tsx
+- import { DraggablePortrait } from '@/components/ui/DraggablePortrait';
++ import { DraggablePortrait } from '@/components/DraggablePortrait';
+```
+
+### ✅ **CONNECTION ISSUE RESOLVED: Frontend-Backend Communication Working**
+
+**Build Success Confirmed:**
+- ✅ "Web Bundled 1194ms apps\\mobile\\index.js (638 modules)"
+- ✅ Backend running: "Ready on http://127.0.0.1:8787"
+- ✅ Frontend accessible: "Waiting on http://localhost:8082"
+- ✅ **Health endpoint calls successful**: Multiple GET /health 200 OK requests
+- ✅ **CORS working**: OPTIONS /chat 200 OK preflight success
+- ✅ **Chat endpoint accessible**: POST /chat request processed
+
+**Connection Status:**
+- ✅ Frontend successfully calling backend API
+- ✅ Environment variables loading correctly
+- ✅ Debug component operational
+- ⚠️ OpenAI API quota exceeded (429 error) - not a connection issue
 
 ### 🔬 **Investigation Areas Identified:**
 

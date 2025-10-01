@@ -7,7 +7,8 @@ import {
 
 import { CodecFrame } from '@/components/CodecFrame';
 import { Portrait } from '@/components/Portrait';
-import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
+import { DraggablePortrait } from '@/components/DraggablePortrait';
+import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
 import { ThemeCycleToggle } from '@/components/ThemeCycleToggle';
@@ -271,6 +272,9 @@ export const ChatScreen: React.FC = () => {
             />
           </View>
         </View>
+        
+        {/* Debug Component - temporary for connection testing */}
+        <ConnectionDebug />
       </CodecFrame>
     </SafeAreaView>
   );
