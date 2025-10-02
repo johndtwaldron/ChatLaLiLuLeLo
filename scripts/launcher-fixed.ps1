@@ -10,17 +10,8 @@ $ErrorActionPreference = "Continue"
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
 # Configuration - Updated for correct ports
-# Handle both script and compiled executable contexts
-if ([string]::IsNullOrEmpty($PSScriptRoot)) {
-    # Running as compiled executable
-    $ScriptDir = Split-Path -Parent ([System.Reflection.Assembly]::GetEntryAssembly().Location)
-    # Assume executable is in dist/ folder, so project root is parent
-    $ProjectRoot = Split-Path -Parent $ScriptDir
-} else {
-    # Running as PowerShell script
-    $ScriptDir = $PSScriptRoot
-    $ProjectRoot = Split-Path -Parent $ScriptDir
-}
+$ScriptDir = $PSScriptRoot
+$ProjectRoot = Split-Path -Parent $ScriptDir
 $FrontendUrl = "http://localhost:8082"  # Correct Expo web port
 $BackendUrl = "http://localhost:8787"   # Correct Wrangler dev port
 $MaxStartupWait = 60
