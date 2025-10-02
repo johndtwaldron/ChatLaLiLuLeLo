@@ -26,7 +26,7 @@ export const DebugToggle: React.FC<DebugToggleProps> = ({ onToggle, enabled }) =
       position: 'absolute',
       top: 20,
       left: '50%',
-      marginLeft: 150, // Position after THEME button
+      marginLeft: 250, // Position with proper spacing after THEME button
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderWidth: 2,

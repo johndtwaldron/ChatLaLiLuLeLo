@@ -26,7 +26,7 @@ export const ConnectionDebugToggle: React.FC<ConnectionDebugToggleProps> = ({ on
       position: 'absolute',
       top: 20,
       left: '50%',
-      marginLeft: 380, // Position after DEBUG button with much more space
+      marginLeft: 420, // Position with proper spacing after DEBUG button
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderWidth: 2,
