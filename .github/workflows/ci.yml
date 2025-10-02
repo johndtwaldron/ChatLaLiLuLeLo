@@ -24,6 +24,10 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
+    
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
 
     steps:
       - name: Checkout code
@@ -94,12 +98,21 @@ jobs:
           du -sh node_modules 2>/dev/null || echo "Could not get node_modules size"
           echo ""
 
+      - name: 🧪 Run local CI tests
+        run: |
+          echo "🧪 Running ChatLaLiLuLeLo CI validation..."
+          # Note: Skip API key checks in GitHub Actions (no .dev.vars file)
+          node scripts/test-ci.js || {
+            echo "❌ CI validation failed"
+            exit 1
+          }
+          echo "✅ CI validation completed successfully"
+
       - name: 🔍 TypeScript check
         run: |
-          cd apps/mobile
           echo "🔍 Running TypeScript compilation check..."
           if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
-            npm run typecheck 2>&1 | tee typescript-check.log
+            npm run typecheck 2>&1 | tee apps/mobile/typescript-check.log
           else
             npm run typecheck
           fi
@@ -107,14 +120,51 @@ jobs:
 
       - name: 🛡️ Lint code
         run: |
-          cd apps/mobile
           echo "🛡️ Running ESLint code quality check..."
           if [ "${{ env.ENABLE_DEBUG_LOGS }}" == "true" ]; then
-            npm run lint 2>&1 | tee eslint.log
+            npm run lint 2>&1 | tee apps/mobile/eslint.log
           else
             npm run lint
           fi
           echo "✅ Code linting completed successfully"
+          
+      - name: 📱 Validate mobile assets
+        run: |
+          echo "📱 Validating mobile app assets and configuration..."
+          cd apps/mobile
+          
+          # Check for required asset directories
+          if [ -d "assets/audio" ]; then
+            echo "✅ Audio assets directory found"
+            audio_count=$(find assets/audio -name "*.mp3" | wc -l)
+            echo "📊 Found $audio_count MP3 audio files"
+            if [ $audio_count -lt 5 ]; then
+              echo "⚠️  Warning: Expected at least 5 audio files for codec sounds"
+            fi
+          else
+            echo "❌ Audio assets directory missing!"
+            exit 1
+          fi
+          
+          # Check for critical components
+          required_components=(
+            "src/components/CodecStandby.tsx"
+            "src/components/StartupAnimation.tsx" 
+            "src/features/chat/ChatScreen.tsx"
+            "src/lib/audio.ts"
+            "src/lib/theme.ts"
+          )
+          
+          for component in "${required_components[@]}"; do
+            if [ -f "$component" ]; then
+              echo "✅ $component found"
+            else
+              echo "❌ Missing critical component: $component"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Mobile assets and components validated"
 
       - name: 🧪 Run tests
         run: |

@@ -3,19 +3,24 @@ import {
   View,
   StyleSheet,
   SafeAreaView,
+  Text,
+  Pressable,
 } from 'react-native';
 
 import { CodecFrame } from '@/components/CodecFrame';
-import { Portrait } from '@/components/Portrait';
-import { DraggablePortrait } from '@/components/DraggablePortrait';
+import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
 import { ThemeCycleToggle } from '@/components/ThemeCycleToggle';
 import { ModeToggle } from '@/components/ModeToggle';
+import { DebugToggle } from '@/components/DebugToggle';
+import { DebugPanel } from '@/components/DebugPanel';
+import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
-import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getModeDisplayName } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatMessage, type ChatRequest } from '@/lib/api';
+import { playCodecClose } from '@/lib/audio';
 
 interface Message {
   id: string;
@@ -24,7 +29,11 @@ interface Message {
   timestamp: number;
 }
 
-export const ChatScreen: React.FC = () => {
+interface ChatScreenProps {
+  onEnterStandby?: () => void;
+}
+
+export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -56,6 +65,8 @@ export const ChatScreen: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamText, setCurrentStreamText] = useState('');
   const [haywireMode] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
+  const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -68,6 +79,7 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
       setCurrentTheme(getCodecTheme());
+      setDebugEnabled(isDebugEnabled()); // Sync debug state
     });
     return unsubscribe;
   }, []);
@@ -75,7 +87,7 @@ export const ChatScreen: React.FC = () => {
   // Measure portrait section layout for dragging boundaries
   const handlePortraitSectionLayout = () => {
     if (portraitSectionRef.current) {
-      portraitSectionRef.current.measure((x, y, width, height, pageX, pageY) => {
+      portraitSectionRef.current.measure((_x, _y, width, height, _pageX, _pageY) => {
         setPortraitSectionLayout({ x: 0, y: 0, width, height }); // relative coordinates
         
         // Set initial positions: Colonel on left, User on right
@@ -88,6 +100,31 @@ export const ChatScreen: React.FC = () => {
         setLayoutReady(true);
       });
     }
+  };
+
+  // Handle debug toggle
+  const handleDebugToggle = (enabled: boolean) => {
+    setDebugEnabled(enabled);
+    setDebug(enabled); // Update theme system state
+  };
+
+  // Handle connection debug toggle
+  const handleConnectionDebugToggle = (enabled: boolean) => {
+    setConnectionDebugEnabled(enabled);
+  };
+
+  // Handle close button press - enter standby mode
+  const handleClosePress = async () => {
+    try {
+      // Play codec close sound
+      await playCodecClose();
+      console.log('[CHAT] Close sound played, entering standby mode');
+    } catch (error) {
+      console.warn('[CHAT] Failed to play close sound:', error);
+    }
+    
+    // Enter standby mode
+    onEnterStandby?.();
   };
 
   // Handle new message from text input
@@ -218,6 +255,26 @@ export const ChatScreen: React.FC = () => {
         <CRTToggle />
         <ThemeCycleToggle />
         <ModeToggle />
+        <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
+        <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
+        
+        {/* Close Button */}
+        <View style={staticStyles.closeButtonContainer}>
+          <Pressable 
+            onPress={handleClosePress}
+            style={[
+              staticStyles.closeButton,
+              { 
+                borderColor: currentTheme.colors.primary,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              }
+            ]}
+          >
+            <Text style={[staticStyles.closeButtonText, { color: currentTheme.colors.primary }]}>
+              CLOSE
+            </Text>
+          </Pressable>
+        </View>
         
         <View style={themeStyles.content}>
           {/* Portrait Section with dual draggable portraits */}
@@ -273,8 +330,15 @@ export const ChatScreen: React.FC = () => {
           </View>
         </View>
         
-        {/* Debug Component - temporary for connection testing */}
-        <ConnectionDebug />
+        {/* Debug Panel */}
+        {debugEnabled && (
+          <DebugPanel onClose={() => handleDebugToggle(false)} />
+        )}
+        
+        {/* Connection Debug Panel */}
+        {connectionDebugEnabled && (
+          <ConnectionDebug />
+        )}
       </CodecFrame>
     </SafeAreaView>
   );
@@ -305,6 +369,29 @@ const staticStyles = StyleSheet.create({
   
   controlsSection: {
     minHeight: 80,
+  },
+  
+  closeButtonContainer: {
+    position: 'absolute',
+    top: 20,
+    left: '50%',
+    marginLeft: -320, // Position further left to avoid overlap with MODE button
+    zIndex: 100,
+  },
+  
+  closeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  
+  closeButtonText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
 

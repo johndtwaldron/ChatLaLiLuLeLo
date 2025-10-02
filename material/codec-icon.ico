@@ -1,0 +1,10 @@
+This is a placeholder for a codec-style icon file.
+In practice, you would replace this with an actual .ico file with the MGS2 codec design.
+
+The icon should feature:
+- MGS2 codec communication interface styling
+- Cyan/green color scheme matching the UI theme
+- Professional appearance suitable for desktop launcher
+- Multiple sizes (16x16, 32x32, 48x48, 256x256) for Windows compatibility
+
+For now, the launcher will use the default PowerShell executable icon.

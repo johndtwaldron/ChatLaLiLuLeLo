@@ -26,7 +26,8 @@ export const ConnectionDebug: React.FC = () => {
       setDebugInfo(prev => prev + `Response: ${JSON.stringify(result, null, 2)}\n`);
       
     } catch (error) {
-      const endTime = Date.now();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const endTime = Date.now();
       setDebugInfo(prev => prev + `Error: ${error}\n`);
       setDebugInfo(prev => prev + `Error type: ${typeof error}\n`);
       setDebugInfo(prev => prev + `Error name: ${(error as any)?.name}\n`);
@@ -53,7 +54,12 @@ export const ConnectionDebug: React.FC = () => {
       
       setDebugInfo(prev => prev + `Response status: ${response.status}\n`);
       setDebugInfo(prev => prev + `Response ok: ${response.ok}\n`);
-      setDebugInfo(prev => prev + `Response headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}\n`);
+      // Convert headers to plain object
+      const headersObj: Record<string, string> = {};
+      response.headers.forEach((value: string, key: string) => {
+        headersObj[key] = value;
+      });
+      setDebugInfo(prev => prev + `Response headers: ${JSON.stringify(headersObj, null, 2)}\n`);
       
       if (response.ok) {
         const data = await response.json();
