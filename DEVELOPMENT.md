@@ -38,6 +38,7 @@ npm run ci-check
 | `npm run ci-check` | **Validation only** | Pre-commit checks, troubleshooting |
 | `npm run typecheck` | **TypeScript check** | Type validation only |
 | `npm run lint` | **Code linting** | Code quality checks |
+| `npm run lint:fix` | **Auto-fix linting** | Fix auto-fixable linting issues |
 | `npm run test` | **Run tests** | Unit testing |
 
 ## 🔧 Local CI Tests
@@ -85,7 +86,7 @@ debug/terminal.outputs/
 **Solutions:**
 ```bash
 npm run lint          # See linting errors
-npm run lint -- --fix # Auto-fix some issues
+npm run lint:fix      # Auto-fix many issues (recommended!)
 ```
 
 ### ❌ "TypeScript validation failed"

@@ -9,20 +9,16 @@ import {
   getCodecTheme, 
   subscribeToThemeChanges, 
   cycleMode, 
-  getCurrentMode,
-  getModeDisplayName,
-  type ConversationMode 
+  getModeDisplayName
 } from '@/lib/theme';
 
 export const ModeToggle: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
-  const [currentMode, setCurrentMode] = useState<ConversationMode>(getCurrentMode());
 
   // Subscribe to theme changes
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
       setCurrentTheme(getCodecTheme());
-      setCurrentMode(getCurrentMode());
     });
     return unsubscribe;
   }, []);

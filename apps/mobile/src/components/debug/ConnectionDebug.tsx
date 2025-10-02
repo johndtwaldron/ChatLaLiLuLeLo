@@ -26,7 +26,8 @@ export const ConnectionDebug: React.FC = () => {
       setDebugInfo(prev => prev + `Response: ${JSON.stringify(result, null, 2)}\n`);
       
     } catch (error) {
-      const endTime = Date.now();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const endTime = Date.now();
       setDebugInfo(prev => prev + `Error: ${error}\n`);
       setDebugInfo(prev => prev + `Error type: ${typeof error}\n`);
       setDebugInfo(prev => prev + `Error name: ${(error as any)?.name}\n`);

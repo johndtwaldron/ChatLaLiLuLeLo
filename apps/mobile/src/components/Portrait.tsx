@@ -14,7 +14,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 
-import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, cycleColonelPortrait } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait } from '@/lib/theme';
 
 // Import colonel portraits
 const colonelImages = [
@@ -34,7 +34,7 @@ export const Portrait: React.FC<PortraitProps> = ({
   type,
   isActive = false,
   isSpeaking = false,
-  mouthFrame = 0,
+  // mouthFrame = 0, // Future use for mouth animation
 }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const idleAnimation = useSharedValue(0);

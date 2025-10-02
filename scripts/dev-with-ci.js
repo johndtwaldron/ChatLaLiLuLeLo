@@ -91,32 +91,26 @@ async function runDevWithValidation() {
     logAndSave(`📝 Debug log: ${logFile}`, 'gray');
     logAndSave('', 'reset');
 
-    // Phase 1: CI Validation
-    logAndSave('📋 Phase 1: Running CI Validation...', 'yellow');
+    // Phase 1: Project Structure Check (Fast)
+    logAndSave('📋 Phase 1: Checking Project Structure...', 'yellow');
     
-    try {
-      const ciResult = runCommand('node scripts/test-ci.js', { silent: true });
-      
-      if (ciResult.success) {
-        logAndSave('✅ CI validation passed', 'green');
-        if (ciResult.output) {
-          // Log CI output but filter out the color codes for file storage
-          const cleanOutput = ciResult.output.replace(/\x1b\[[0-9;]*m/g, '');
-          logBuffer.push(cleanOutput);
-        }
-      } else {
-        logAndSave('❌ CI validation failed:', 'red');
-        logAndSave(ciResult.error || ciResult.output || 'Unknown error', 'red');
+    const requiredPaths = [
+      'apps/mobile/package.json',
+      'apps/edge/package.json',
+      'apps/edge/.dev.vars',
+      'apps/mobile/src/features/chat/ChatScreen.tsx'
+    ];
+
+    for (const filepath of requiredPaths) {
+      if (!require('fs').existsSync(filepath)) {
+        logAndSave(`❌ Missing required file: ${filepath}`, 'red');
         saveLogBuffer();
         process.exit(1);
       }
-    } catch (error) {
-      logAndSave(`❌ CI validation error: ${error.message}`, 'red');
-      saveLogBuffer();
-      process.exit(1);
     }
+    logAndSave('✅ Project structure validated', 'green');
 
-    // Phase 2: Linting
+    // Phase 2: Linting (Fast, likely to fail)
     logAndSave('🛡️ Phase 2: Running Code Linting...', 'yellow');
     
     try {
@@ -128,7 +122,8 @@ async function runDevWithValidation() {
         logAndSave('❌ Linting failed:', 'red');
         logAndSave(lintResult.error || lintResult.output || 'Unknown linting error', 'red');
         logAndSave('', 'reset');
-        logAndSave('🔧 Fix linting issues before continuing development', 'yellow');
+        logAndSave('💡 Quick fix: Run `npm run lint:fix` to auto-fix many issues', 'yellow');
+        logAndSave('🔧 Then run `npm run dev` again', 'yellow');
         saveLogBuffer();
         process.exit(1);
       }

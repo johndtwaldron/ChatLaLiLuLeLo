@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { getCodecTheme, subscribeToThemeChanges, isDebugEnabled, toggleDebug } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
 
 interface DebugToggleProps {
   onToggle: (enabled: boolean) => void;

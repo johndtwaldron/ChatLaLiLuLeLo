@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 
 import { CodecFrame } from '@/components/CodecFrame';
-import { Portrait } from '@/components/Portrait';
 import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
@@ -17,7 +16,7 @@ import { DebugToggle } from '@/components/DebugToggle';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
-import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getModeDisplayName, isDebugEnabled, setDebug } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatMessage, type ChatRequest } from '@/lib/api';
 
 interface Message {
@@ -81,7 +80,7 @@ export const ChatScreen: React.FC = () => {
   // Measure portrait section layout for dragging boundaries
   const handlePortraitSectionLayout = () => {
     if (portraitSectionRef.current) {
-      portraitSectionRef.current.measure((x, y, width, height, pageX, pageY) => {
+      portraitSectionRef.current.measure((_x, _y, width, height, _pageX, _pageY) => {
         setPortraitSectionLayout({ x: 0, y: 0, width, height }); // relative coordinates
         
         // Set initial positions: Colonel on left, User on right

@@ -13,6 +13,7 @@
     "ci-check": "node scripts/test-ci.js",
     "typecheck": "cd apps/mobile && npm run typecheck",
     "lint": "cd apps/mobile && npm run lint",
+    "lint:fix": "cd apps/mobile && npm run lint -- --fix",
     "test": "cd apps/mobile && npm run test",
     "e2e": "cd apps/mobile && npm run e2e",
     "build:mobile": "cd apps/mobile && npm run build",
