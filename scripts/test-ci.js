@@ -77,9 +77,21 @@ async function runCITests() {
       hasErrors = true;
     }
     
+    // 3. ESLint code quality check
+    log('\nRunning ESLint code quality check...', 'yellow');
+    
+    const lintcheck = runCommand('npm run lint', { silent: true });
+    if (lintcheck.success) {
+      log('OK ESLint check passed', 'green');
+    } else {
+      log('ERROR ESLint check failed', 'red');
+      log(lintcheck.error || lintcheck.output, 'red');
+      hasErrors = true;
+    }
+    
     process.chdir('../../'); // Back to root
 
-    // 3. Check backend API keys (only if .dev.vars exists)
+    // 4. Check backend API keys (only if .dev.vars exists)
     log('\nChecking backend configuration...', 'yellow');
     
     if (fs.existsSync('apps/edge/.dev.vars')) {
@@ -94,7 +106,7 @@ async function runCITests() {
       log('WARNING .dev.vars not found - API keys not configured', 'yellow');
     }
 
-    // 4. Check critical dependency versions
+    // 5. Check critical dependency versions
     log('\nChecking dependency versions...', 'yellow');
     
     // Check wrangler version
@@ -147,7 +159,7 @@ async function runCITests() {
       log('   WARNING: Could not check Node.js version', 'yellow');
     }
 
-    // 5. Test backend health endpoint (optional, only if requested)
+    // 6. Test backend health endpoint (optional, only if requested)
     if (process.env.TEST_BACKEND_HEALTH) {
       log('\nTesting backend health endpoint...', 'yellow');
       

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
+import { CodecAudioControls } from './CodecAudioControls';
 
 interface DebugInfo {
   apiStatus: 'connected' | 'disconnected' | 'loading';
@@ -30,6 +31,7 @@ interface DebugPanelProps {
 
 export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  const [showAudioControls, setShowAudioControls] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     api: true,
     environment: false,
@@ -345,7 +347,28 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
             </View>
           )}
         </View>
+
+        {/* Codec Audio Controls Section */}
+        <View style={staticStyles.sectionContainer}>
+          <TouchableOpacity
+            style={[staticStyles.sectionHeader, dynamicStyles.sectionHeader]}
+            onPress={() => setShowAudioControls(true)}
+          >
+            <Text style={[staticStyles.sectionTitle, dynamicStyles.sectionTitle]}>
+              CODEC AUDIO ♪
+            </Text>
+            <Text style={[staticStyles.infoValue, dynamicStyles.infoValue]}>
+              SETTINGS
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {/* Audio Controls Modal */}
+      <CodecAudioControls
+        visible={showAudioControls}
+        onClose={() => setShowAudioControls(false)}
+      />
     </View>
   );
 };

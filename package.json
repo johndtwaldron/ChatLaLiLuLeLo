@@ -17,7 +17,8 @@
     "test": "cd apps/mobile && npm run test",
     "e2e": "cd apps/mobile && npm run e2e",
     "build:mobile": "cd apps/mobile && npm run build",
-    "build:edge": "cd edge/api && npm run build"
+    "build:edge": "cd edge/api && npm run build",
+    "build-launcher": "powershell -ExecutionPolicy Bypass -Command \"Import-Module ps2exe; ps2exe -InputFile './scripts/launcher.ps1' -OutputFile './ChatLaLiLuLeLo-Launcher.exe' -Title 'MGS2 Codec System' -Description 'ChatLaLiLuLeLo Development Launcher' -Company 'Codec Systems' -Product 'MGS2 Codec Interface' -Version '1.0.0.0' -STA\""
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",

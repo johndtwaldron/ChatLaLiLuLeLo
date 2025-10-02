@@ -40,6 +40,7 @@ npm run ci-check
 | `npm run lint` | **Code linting** | Code quality checks |
 | `npm run lint:fix` | **Auto-fix linting** | Fix auto-fixable linting issues |
 | `npm run test` | **Run tests** | Unit testing |
+| `npm run build-launcher` | **Build desktop launcher** | Create executable launcher for Windows |
 
 ## 🔧 Local CI Tests
 
@@ -108,6 +109,34 @@ If you need to develop despite validation failures:
 ```bash
 npm run prod  # Bypasses all checks
 ```
+
+## 🖥️ Desktop Launcher
+
+### Building the Launcher
+```bash
+npm run build-launcher
+```
+**What it does:**
+- Creates `ChatLaLiLuLeLo-Launcher.exe` in the project root
+- Provides MGS2 codec-themed dependency checking
+- Verifies Node.js and npm are installed before startup
+- Designed for easy distribution to other developers
+
+### Using the Launcher
+- **Double-click** `ChatLaLiLuLeLo-Launcher.exe` to run
+- **MGS2-themed output** with color-coded status messages
+- **Dependency validation** before attempting to start servers
+- **Browser launch** (when not in skip mode)
+
+**Features:**
+- ✅ Node.js version detection
+- ✅ npm version verification  
+- ✅ Project structure validation
+- 🎨 MGS2 codec communication styling
+- 📦 Standalone executable (no PowerShell knowledge required)
+
+### Rebuilding the Launcher
+The `npm run build-launcher` command automatically **overwrites** the previous `.exe` file, so you always get a fresh build with the latest launcher script changes.
 
 ## 🌐 GitHub Actions CI
 

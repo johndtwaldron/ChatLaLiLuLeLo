@@ -1,0 +1,22 @@
+[2025-10-02T15:29:48.074Z] 🚀 ChatLaLiLuLeLo Enhanced Development Startup
+[2025-10-02T15:29:48.079Z] 📝 Debug log: debug\terminal.outputs\dev.debug.2025-10-02T15-29-48.txt
+[2025-10-02T15:29:48.079Z] 
+[2025-10-02T15:29:48.079Z] 📋 Phase 1: Checking Project Structure...
+[2025-10-02T15:29:48.080Z] ✅ Project structure validated
+[2025-10-02T15:29:48.080Z] 🛡️ Phase 2: Running Code Linting...
+[2025-10-02T15:29:50.825Z] ✅ Code linting passed
+[2025-10-02T15:29:50.826Z] 🔍 Phase 3: Running TypeScript Validation...
+[2025-10-02T15:29:54.911Z] ✅ TypeScript validation passed
+[2025-10-02T15:29:54.912Z] 
+[2025-10-02T15:29:54.913Z] 🎉 All validation checks passed!
+[2025-10-02T15:29:54.914Z] 🚀 Starting development servers...
+[2025-10-02T15:29:54.914Z] 
+[2025-10-02T15:29:54.914Z] 📡 Launching backend (Cloudflare Workers) and frontend (Expo)...
+[2025-10-02T15:29:54.914Z] 🔗 Frontend will be available at: http://localhost:8082
+[2025-10-02T15:29:54.914Z] 🔗 Backend API will be available at: http://localhost:8787
+[2025-10-02T15:29:54.915Z] 
+[2025-10-02T15:29:54.915Z] 💡 To stop servers: Ctrl+C
+[2025-10-02T15:29:54.915Z] 📝 This session logged to: debug\terminal.outputs\dev.debug.2025-10-02T15-29-48.txt
+[2025-10-02T15:29:54.916Z] 
+[2025-10-02T15:31:35.006Z] 
+[2025-10-02T15:31:35.008Z] 🛑 Shutting down development servers...
