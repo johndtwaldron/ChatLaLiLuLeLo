@@ -108,6 +108,12 @@ const themeOrder: Array<keyof typeof themePresets> = ['cyan', 'purple', 'gold', 
 // CRT effects toggle state
 let crtEnabled = true;
 
+// Debug panel toggle state
+let debugEnabled = false;
+
+// Colonel portrait cycling state
+let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
+
 // Conversation mode system
 export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin';
 let currentMode: ConversationMode = 'haywire';
@@ -263,3 +269,34 @@ export const setCRT = (enabled: boolean) => {
 };
 
 export const getCRTState = () => crtEnabled;
+
+// Debug panel toggle functions
+export const toggleDebug = () => {
+  debugEnabled = !debugEnabled;
+  notifyThemeChange();
+};
+
+export const setDebug = (enabled: boolean) => {
+  debugEnabled = enabled;
+  notifyThemeChange();
+};
+
+export const getDebugState = () => debugEnabled;
+
+// Convenience function for components
+export const isDebugEnabled = () => debugEnabled;
+
+// Colonel portrait cycling functions
+export const cycleColonelPortrait = () => {
+  currentColonelPortrait = (currentColonelPortrait + 1) % 3; // 0, 1, 2
+  notifyThemeChange(); // Notify components of the portrait change
+};
+
+export const getCurrentColonelPortrait = () => currentColonelPortrait;
+
+export const setColonelPortrait = (index: number) => {
+  if (index >= 0 && index <= 2) {
+    currentColonelPortrait = index;
+    notifyThemeChange();
+  }
+};

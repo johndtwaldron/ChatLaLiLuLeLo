@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Portrait } from '@/components/Portrait';
+import { cycleColonelPortrait } from '@/lib/theme';
 
 export interface Rect {
   x: number; // relative to container
@@ -89,8 +90,37 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
     return { x, y };
   };
 
+  // Handle portrait cycling on tap for colonel portraits
+  const handlePortraitCycle = () => {
+    if (type === 'colonel') {
+      cycleColonelPortrait();
+    }
+  };
+
+  // Track if we're dragging to prevent cycling on drag end
+  const isDragging = useSharedValue(false);
+  const dragThreshold = 5; // pixels
+
+  const tap = Gesture.Tap()
+    .maxDuration(250) // Quick tap only
+    .onEnd(() => {
+      // Only cycle if we're not dragging
+      if (!isDragging.value) {
+        runOnJS(handlePortraitCycle)();
+      }
+    });
+
   const pan = Gesture.Pan()
+    .onStart(() => {
+      isDragging.value = false;
+    })
     .onChange((e) => {
+      // Check if we've moved enough to be considered dragging
+      const totalMovement = Math.abs(e.translationX) + Math.abs(e.translationY);
+      if (totalMovement > dragThreshold) {
+        isDragging.value = true;
+      }
+      
       const nextX = translateX.value + e.changeX;
       const nextY = translateY.value + e.changeY;
       const clamped = clampToContainer(nextX, nextY);
@@ -114,7 +144,15 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       if (onPositionChange) {
         runOnJS(onPositionChange)(finalX, finalY);
       }
+      
+      // Reset dragging state after a short delay
+      setTimeout(() => {
+        isDragging.value = false;
+      }, 100);
     });
+
+  // Use Race gesture - tap wins over pan for quick taps
+  const composed = Gesture.Race(tap, pan);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -127,7 +165,7 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   }));
 
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={composed}>
       <Animated.View style={[animatedStyle, style]}>
         <Portrait type={type} isActive={type === 'colonel'} isSpeaking={false} />
       </Animated.View>

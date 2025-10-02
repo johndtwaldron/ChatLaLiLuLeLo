@@ -7,14 +7,17 @@ import {
 
 import { CodecFrame } from '@/components/CodecFrame';
 import { Portrait } from '@/components/Portrait';
-import { DraggablePortrait } from '@/components/DraggablePortrait';
+import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
 import { ThemeCycleToggle } from '@/components/ThemeCycleToggle';
 import { ModeToggle } from '@/components/ModeToggle';
+import { DebugToggle } from '@/components/DebugToggle';
+import { DebugPanel } from '@/components/DebugPanel';
+import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
-import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getModeDisplayName } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getModeDisplayName, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatMessage, type ChatRequest } from '@/lib/api';
 
 interface Message {
@@ -56,6 +59,8 @@ export const ChatScreen: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamText, setCurrentStreamText] = useState('');
   const [haywireMode] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
+  const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -68,6 +73,7 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
       setCurrentTheme(getCodecTheme());
+      setDebugEnabled(isDebugEnabled()); // Sync debug state
     });
     return unsubscribe;
   }, []);
@@ -88,6 +94,17 @@ export const ChatScreen: React.FC = () => {
         setLayoutReady(true);
       });
     }
+  };
+
+  // Handle debug toggle
+  const handleDebugToggle = (enabled: boolean) => {
+    setDebugEnabled(enabled);
+    setDebug(enabled); // Update theme system state
+  };
+
+  // Handle connection debug toggle
+  const handleConnectionDebugToggle = (enabled: boolean) => {
+    setConnectionDebugEnabled(enabled);
   };
 
   // Handle new message from text input
@@ -218,6 +235,8 @@ export const ChatScreen: React.FC = () => {
         <CRTToggle />
         <ThemeCycleToggle />
         <ModeToggle />
+        <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
+        <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
         
         <View style={themeStyles.content}>
           {/* Portrait Section with dual draggable portraits */}
@@ -273,8 +292,15 @@ export const ChatScreen: React.FC = () => {
           </View>
         </View>
         
-        {/* Debug Component - temporary for connection testing */}
-        <ConnectionDebug />
+        {/* Debug Panel */}
+        {debugEnabled && (
+          <DebugPanel onClose={() => handleDebugToggle(false)} />
+        )}
+        
+        {/* Connection Debug Panel */}
+        {connectionDebugEnabled && (
+          <ConnectionDebug />
+        )}
       </CodecFrame>
     </SafeAreaView>
   );

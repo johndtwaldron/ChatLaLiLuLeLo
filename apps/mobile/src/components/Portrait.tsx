@@ -14,10 +14,14 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 
-import { getCodecTheme, subscribeToThemeChanges, codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, cycleColonelPortrait } from '@/lib/theme';
 
-// Import colonel portrait
-const colonelImage = require('@/assets/images/colonel.jpeg');
+// Import colonel portraits
+const colonelImages = [
+  require('@/assets/images/colonel.jpeg'),
+  require('@/assets/images/colonel_1.jpg'),
+  require('@/assets/images/colonel_2.jpg'),
+];
 
 interface PortraitProps {
   type: 'colonel' | 'user';
@@ -92,28 +96,32 @@ export const Portrait: React.FC<PortraitProps> = ({
     };
   });
 
-  const renderColonelPortrait = () => (
-    <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
-      {/* Colonel portrait image */}
-      <View style={[styles.spriteContainer, styles.colonelImageContainer]}>
-        <Image 
-          source={colonelImage}
-          style={[
-            styles.colonelImage,
-            {
-              opacity: isSpeaking ? 1 : 0.9,
-              // Add subtle border glow effect when speaking
-              ...(isSpeaking && {
-                shadowColor: currentTheme.colors.primary,
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 6,
-                elevation: 8,
-              })
-            }
-          ]}
-          resizeMode="cover"
-        />
+  const renderColonelPortrait = () => {
+    const currentPortraitIndex = getCurrentColonelPortrait();
+    const currentColonelImage = colonelImages[currentPortraitIndex];
+    
+    return (
+      <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
+        {/* Colonel portrait image */}
+        <View style={[styles.spriteContainer, styles.colonelImageContainer]}>
+          <Image 
+            source={currentColonelImage}
+            style={[
+              styles.colonelImage,
+              {
+                opacity: isSpeaking ? 1 : 0.9,
+                // Add subtle border glow effect when speaking
+                ...(isSpeaking && {
+                  shadowColor: currentTheme.colors.primary,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 6,
+                  elevation: 8,
+                })
+              }
+            ]}
+            resizeMode="cover"
+          />
         
         {/* Speaking indicator overlay */}
         {isSpeaking && (
@@ -127,6 +135,7 @@ export const Portrait: React.FC<PortraitProps> = ({
       </View>
     </View>
   );
+  };
 
   const renderUserPortrait = () => (
     <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
