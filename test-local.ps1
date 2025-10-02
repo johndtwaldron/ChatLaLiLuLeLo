@@ -47,7 +47,66 @@ if ($devVars -match "OPENAI_API_KEY=sk-") {
     exit 1
 }
 
-# 4. Test backend health endpoint (if server is running)
+# 4. Check critical dependency versions
+Write-Host "`nChecking dependency versions..." -ForegroundColor Yellow
+
+# Check wrangler version from package.json
+try {
+    Push-Location "apps/edge"
+    $packageJson = Get-Content "package.json" | ConvertFrom-Json
+    $wranglerVersion = $packageJson.devDependencies.wrangler
+    if ($wranglerVersion) {
+        Write-Host "   Wrangler: $wranglerVersion" -ForegroundColor Gray
+        
+        # Check if version is outdated (major version 3 is outdated)
+        if ($wranglerVersion -match "\^?(\d+)\." -and $Matches[1] -eq "3") {
+            Write-Host "   WARNING: Wrangler v$wranglerVersion is outdated. Update to v4.x recommended." -ForegroundColor Yellow
+            Write-Host "   Run: npm install --save-dev wrangler@4" -ForegroundColor Gray
+        } else {
+            Write-Host "   OK: Wrangler version looks current" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "   WARNING: Wrangler not found in package.json" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "   WARNING: Could not check wrangler version" -ForegroundColor Yellow
+} finally {
+    Pop-Location
+}
+
+# Check expo version
+try {
+    Push-Location "apps/mobile"
+    $packageJson = Get-Content "package.json" | ConvertFrom-Json
+    $expoVersion = $packageJson.devDependencies.expo
+    Write-Host "   Expo: $expoVersion" -ForegroundColor Gray
+    
+    # Check for major version mismatches (basic check)
+    if ($expoVersion -match "\^?(\d+)") {
+        $majorVersion = [int]$Matches[1]
+        if ($majorVersion -lt 54) {
+            Write-Host "   WARNING: Expo version may be outdated" -ForegroundColor Yellow
+        }
+    }
+} catch {
+    Write-Host "   WARNING: Could not check expo version" -ForegroundColor Yellow
+} finally {
+    Pop-Location
+}
+
+# Check Node.js version
+$nodeVersion = & node --version 2>$null
+if ($nodeVersion) {
+    Write-Host "   Node.js: $nodeVersion" -ForegroundColor Gray
+    if ($nodeVersion -match "v(\d+)") {
+        $nodeMajor = [int]$Matches[1]
+        if ($nodeMajor -lt 18) {
+            Write-Host "   WARNING: Node.js v$nodeVersion may be too old. v18+ recommended." -ForegroundColor Yellow
+        }
+    }
+}
+
+# 5. Test backend health endpoint (if server is running)
 Write-Host "`nTesting backend health endpoint..." -ForegroundColor Yellow
 try {
     $response = Invoke-WebRequest -Uri "http://localhost:8787/health" -UseBasicParsing -TimeoutSec 5
