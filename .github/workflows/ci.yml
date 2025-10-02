@@ -94,6 +94,16 @@ jobs:
           du -sh node_modules 2>/dev/null || echo "Could not get node_modules size"
           echo ""
 
+      - name: 🧪 Run local CI tests
+        run: |
+          echo "🧪 Running ChatLaLiLuLeLo CI validation..."
+          # Note: Skip API key checks in GitHub Actions (no .dev.vars file)
+          node scripts/test-ci.js || {
+            echo "❌ CI validation failed"
+            exit 1
+          }
+          echo "✅ CI validation completed successfully"
+
       - name: 🔍 TypeScript check
         run: |
           cd apps/mobile
