@@ -24,6 +24,10 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
+    
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
 
     steps:
       - name: Checkout code

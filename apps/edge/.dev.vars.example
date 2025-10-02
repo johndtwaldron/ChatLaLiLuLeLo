@@ -1,0 +1,12 @@
+# ChatLaLiLuLeLo Backend Environment Variables
+# Copy this file to .dev.vars and fill in your actual API keys
+
+OPENAI_API_KEY=sk-proj-your-openai-api-key-here
+TAVILY_API_KEY=tvly-your-tavily-api-key-here   # optional - for web search functionality
+
+# Instructions:
+# 1. Copy this file: cp .dev.vars.example .dev.vars
+# 2. Get your OpenAI API key from: https://platform.openai.com/api-keys
+# 3. Get your Tavily API key from: https://tavily.com/ (optional)
+# 4. Replace the placeholder values above
+# 5. Never commit .dev.vars to git (it's in .gitignore)

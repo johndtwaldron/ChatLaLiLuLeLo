@@ -51,7 +51,6 @@ async function runCITests() {
     const requiredPaths = [
       'apps/mobile/package.json',
       'apps/edge/package.json',
-      'apps/edge/.dev.vars',
       'apps/mobile/src/features/chat/ChatScreen.tsx'
     ];
 
@@ -62,6 +61,16 @@ async function runCITests() {
         log(`ERROR ${filepath} missing`, 'red');
         hasErrors = true;
       }
+    }
+
+    // Check for .dev.vars or .dev.vars.example
+    if (fs.existsSync('apps/edge/.dev.vars')) {
+      log(`OK apps/edge/.dev.vars exists`, 'green');
+    } else if (fs.existsSync('apps/edge/.dev.vars.example')) {
+      log(`OK apps/edge/.dev.vars.example exists (template found)`, 'green');
+    } else {
+      log(`ERROR Neither apps/edge/.dev.vars nor apps/edge/.dev.vars.example found`, 'red');
+      hasErrors = true;
     }
 
     // 2. TypeScript compilation check
