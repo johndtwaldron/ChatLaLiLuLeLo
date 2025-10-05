@@ -27,22 +27,30 @@ export function asImg(file: any) {
   
   // Production web build or native
   if (Platform.OS === 'web') {
-    // For web production, convert absolute paths to relative paths for GitHub Pages
-    let assetPath = file;
-    if (typeof file === 'string' && file.startsWith('/')) {
-      assetPath = '.' + file;
+    let result;
+    
+    if (typeof file === 'object' && file.uri) {
+      // File is already an object with uri (Metro production format)
+      let relativeUri = file.uri;
+      if (relativeUri.startsWith('/')) {
+        relativeUri = '.' + relativeUri;
+      }
+      result = {
+        ...file,
+        uri: relativeUri
+      };
+      console.log('[ASSET] Web production - converted object URI from:', file.uri, 'to:', relativeUri);
+    } else if (typeof file === 'string' && file.startsWith('/')) {
+      // File is a string path
+      result = { uri: '.' + file };
+      console.log('[ASSET] Web production - converted string path:', file, 'to:', '.' + file);
+    } else {
+      // File is already in correct format or unknown format
+      result = file;
+      console.log('[ASSET] Web production - using file as-is:', file);
     }
     
-    // Try different formats to see which one React Native Web accepts
-    const result = { uri: assetPath };
-    console.log('[ASSET] Web production - input file:', file);
-    console.log('[ASSET] Web production - processed path:', assetPath);
     console.log('[ASSET] Web production - final result:', result);
-    
-    // Also log the current hostname to verify production detection
-    console.log('[ASSET] Current hostname:', window.location.hostname);
-    console.log('[ASSET] Current port:', window.location.port);
-    
     return result;
   }
   
