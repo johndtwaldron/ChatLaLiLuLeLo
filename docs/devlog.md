@@ -2408,5 +2408,113 @@ useEffect(() => {
 **Status:** 🎉 **PRIORITY 1 COMPLETE AND VALIDATED** - Live CRT toggle successfully implemented using lessons learned. User confirmed "works perfectly". Ready for button repositioning and Priority 2 implementation.
 
 ---
- 
- 
+
+## Session 21 - 2025-10-05T18:38:07Z
+
+**Objective:** 🔧 Bug Fixes for Budget System Real-Time Updates and Port Configuration Update
+
+### ✅ **CRITICAL BUDGET SYSTEM FIXES APPLIED:**
+
+**Issue #1: Budget Indicator Not Updating After Messages**
+- ❌ **Root Cause**: Session ID was being regenerated on every render using `Date.now()`
+- ❌ **Impact**: Budget tracking was inconsistent, budget box showed stale data
+- ✅ **Solution**: Implemented stable session ID generation with `useState` in `ChatScreen`
+- ✅ **Enhancement**: Added `refreshTrigger` state that increments after successful API responses
+- ✅ **Result**: Budget indicator now updates immediately after each message with real-time spend tracking
+
+**Issue #2: Debug Panel Showing Hardcoded Theme Name**
+- ❌ **Root Cause**: Debug panel displayed literal string `'current_theme'` instead of actual theme
+- ✅ **Solution**: Imported and integrated `getCurrentThemeName()` function from theme system
+- ✅ **Result**: Debug panel now shows correct theme names (PURPLE, GOLD, CYAN, etc.) and updates live
+
+### 🔌 **PORT CONFIGURATION UPDATE: 8082 → 14085**
+
+**Motivation**: Changed default frontend port to variation of 140.85 (MGS2 frequency reference)
+
+**Files Updated:**
+- ✅ `package.json` - Updated `prod` script: `--port=14085`
+- ✅ `scripts/dev-with-ci.js` - Port detection logic: `findAvailablePort(14085)`
+- ✅ `scripts/launcher.ps1` - Frontend URL: `http://localhost:14085`
+- ✅ `scripts/launcher-fixed.ps1` - Frontend URL: `http://localhost:14085`
+
+**New Development URLs:**
+- 🌐 **Frontend**: `http://localhost:14085` _(variation of 140.85)_
+- 🌐 **Backend**: `http://localhost:8787` _(unchanged)_
+
+**CI/CD Impact Analysis**: ✅ **NO CHANGES NEEDED**
+- GitHub Actions CI unaffected (static analysis only, no servers)
+- Local CI script unaffected (no frontend port dependencies)
+- GitPod configuration unaffected (separate port scheme)
+- Build processes unaffected (static file generation)
+
+### 🔄 **TECHNICAL IMPLEMENTATION DETAILS:**
+
+**Budget System Architecture:**
+```typescript
+// ChatScreen.tsx - Stable session management
+const [sessionId] = useState(() => `session-${Date.now()}-${Math.random()}`);
+const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+// BudgetIndicator.tsx - Reactive budget updates
+const triggerRefresh = useCallback(() => {
+  setRefreshTrigger(prev => prev + 1);
+}, []);
+```
+
+**Debug Panel Enhancement:**
+```typescript
+// DebugPanel.tsx - Live theme name display
+import { getCurrentThemeName } from '@/lib/theme';
+const currentTheme = getCurrentThemeName();
+```
+
+**Port Configuration Consistency:**
+- All development scripts now use 14085 as default
+- Port conflict detection updated for new default
+- Launcher scripts synchronized with new port
+- Log messages updated to reflect new port
+
+### 📊 **SYSTEM STATUS VERIFICATION:**
+
+**Budget Tracking**: ✅ **FULLY OPERATIONAL**
+- Real-time spend updates: `BGT $0.003` → `BGT $0.006`
+- Session stability maintained across renders
+- Immediate refresh after API responses
+- $5/month hard cap protection active
+
+**Debug Panel**: ✅ **FULLY REACTIVE**
+- Shows actual theme names: `PURPLE`, `GOLD`, `CYAN`
+- Updates live when cycling themes
+- Maintains all existing debug information
+
+**Development Environment**: ✅ **PORT MIGRATION COMPLETE**
+- All configuration files synchronized
+- No CI/CD impact confirmed
+- Development workflow unchanged
+- Port 14085 chosen as MGS2 140.85 frequency reference
+
+### 🚀 **V4-004 SPEND CONTROLS - FINAL STATUS:**
+
+**Comprehensive Protection System:**
+- ✅ Rate limiter: 30 requests/15min, 50k tokens/session
+- ✅ Budget tracking: Real-time spend monitoring with live updates
+- ✅ Hard cap: $5/month maximum spend protection
+- ✅ Visual feedback: Budget indicator in header with auto-refresh
+- ✅ Model awareness: Pricing calculation for gpt-4o-mini vs gpt-4o
+- ✅ Session tracking: Stable IDs for consistent budget monitoring
+
+**Files Added:**
+- `apps/edge/lib/rate-limiter.ts` - Comprehensive rate limiting
+- `apps/mobile/src/components/BudgetIndicator.tsx` - Live budget display
+- `docs/V4-004_SPEND_CONTROLS.md` - Implementation documentation
+
+**Files Modified:**
+- `apps/edge/api/chat.ts` - Rate limiting + /budget endpoint
+- `apps/mobile/src/features/chat/ChatScreen.tsx` - Session stability
+- `apps/mobile/src/components/DebugPanel.tsx` - Reactive theme display
+- Port configuration files (package.json, launcher scripts)
+
+**Status:** ✅ **V4-003 DEPLOYMENT READY WITH BUG FIXES** - Budget system real-time updates working, debug panel reactive, port standardized to 14085
+
+---
+

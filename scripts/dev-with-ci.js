@@ -167,19 +167,19 @@ async function runDevWithValidation() {
     }
     
     // Check default ports
-    const frontendPort = await findAvailablePort(8082);
+    const frontendPort = await findAvailablePort(14085);
     const backendPort = await findAvailablePort(8787);
     
-    if (frontendPort !== 8082 || backendPort !== 8787) {
+    if (frontendPort !== 14085 || backendPort !== 8787) {
       logAndSave('🔧 Port conflicts detected, using alternative ports:', 'yellow');
-      if (frontendPort !== 8082) {
-        logAndSave(`   Frontend: ${frontendPort} (instead of 8082)`, 'yellow');
+      if (frontendPort !== 14085) {
+        logAndSave(`   Frontend: ${frontendPort} (instead of 14085)`, 'yellow');
       }
       if (backendPort !== 8787) {
         logAndSave(`   Backend: ${backendPort} (instead of 8787)`, 'yellow');
       }
     } else {
-      logAndSave('✅ Default ports available (8082, 8787)', 'green');
+      logAndSave('✅ Default ports available (14085, 8787)', 'green');
     }
     
     logAndSave('✅ System health check completed', 'green');
