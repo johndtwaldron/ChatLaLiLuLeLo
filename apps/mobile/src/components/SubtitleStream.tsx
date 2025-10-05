@@ -12,17 +12,13 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import { getCodecTheme, subscribeToThemeChanges, codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentModeKey, getCurrentModelKey, makeTag } from '@/lib/theme';
+import type { Message } from '@/types/chat';
 
 // const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SubtitleStreamProps {
-  messages: Array<{
-    id: string;
-    text: string;
-    speaker: 'colonel' | 'user';
-    timestamp: number;
-  }>;
+  messages: Message[];
   isStreaming?: boolean;
   currentStreamText?: string;
 }
@@ -115,6 +111,76 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     return speaker === 'colonel' ? currentTheme.colors.primary : currentTheme.colors.secondary;
   };
 
+  // Helper function to create a tag from MsgMeta
+  const createTagFromMeta = (meta: any): string => {
+    if (!meta) return '[JD:gpt-4o-mini]'; // fallback
+    
+    // If it's the new MsgMeta format
+    if ('mode' in meta && 'model' in meta && !('tag' in meta)) {
+      return `[${meta.mode}:${meta.model}]`;
+    }
+    
+    // If it's the old MessageMeta format with tag
+    if ('tag' in meta) {
+      return meta.tag;
+    }
+    
+    return '[JD:gpt-4o-mini]'; // fallback
+  };
+  
+  // Guard rail function to backfill meta for older messages that lack it
+  const ensureMessageMeta = (message: Message) => {
+    if (!message.meta) {
+      // Backfill with current settings as a fallback
+      const currentModeKey = getCurrentModeKey();
+      const currentModelKey = getCurrentModelKey();
+      return {
+        ...message,
+        meta: {
+          mode: currentModeKey === 'haywire' ? 'GW' : 
+                currentModeKey === 'jd' ? 'JD' : 
+                currentModeKey === 'lore' ? 'MGS' :
+                currentModeKey === 'bitcoin' ? 'BTC' : 'JD',
+          model: currentModelKey as 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'mock',
+          at: Date.now(),
+          kind: message.speaker === 'user' ? 'user' : 'ai'
+        }
+      };
+    }
+    return message;
+  };
+
+  // Render message with frozen meta tag (no global state lookups)
+  const renderMessageText = (message: Message): string => {
+    const messageWithMeta = ensureMessageMeta(message);
+    
+    // Only add tag prefix for colonel messages, and only if not already present
+    if (message.speaker === 'colonel') {
+      const prefix = createTagFromMeta(messageWithMeta.meta);
+      const text = message.text;
+      
+      // Check if tag is already present to avoid duplication
+      if (!text.startsWith('[') || !text.includes(']:')) {
+        return `${prefix} ${text}`;
+      }
+    }
+    
+    return message.text;
+  };
+
+  // For streaming text, use current mode/model (since it's being created now)
+  const renderStreamingText = (text: string): string => {
+    const currentModeKey = getCurrentModeKey();
+    const currentModelKey = getCurrentModelKey();
+    const currentTag = makeTag(currentModeKey, currentModelKey);
+    
+    // Only add tag if not already present
+    if (!text.startsWith('[') || !text.includes(']:')) {
+      return `${currentTag} ${text}`;
+    }
+    return text;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }]}>
       {/* Header with frequency indicator */}
@@ -146,7 +212,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
               </Text>
             </View>
             <Text style={[styles.messageText, { color: getSpeakerColor(message.speaker) }]}>
-              {message.text}
+              {renderMessageText(message)}
             </Text>
           </View>
         ))}
@@ -164,7 +230,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
             </View>
             <View style={styles.streamingContainer}>
               <Text style={[styles.messageText, { color: currentTheme.colors.primary }]}>
-                {displayText}
+                {renderStreamingText(displayText)}
               </Text>
               <Animated.View style={[styles.cursor, { backgroundColor: currentTheme.colors.primary }, animatedCursorStyle]} />
             </View>

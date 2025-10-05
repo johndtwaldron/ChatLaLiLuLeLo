@@ -18,6 +18,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
   env: {
+    browser: true,
     jest: true,
     node: true,
     es6: true,

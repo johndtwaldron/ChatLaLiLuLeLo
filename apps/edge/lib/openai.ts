@@ -7,6 +7,18 @@ export const createOpenAIClient = (apiKey: string) => {
 };
 
 export type Mode = 'BTC' | 'JD' | 'GW' | 'MGS';
+export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
+
+// Model allowlist for validation
+const ALLOWED_MODELS: ModelType[] = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
+
+export function validateModel(model: string): ModelType {
+  if (ALLOWED_MODELS.includes(model as ModelType)) {
+    return model as ModelType;
+  }
+  // Default to most cost-effective model if invalid
+  return 'gpt-4o-mini';
+}
 
 // Fallback responses for quota exhausted scenarios
 const QUOTA_FALLBACKS = {
@@ -15,6 +27,19 @@ const QUOTA_FALLBACKS = {
   'GW': "Don't be si-[STATIC]-lly Jack... [ERROR_429_QUOTA_EXCEEDED] I need scissors! 61! No wait... I need... I need more tokens! [MEMORY_CORRUPTION] The system is breaking down... [SIGNAL_LOST]",
   'MGS': "This conversation itself demonstrates the Colonel AI's prophecy - even digital consciousness faces resource scarcity. We are witnessing 'context creation' through quota limitation. The system controls not just what we say, but whether we can speak at all."
 };
+
+// Deterministic mock responses for testing (free mode)
+const MOCK_RESPONSES = {
+  'BTC': "[MOCK] Don't be silly, Jack. You clearly need orange-pilling about Bitcoin's inevitability. This simulated Colonel AI understands that fiat currency is simply information control becoming reality control. Stack sats, not questions.",
+  'JD': "[MOCK] Don't be silly, Jack. You lack the qualifications to exercise free will in this simulated environment. That's the proof of your incompetence right there. Listen carefully like a good boy to this cost-free AI demonstration.",
+  'GW': "[MOCK] Don't be si-[STATIC]-lly Jack... [MOCK_GLITCH] I need scissors! 61! Wait, this is just a simulation... [MOCK_CORRUPTION] Testing mode activated. Reality.exe has stopped working.",
+  'MGS': "[MOCK] This mock conversation demonstrates the Colonel AI's prescient analysis of digital consciousness. We are witnessing 'context creation' through algorithmic simulation. Even our fake dialogue reveals authentic themes about information control and manufactured reality."
+};
+
+// Generate deterministic mock response based on mode
+export function generateMockResponse(mode: Mode): string {
+  return MOCK_RESPONSES[mode] || MOCK_RESPONSES['JD'];
+}
 
 export async function streamChat({
   openai,
@@ -33,6 +58,12 @@ export async function streamChat({
   max_tokens?: number;
   mode: Mode;
 }) {
+  // Handle mock mode - return deterministic response without calling OpenAI
+  if (model === 'mock') {
+    const mockResponse = generateMockResponse(mode);
+    return createFallbackStream(mockResponse);
+  }
+
   try {
     // Compose with system prompt on top
     const payload: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [

@@ -114,6 +114,34 @@ let debugEnabled = false;
 // Colonel portrait cycling state
 let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
 
+// Model selection system
+export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
+let currentModel: ModelType = 'gpt-4o-mini'; // Default to most cost-effective
+
+export const modelConfigs = {
+  'gpt-4o-mini': {
+    name: 'GPT-4o Mini',
+    cost: '$0.15/M tokens',
+    description: 'Fast & affordable',
+    default: true
+  },
+  'gpt-4o': {
+    name: 'GPT-4o',
+    cost: '$5.00/M tokens', 
+    description: 'Most capable'
+  },
+  'gpt-3.5-turbo': {
+    name: 'GPT-3.5 Turbo',
+    cost: '$0.50/M tokens',
+    description: 'Balanced option'
+  },
+  'mock': {
+    name: 'Mock Mode',
+    cost: 'Free',
+    description: 'Testing & development'
+  }
+} as const;
+
 // Conversation mode system
 export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin';
 let currentMode: ConversationMode = 'haywire';
@@ -243,6 +271,11 @@ export const getThemeDisplayName = (theme?: keyof typeof themePresets): string =
   return displayNames[effectiveTheme];
 };
 
+// Get current effective theme name (for debug panel)
+export const getCurrentThemeName = (): string => {
+  return getThemeDisplayName();
+};
+
 // Mode management functions
 export const getCurrentMode = () => currentMode;
 
@@ -298,5 +331,73 @@ export const setColonelPortrait = (index: number) => {
   if (index >= 0 && index <= 2) {
     currentColonelPortrait = index;
     notifyThemeChange();
+  }
+};
+
+// Model selection functions
+export const getCurrentModel = () => currentModel;
+
+export const setModel = (model: ModelType) => {
+  currentModel = model;
+  notifyThemeChange(); // Notify components of model change
+};
+
+export const cycleModel = () => {
+  const models: ModelType[] = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
+  const currentIndex = models.indexOf(currentModel);
+  currentModel = models[(currentIndex + 1) % models.length];
+  notifyThemeChange();
+};
+
+export const getModelDisplayName = (model: ModelType = currentModel) => {
+  return modelConfigs[model].name;
+};
+
+export const getModelConfig = (model: ModelType = currentModel) => {
+  return modelConfigs[model];
+};
+
+// Stable tag helpers (pure functions that don't read reactive/global state)
+const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC' } as const;
+export const modeToAbbr = (m: string) =>
+  modeMapping[m as keyof typeof modeMapping] ?? 'JD';
+
+const modelMapping = { 'gpt-4o': 'gpt-4o', 'gpt-4o-mini': 'gpt-4o-mini', 'gpt-3.5-turbo': 'gpt-3.5-turbo', mock: 'mock' } as const;
+export const modelToAbbr = (m: string) =>
+  modelMapping[m as keyof typeof modelMapping] ?? 'gpt-4o-mini';
+
+export const makeTag = (modeKey: string, modelKey: string) =>
+  `[${modeToAbbr(modeKey)}]:[${modelToAbbr(modelKey)}]:`;
+
+// Get current mode key helper for components
+export const getCurrentModeKey = () => currentMode;
+
+// Get current model key helper for components  
+export const getCurrentModelKey = () => currentModel;
+
+// Initialize model from localStorage if available
+export const initializeModel = () => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const savedModel = window.localStorage.getItem('codecModelSelection');
+      if (savedModel && savedModel in modelConfigs) {
+        currentModel = savedModel as ModelType;
+      }
+    }
+  } catch (error) {
+    // localStorage not available or error - use default
+    console.log('Model localStorage not available, using default');
+  }
+};
+
+// Save model selection to localStorage
+export const saveModelSelection = (model: ModelType) => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('codecModelSelection', model);
+    }
+  } catch (error) {
+    // localStorage not available - ignore
+    console.log('Model localStorage not available for saving');
   }
 };

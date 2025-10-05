@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { healthCheck } from '@/lib/api';
+import { getCurrentThemeName, getCurrentMode, getCurrentModel } from '@/lib/theme';
 
 export const ConnectionDebug: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<string>('');
@@ -76,6 +77,17 @@ export const ConnectionDebug: React.FC = () => {
     setIsLoading(false);
   };
 
+  const getEnvironmentInfo = () => {
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
+    return `ENVIRONMENT
+Theme: ${getCurrentThemeName()}
+Mode: ${getCurrentMode()}
+Model: ${getCurrentModel()}
+API URL: ${apiUrl}
+
+`;
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Connection Debug</Text>
@@ -99,7 +111,7 @@ export const ConnectionDebug: React.FC = () => {
       </View>
       
       <View style={styles.debugOutput}>
-        <Text style={styles.debugText}>{debugInfo}</Text>
+        <Text style={styles.debugText}>{getEnvironmentInfo()}{debugInfo}</Text>
       </View>
     </View>
   );

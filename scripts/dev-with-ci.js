@@ -4,11 +4,13 @@
  * Enhanced Development Startup Script
  * Runs CI checks, linting, and starts development servers if all checks pass
  * Logs output to debug files with timestamps
+ * Includes port conflict resolution and disk space monitoring
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync, spawn } = require('child_process');
+const net = require('net');
 
 // ANSI color codes
 const colors = {
@@ -61,6 +63,60 @@ function runCommand(command, options = {}) {
   }
 }
 
+// Check if port is available
+function isPortAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    
+    server.listen(port, () => {
+      server.once('close', () => {
+        resolve(true);
+      });
+      server.close();
+    });
+    
+    server.on('error', () => {
+      resolve(false);
+    });
+  });
+}
+
+// Find next available port starting from a base port
+async function findAvailablePort(startPort, maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const port = startPort + i;
+    const available = await isPortAvailable(port);
+    if (available) {
+      return port;
+    }
+  }
+  throw new Error(`No available port found starting from ${startPort}`);
+}
+
+// Check disk space (Windows)
+function checkDiskSpace() {
+  try {
+    const result = execSync('powershell "Get-PSDrive C | Select-Object -ExpandProperty Free"', {
+      encoding: 'utf8',
+      stdio: 'pipe'
+    });
+    
+    const freeBytes = parseInt(result.trim());
+    const freeMB = Math.round(freeBytes / (1024 * 1024));
+    const freeGB = (freeBytes / (1024 * 1024 * 1024)).toFixed(2);
+    
+    return {
+      freeBytes,
+      freeMB,
+      freeGB: parseFloat(freeGB),
+      isLow: freeMB < 500, // Less than 500MB is considered low
+      isCritical: freeMB < 100 // Less than 100MB is critical
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
 async function runDevWithValidation() {
   const timestamp = generateTimestamp();
   const debugDir = createDebugDir();
@@ -91,6 +147,43 @@ async function runDevWithValidation() {
     logAndSave(`📝 Debug log: ${logFile}`, 'gray');
     logAndSave('', 'reset');
 
+    // Phase 0: System Health Check
+    logAndSave('⚡ Phase 0: System Health Check...', 'yellow');
+    
+    // Check disk space
+    const diskSpace = checkDiskSpace();
+    if (diskSpace) {
+      if (diskSpace.isCritical) {
+        logAndSave(`🚨 CRITICAL: Only ${diskSpace.freeMB}MB (${diskSpace.freeGB}GB) free on C: drive!`, 'red');
+        logAndSave('⚠️  Development may fail due to insufficient disk space', 'red');
+        logAndSave('💡 Consider moving project to drive with more space or clearing cache files', 'yellow');
+        logAndSave('', 'reset');
+      } else if (diskSpace.isLow) {
+        logAndSave(`⚠️  Low disk space: ${diskSpace.freeMB}MB (${diskSpace.freeGB}GB) free on C: drive`, 'yellow');
+        logAndSave('💡 Consider cleaning up files soon', 'yellow');
+      } else {
+        logAndSave(`✅ Disk space OK: ${diskSpace.freeGB}GB free`, 'green');
+      }
+    }
+    
+    // Check default ports
+    const frontendPort = await findAvailablePort(8082);
+    const backendPort = await findAvailablePort(8787);
+    
+    if (frontendPort !== 8082 || backendPort !== 8787) {
+      logAndSave('🔧 Port conflicts detected, using alternative ports:', 'yellow');
+      if (frontendPort !== 8082) {
+        logAndSave(`   Frontend: ${frontendPort} (instead of 8082)`, 'yellow');
+      }
+      if (backendPort !== 8787) {
+        logAndSave(`   Backend: ${backendPort} (instead of 8787)`, 'yellow');
+      }
+    } else {
+      logAndSave('✅ Default ports available (8082, 8787)', 'green');
+    }
+    
+    logAndSave('✅ System health check completed', 'green');
+    
     // Phase 1: Project Structure Check (Fast)
     logAndSave('📋 Phase 1: Checking Project Structure...', 'yellow');
     
@@ -164,8 +257,8 @@ async function runDevWithValidation() {
     
     // Start the production command (which starts both servers)
     logAndSave('📡 Launching backend (Cloudflare Workers) and frontend (Expo)...', 'blue');
-    logAndSave('🔗 Frontend will be available at: http://localhost:8082', 'magenta');
-    logAndSave('🔗 Backend API will be available at: http://localhost:8787', 'magenta');
+    logAndSave(`🔗 Frontend will be available at: http://localhost:${frontendPort}`, 'magenta');
+    logAndSave(`🔗 Backend API will be available at: http://localhost:${backendPort}`, 'magenta');
     logAndSave('', 'reset');
     logAndSave('💡 To stop servers: Ctrl+C', 'gray');
     logAndSave('📝 This session logged to: ' + logFile, 'gray');
@@ -174,8 +267,18 @@ async function runDevWithValidation() {
     // Final log save before starting servers
     saveLogBuffer();
 
-    // Start the development servers using the prod command
-    const devProcess = spawn('npm', ['run', 'prod'], {
+    // Build concurrently command with dynamic ports
+    const edgeCommand = `"cd apps/edge && npx wrangler dev --local --env=development --port=${backendPort}"`;
+    const mobileCommand = `"cd apps/mobile && npx expo start --web --port=${frontendPort}"`;
+    
+    // Start the development servers with dynamic ports
+    const devProcess = spawn('npx', [
+      'concurrently',
+      '-n', 'EDGE,MOBILE',
+      '-c', 'blue,green',
+      edgeCommand,
+      mobileCommand
+    ], {
       stdio: 'inherit',
       shell: true
     });

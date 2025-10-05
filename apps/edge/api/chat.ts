@@ -1,4 +1,4 @@
-import { createOpenAIClient, streamChat } from '../lib/openai';
+import { createOpenAIClient, streamChat, validateModel } from '../lib/openai';
 import { buildSystemPrompt } from '../lib/composer';
 import { webSearch, formatResearchContext, buildSearchQuery } from '../lib/search';
 import { ChatRequestSchema } from '../lib/schema';
@@ -65,12 +65,18 @@ export default {
       }
 
       const { mode, messages = [], options = {}, client = {} } = parseResult.data;
+      
+      // Validate and determine model to use
+      const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4o-mini';
+      const validatedModel = validateModel(requestedModel);
 
       logInfo('Chat request received', {
         requestId,
         mode,
         messageCount: messages.length,
         research: options.research,
+        requestedModel,
+        validatedModel,
         sessionId: client.sessionId,
         appVersion: client.appVersion
       });
@@ -109,20 +115,20 @@ export default {
       // Build system prompt
       const systemPrompt = buildSystemPrompt(mode, { research: !!options.research }) + researchBlock;
 
-      logInfo('Streaming chat request to OpenAI', {
+      logInfo('Streaming chat request', {
         requestId,
-        model: env.OPENAI_MODEL ?? 'gpt-4o-mini',
+        model: validatedModel,
         temperature: options.temperature ?? 0.7,
         maxTokens: options.max_tokens ?? 600,
-        openaiKeyStatus: redactApiKey(openaiKey)
+        openaiKeyStatus: validatedModel === 'mock' ? 'N/A (mock mode)' : redactApiKey(openaiKey)
       });
 
-      // Create OpenAI stream
+      // Create OpenAI stream (or mock stream for 'mock' model)
       const stream = await streamChat({
         openai,
         systemPrompt,
         messages,
-        model: env.OPENAI_MODEL ?? 'gpt-4o-mini',
+        model: validatedModel,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.max_tokens ?? 600,
         mode

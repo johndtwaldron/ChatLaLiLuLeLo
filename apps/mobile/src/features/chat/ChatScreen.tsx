@@ -14,53 +14,78 @@ import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
 import { ThemeCycleToggle } from '@/components/ThemeCycleToggle';
 import { ModeToggle } from '@/components/ModeToggle';
+import { ModelToggle } from '@/components/ModelToggle';
 import { DebugToggle } from '@/components/DebugToggle';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
-import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, isDebugEnabled, setDebug } from '@/lib/theme';
-import { streamReply, type ChatMessage, type ChatRequest } from '@/lib/api';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getCurrentModel, isDebugEnabled, setDebug } from '@/lib/theme';
+import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
+import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
 import { playCodecClose } from '@/lib/audio';
-
-interface Message {
-  id: string;
-  text: string;
-  speaker: 'colonel' | 'user';
-  timestamp: number;
-}
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
 }
 
+// Snapshot meta helper functions
+const modeToTag = (m: string): ModeTag =>
+  m === 'jd' ? 'JD' : m === 'bitcoin' ? 'BTC' : m === 'haywire' ? 'GW' : 'MGS';
+
+const modelToTag = (m: string): ModelTag =>
+  m === 'gpt-4o' ? 'gpt-4o' :
+  m === 'gpt-3.5-turbo' ? 'gpt-3.5-turbo' :
+  m === 'mock' ? 'mock' : 'gpt-4o-mini';
+
+function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
+  return {
+    mode: modeToTag(getCurrentMode()),
+    model: modelToTag(getCurrentModel()),
+    at: Date.now(),
+    kind,
+  };
+}
+
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Codec connection established. Four modes available.',
-      speaker: 'colonel',
-      timestamp: Date.now() - 45000,
-    },
-    {
-      id: '2', 
-      text: 'MGS2 MEME Philosophy, Bitcoin, Haywire, or MGS Lore?',
-      speaker: 'colonel',
-      timestamp: Date.now() - 30000,
-    },
-    {
-      id: '3',
-      text: 'Initiating Philosophy mode... What is truth?',
-      speaker: 'user',
-      timestamp: Date.now() - 20000,
-    },
-    {
-      id: '4',
-      text: 'Information control becomes reality control. The digital age has blurred the line between authentic experience and manufactured consciousness.',
-      speaker: 'colonel',
-      timestamp: Date.now() - 5000,
-    },
-  ]);
+  
+  // Create initial seeded messages with current mode/model stamped
+  const createInitialMessages = (): Message[] => {
+    const systemMeta = snapshotMeta('system');
+    
+    return [
+      {
+        id: '1',
+        text: 'Codec connection established. Four modes available.',
+        speaker: 'colonel',
+        timestamp: Date.now() - 45000,
+        meta: systemMeta,
+      },
+      {
+        id: '2', 
+        text: 'MGS2 MEME Philosophy, Bitcoin, Haywire, or MGS Lore?',
+        speaker: 'colonel',
+        timestamp: Date.now() - 30000,
+        meta: systemMeta,
+      },
+      {
+        id: '3',
+        text: 'Initiating Philosophy mode... What is truth?',
+        speaker: 'user',
+        timestamp: Date.now() - 20000,
+        meta: snapshotMeta('user'),
+      },
+      {
+        id: '4',
+        text: 'Information control becomes reality control. The digital age has blurred the line between authentic experience and manufactured consciousness.',
+        speaker: 'colonel',
+        timestamp: Date.now() - 5000,
+        meta: snapshotMeta('ai'),
+      },
+    ];
+  };
+  
+  const [messages, setMessages] = useState<Message[]>(createInitialMessages);
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamText, setCurrentStreamText] = useState('');
@@ -131,11 +156,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const handleSendMessage = async (messageText: string) => {
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(7);
+    
+    // Snapshot current mode/model at creation time (freeze them)
+    const meta = snapshotMeta('user');
+    
     const userMessage: Message = {
       id: `user-${timestamp}-${randomSuffix}`,
       text: `USER: ${messageText}`,
       speaker: 'user',
       timestamp,
+      meta, // stamp meta!
     };
     
     // Add user message with deduplication check
@@ -180,13 +210,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
       content: messageText
     });
     
+    // Get current selected model
+    const selectedModel = getCurrentModel();
+    
     const chatRequest: ChatRequest = {
       mode: apiMode,
       messages: conversationHistory,
       options: {
         research: false, // TODO: Make this configurable
         max_tokens: 600,
-        temperature: 0.7
+        temperature: 0.7,
+        model: selectedModel // Include selected model
       },
       client: {
         sessionId: `${process.env.EXPO_PUBLIC_SESSION_ID_PREFIX || 'chatlali'}-${Date.now()}`,
@@ -215,6 +249,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             text: fullResponseText,
             speaker: 'colonel',
             timestamp: responseTimestamp,
+            meta, // use the SAME meta that was stamped for the user message
           };
           
           setMessages(prev => [...prev, responseMessage]);
@@ -232,6 +267,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             text: `[ERROR] Connection failed: ${error}`,
             speaker: 'colonel',
             timestamp: errorTimestamp,
+            meta, // use the SAME meta that was stamped for the user message
           };
           
           setMessages(prev => [...prev, errorMessage]);
@@ -251,29 +287,30 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons */}
-        <CRTToggle />
-        <ThemeCycleToggle />
-        <ModeToggle />
-        <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
-        <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
-        
-        {/* Close Button */}
-        <View style={staticStyles.closeButtonContainer}>
+        {/* Control Buttons - MODEL → CLOSE → CRT → THEME → DEBUG → CONN */}
+        <View style={staticStyles.controlButtonsContainer}>
+          <ModelToggle />
+          
           <Pressable 
             onPress={handleClosePress}
             style={[
-              staticStyles.closeButton,
+              staticStyles.controlButton,
               { 
                 borderColor: currentTheme.colors.primary,
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
               }
             ]}
           >
-            <Text style={[staticStyles.closeButtonText, { color: currentTheme.colors.primary }]}>
+            <Text style={[staticStyles.controlButtonText, { color: currentTheme.colors.primary }]}>
               CLOSE
             </Text>
           </Pressable>
+          
+          <CRTToggle />
+          <ThemeCycleToggle />
+          <ModeToggle />
+          <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
+          <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
         </View>
         
         <View style={themeStyles.content}>
@@ -371,15 +408,21 @@ const staticStyles = StyleSheet.create({
     minHeight: 80,
   },
   
-  closeButtonContainer: {
+  controlButtonsContainer: {
     position: 'absolute',
     top: 20,
-    left: '50%',
-    marginLeft: -320, // Position further left to avoid overlap with MODE button
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
     zIndex: 100,
   },
   
-  closeButton: {
+  controlButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
@@ -387,7 +430,7 @@ const staticStyles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   
-  closeButtonText: {
+  controlButtonText: {
     fontSize: 12,
     fontFamily: 'monospace',
     fontWeight: 'bold',
