@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>140.85 — ChatLaLiLuLeLo Test</title>
+    <style>
+        body {
+            background: #000;
+            color: #00ffff;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .test-container {
+            text-align: center;
+            border: 2px solid #00ffff;
+            padding: 2rem;
+            background: rgba(0, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>140.85 — ChatLaLiLuLeLo</h1>
+        <p>🔧 GitHub Pages Deployment Test</p>
+        <p>If you can see this, GitHub Pages is working!</p>
+        <p>Backend API: <span id="api-status">Testing...</span></p>
+    </div>
+
+    <script>
+        // Test backend API connection
+        const apiUrl = 'https://chatlalilulelo-backend-prod.chatlalilulelo.workers.dev/health';
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('api-status').textContent = 
+                    `✅ Connected (${data.status})`;
+            })
+            .catch(error => {
+                document.getElementById('api-status').textContent = 
+                    `❌ Failed: ${error.message}`;
+            });
+    </script>
+</body>
+</html>
