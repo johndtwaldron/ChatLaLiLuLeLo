@@ -33,13 +33,20 @@ export interface StreamEvent {
   };
 }
 
+export function getApiUrl(): string {
+  // 1) Prefer runtime var injected by Pages workflow
+  // 2) Fallback to Expo env for local dev
+  const runtime = (globalThis as any).__DEMO_API_URL as string | undefined;
+  return runtime ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
+}
+
 export function streamReply(
   request: ChatRequest, 
   onToken: (token: string) => void,
   onDone?: (usage?: any) => void,
   onError?: (error: string) => void
 ): Promise<void> {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
+  const apiUrl = getApiUrl();
   
   return fetch(`${apiUrl}/chat`, {
     method: 'POST',
@@ -95,7 +102,7 @@ export function streamReply(
 }
 
 export async function healthCheck(): Promise<any> {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
+  const apiUrl = getApiUrl();
   
   try {
     const response = await fetch(`${apiUrl}/health`);

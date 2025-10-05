@@ -50,6 +50,21 @@ jobs:
           cp apps/mobile/dist/index.html apps/mobile/dist/404.html
           echo "Created 404.html for SPA routing support"
 
+      - name: Inject runtime API URL
+        run: |
+          echo "window.__DEMO_API_URL='${{ vars.DEMO_API_URL }}'" > apps/mobile/dist/env.js
+          echo "Injected API URL: ${{ vars.DEMO_API_URL }}"
+          
+          # Inject env.js script into index.html before other scripts
+          if [ -f "apps/mobile/dist/index.html" ]; then
+            # Add env.js script tag before the closing </head> tag
+            sed -i 's|</head>|<script src="./env.js"></script></head>|' apps/mobile/dist/index.html
+            echo "Patched index.html to load env.js"
+          else
+            echo "Warning: index.html not found at apps/mobile/dist/index.html"
+            ls -la apps/mobile/dist/ || echo "dist directory not found"
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v3
 

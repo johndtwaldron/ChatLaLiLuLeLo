@@ -28,15 +28,12 @@ export const withBasePath = (path: string): string => {
 /**
  * Get the current base URL for API requests
  * This handles both local development and production deployment
+ * NOTE: This function is deprecated - use getApiUrl from api.ts instead
  */
 export const getApiUrl = (): string => {
-  // Check for explicit API URL override (GitHub Pages deployment)
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  
-  // Local development fallback
-  return 'http://localhost:8787';
+  // Prefer runtime var injected by Pages workflow
+  const runtime = (globalThis as any).__DEMO_API_URL as string | undefined;
+  return runtime ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
 };
 
 /**

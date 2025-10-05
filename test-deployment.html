@@ -32,8 +32,21 @@
     </div>
 
     <script>
-        // Test backend API connection
-        const apiUrl = 'https://chatlalilulelo-backend-prod.chatlalilulelo.workers.dev/health';
+        // Test backend API connection using runtime injected URL
+        function getApiUrl() {
+            // Use runtime injected URL if available, fallback to hardcoded
+            return window.__DEMO_API_URL || 'https://chatlalilulelo-backend-prod.chatlalilulelo.workers.dev';
+        }
+        
+        const apiUrl = getApiUrl() + '/health';
+        console.log('Testing API URL:', apiUrl);
+        
+        // Show which API URL we're using
+        const debugInfo = document.createElement('p');
+        debugInfo.innerHTML = `<small>API URL: ${getApiUrl()}</small>`;
+        debugInfo.style.fontSize = '12px';
+        debugInfo.style.opacity = '0.7';
+        document.querySelector('.test-container').appendChild(debugInfo);
         
         fetch(apiUrl)
             .then(response => response.json())
@@ -44,6 +57,7 @@
             .catch(error => {
                 document.getElementById('api-status').textContent = 
                     `❌ Failed: ${error.message}`;
+                console.error('API test failed:', error);
             });
     </script>
 </body>
