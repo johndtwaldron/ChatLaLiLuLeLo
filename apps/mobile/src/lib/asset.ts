@@ -24,9 +24,20 @@ export function asImg(file: any) {
   }
   
   // Production web build or native
-  const result = Platform.OS === 'web' ? { uri: file } : file;
-  console.log('[ASSET] Production/native - using wrapped format for image:', Platform.OS);
-  return result;
+  if (Platform.OS === 'web') {
+    // For web production, convert absolute paths to relative paths for GitHub Pages
+    let assetPath = file;
+    if (typeof file === 'string' && file.startsWith('/')) {
+      assetPath = '.' + file;
+    }
+    const result = { uri: assetPath };
+    console.log('[ASSET] Web production - using wrapped format with relative path:', assetPath);
+    return result;
+  }
+  
+  // Native platforms
+  console.log('[ASSET] Native - using direct require:', Platform.OS);
+  return file;
 }
 
 export function asAudio(file: any) {
@@ -41,11 +52,24 @@ export function asAudio(file: any) {
   
   if (isLocalDev) {
     // Local development - use direct require for Metro bundler
+    console.log('[ASSET] Local dev detected - using direct require for audio');
     return file;
   }
   
   // Production web build or native
-  return Platform.OS === 'web' ? { uri: file } : file;
+  if (Platform.OS === 'web') {
+    // For web production, convert absolute paths to relative paths for GitHub Pages
+    let assetPath = file;
+    if (typeof file === 'string' && file.startsWith('/')) {
+      assetPath = '.' + file;
+    }
+    console.log('[ASSET] Web production - using wrapped format with relative path for audio:', assetPath);
+    return { uri: assetPath };
+  }
+  
+  // Native platforms
+  console.log('[ASSET] Native - using direct require for audio:', Platform.OS);
+  return file;
 }
 
 /**
