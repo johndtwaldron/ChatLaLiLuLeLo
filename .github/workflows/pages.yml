@@ -92,6 +92,23 @@ jobs:
             ls -la apps/mobile/dist/ || echo "dist directory not found"
           fi
 
+      - name: Debug - List built files and fix asset accessibility
+        run: |
+          cd apps/mobile/dist
+          echo "Files in dist directory:"
+          find . -type f | head -20
+          echo "\nAsset files:"
+          find . -name "*.mp3" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" | head -10
+          echo "\nDirectory structure:"
+          ls -la .
+          
+          # Check if assets are accessible via expected paths
+          echo "\nChecking asset paths in JavaScript bundle:"
+          if [ -f "_expo/static/js/web/index-"*.js ]; then
+            echo "Found JavaScript bundle, checking for asset references:"
+            grep -o '"[^"]*\.(mp3\|jpg\|jpeg\|png)' _expo/static/js/web/index-*.js | head -10 || echo "No asset references found"
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
