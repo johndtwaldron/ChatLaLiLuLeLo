@@ -43,7 +43,29 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
           EXPO_PUBLIC_DEBUG_MODE: "0"
-          BASE_PATH: "/${{ github.event.repository.name }}"
+
+      - name: Fix asset paths for GitHub Pages
+        run: |
+          cd apps/mobile/dist
+          
+          # Fix absolute paths to relative paths in index.html
+          if [ -f "index.html" ]; then
+            # Replace /_expo/ with ./_expo/
+            sed -i 's|src="/_expo/|src="./_expo/|g' index.html
+            # Replace href="/_expo/ with href="./_expo/
+            sed -i 's|href="/_expo/|href="./_expo/|g' index.html
+            echo "Fixed asset paths in index.html"
+            
+            # Update page title
+            sed -i 's|<title>ChatLaLiLuLeLo</title>|<title>140.85 — ChatLaLiLuLeLo</title>|g' index.html
+            echo "Updated page title"
+            
+            # Show the patched result
+            echo "Asset paths after fix:"
+            grep -E '(src=|href=)' index.html | head -5
+          else
+            echo "Warning: index.html not found"
+          fi
 
       - name: Create 404.html for SPA routing
         run: |
