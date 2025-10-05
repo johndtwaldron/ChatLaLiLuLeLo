@@ -18,9 +18,9 @@ import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPo
 
 // Import colonel portraits - using URI for web compatibility
 const colonelImages = [
-  { uri: require('@/assets/images/colonel.jpeg') },
-  { uri: require('@/assets/images/colonel_1.jpg') },
-  { uri: require('@/assets/images/colonel_2.jpg') },
+  { uri: require('../../assets/images/colonel.jpeg') },
+  { uri: require('../../assets/images/colonel_1.jpg') },
+  { uri: require('../../assets/images/colonel_2.jpg') },
 ];
 
 interface PortraitProps {

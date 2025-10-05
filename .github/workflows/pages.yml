@@ -44,6 +44,7 @@ jobs:
       - name: Build web export for GitHub Pages
         run: |
           cd apps/mobile
+          # Use the correct export command as defined in package.json
           npm run export:web
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
