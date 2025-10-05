@@ -116,15 +116,28 @@ class CodecAudioService {
         // Preload sounds on native platforms
         await this.preloadSounds(['codec_startup', 'codec_lock']);
       } else {
-        // On web, defer preloading until first user interaction
-        console.log('[CODEC AUDIO] Web platform detected - deferring sound preloading');
+        // On web, prepare audio context and defer preloading until first user interaction
+        console.log('[CODEC AUDIO] Web platform detected - preparing web audio context');
+        // Attempt to prepare audio context
+        try {
+          const { sound: testSound } = await Audio.Sound.createAsync(
+            this.codecSounds[0].file,
+            { shouldPlay: false, volume: 0 }
+          );
+          this.sounds.set('_test_', testSound);
+          console.log('[CODEC AUDIO] Web audio context prepared successfully');
+        } catch (webError) {
+          console.warn('[CODEC AUDIO] Web audio preparation failed (will retry on first play):', webError);
+        }
       }
       
       this.isInitialized = true;
       console.log('[CODEC AUDIO] Service initialized successfully');
     } catch (error) {
       console.error('[CODEC AUDIO] Failed to initialize:', error);
-      throw error;
+      // Don't throw error - allow app to continue without audio
+      this.isInitialized = true;
+      console.warn('[CODEC AUDIO] Continuing without audio initialization');
     }
   }
 
