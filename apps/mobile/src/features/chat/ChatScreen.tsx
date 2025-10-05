@@ -19,6 +19,7 @@ import { DebugToggle } from '@/components/DebugToggle';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
+import { BudgetIndicator } from '@/components/BudgetIndicator';
 import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getCurrentModel, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
 import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
@@ -48,6 +49,14 @@ function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  
+  // Generate stable session ID for budget tracking
+  const [sessionId] = useState(() => 
+    `${process.env.EXPO_PUBLIC_SESSION_ID_PREFIX || 'chatlali'}-${Date.now()}`
+  );
+  
+  // Budget refresh trigger
+  const [budgetRefreshTrigger, setBudgetRefreshTrigger] = useState(0);
   
   // Create initial seeded messages with current mode/model stamped
   const createInitialMessages = (): Message[] => {
@@ -223,7 +232,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         model: selectedModel // Include selected model
       },
       client: {
-        sessionId: `${process.env.EXPO_PUBLIC_SESSION_ID_PREFIX || 'chatlali'}-${Date.now()}`,
+        sessionId: sessionId, // Use stable session ID
         appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0'
       }
     };
@@ -255,6 +264,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           setMessages(prev => [...prev, responseMessage]);
           setIsStreaming(false);
           setCurrentStreamText('');
+          
+          // Trigger budget refresh after successful response
+          setBudgetRefreshTrigger(prev => prev + 1);
         },
         (error) => {
           // Handle errors
@@ -287,7 +299,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons - MODEL → CLOSE → CRT → THEME → DEBUG → CONN */}
+        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN */}
         <View style={staticStyles.controlButtonsContainer}>
           <ModelToggle />
           
@@ -305,6 +317,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
               CLOSE
             </Text>
           </Pressable>
+          
+          <BudgetIndicator 
+            sessionId={sessionId}
+            compact={true}
+            refreshTrigger={budgetRefreshTrigger}
+          />
           
           <CRTToggle />
           <ThemeCycleToggle />

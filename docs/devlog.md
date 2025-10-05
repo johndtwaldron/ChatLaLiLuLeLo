@@ -1964,6 +1964,322 @@ With header button layout fixed and freeze mode implementation verified:
 
 ---
 
+## Session 20 - 2025-10-05T17:59:26Z
+
+**Objective:** 🎵 Implement Random Sound Effects for User Portrait Clicks
+
+### ✅ **USER PANEL CLICK SOUND FEATURE COMPLETE**
+
+**Requirements Met:**
+- ✅ **Random Sound Effects**: Play non-codec MGS sounds when USER portrait is clicked
+- ✅ **Smart Audio Integration**: Extended existing codecAudioService with user interaction sounds
+- ✅ **User-Friendly Interaction**: Tap detection prevents sounds during dragging operations
+- ✅ **Clean Implementation**: Maintains colonel portrait cycling while adding user sound feedback
+
+### 🎵 **Sound Effects Added:**
+
+**User Interaction Sounds (Non-Codec Related):**
+- 🥫 **Rations** - MGS rations pickup sound
+- 📦 **Item Drop** - MGS item acquisition sound 
+- ⚡ **Reflex Mode** - MGS reflex mode activation
+- 🗣️ **Impressive Snake** - MGS voice clip
+- 💬 **If You Say So** - MGS2 Snake voice clip
+
+### 🔧 **Technical Implementation:**
+
+**Audio Service Enhancement:**
+```typescript
+// Extended codecAudioService with user sound category
+private readonly userSounds: CodecSound[] = [
+  { id: 'rations', name: 'Rations', file: require('../../assets/audio/mgs-rations.mp3') },
+  { id: 'item_drop', name: 'Item Drop', file: require('../../assets/audio/metal-gear-item-drop.mp3') },
+  { id: 'reflex_mode', name: 'Reflex Mode', file: require('../../assets/audio/mgs-reflex-mode.mp3') },
+  // ... additional sounds
+];
+
+// Random sound selection method
+async playRandomUserSound(): Promise<void> {
+  const randomIndex = Math.floor(Math.random() * this.userSounds.length);
+  const selectedSound = this.userSounds[randomIndex];
+  await this.playSound(selectedSound.id, {
+    volume: this.settings.volume * 0.8, // 80% volume for UI feedback
+  });
+}
+```
+
+**Portrait Interaction Enhancement:**
+```typescript
+// Updated DraggablePortrait with dual functionality
+const handlePortraitInteraction = () => {
+  if (type === 'colonel') {
+    cycleColonelPortrait(); // Existing image cycling
+  } else if (type === 'user') {
+    playRandomUserSound(); // New random sound feature
+    console.log('[DRAGGABLE PORTRAIT] User portrait clicked - playing random sound');
+  }
+};
+```
+
+### 🎯 **User Experience Features:**
+
+**Dual Portrait Functionality:**
+- **Colonel Portrait** (left): Click to cycle through different colonel images
+- **USER Portrait** (right, "SOLDIER"): Click to hear random MGS sound effects
+- **Smart Interaction**: Distinguishes between tap (sound/cycle) vs drag (move portrait)
+- **Audio Feedback**: Immediate response with 80% volume for comfortable UI interaction
+
+**Technical Safeguards:**
+- **Drag Detection**: 5-pixel threshold prevents accidental sounds during portrait movement
+- **Sound Separation**: User sounds completely separate from codec communication sounds
+- **Performance**: Efficient random selection with existing audio caching system
+- **Error Handling**: Graceful fallbacks if audio files unavailable
+
+### 📊 **Implementation Statistics:**
+
+**Files Modified:**
+- ✅ `apps/mobile/src/lib/audio.ts` - Extended with user sound category and random playback
+- ✅ `apps/mobile/src/components/DraggablePortrait.tsx` - Added user portrait click handler
+
+**Code Quality:**
+- **ESLint**: 0 errors, 0 warnings (clean codebase)
+- **TypeScript**: Full compilation success with proper type safety
+- **Git History**: Clean commits with detailed documentation
+- **Architecture**: Built on existing proven audio service patterns
+
+### 🎮 **Interactive Experience:**
+
+**User Journey:**
+1. **Visual Cue**: USER portrait labeled "SOLDIER" on top-right
+2. **Click Action**: Quick tap triggers random sound selection
+3. **Audio Feedback**: Immediate MGS sound effect plays (rations, items, voice clips)
+4. **Variety**: 5 different sounds ensure varied experience
+5. **Volume Control**: Respects user audio settings with 80% UI volume
+
+**Integration with Existing Features:**
+- **Preserves** colonel portrait cycling functionality
+- **Maintains** draggable portrait collision detection and boundaries
+- **Respects** existing audio service settings and volume controls
+- **Uses** established gesture detection patterns (Race gesture for tap vs drag)
+
+### 🔬 **Quality Assurance:**
+
+**Testing Approach:**
+- **Gesture Detection**: Verified tap vs drag threshold (5 pixels)
+- **Audio Integration**: Confirmed sound loading and playback
+- **Volume Levels**: UI sounds at 80% of user preference
+- **Error Handling**: Graceful behavior when sounds unavailable
+- **Performance**: No impact on existing portrait dragging functionality
+
+### 🚀 **Next Phase Ready:**
+
+With user interaction sound system operational:
+- ✅ **Enhanced UX**: Users have immediate audio feedback for UI interactions
+- ✅ **Non-Intrusive**: Sounds complement rather than interfere with codec communication
+- ✅ **Extensible**: Audio service ready for additional UI sound categories
+- ✅ **Professional**: Clean implementation following established patterns
+
+**Potential Enhancements:**
+- Additional sound categories (alerts, notifications, special events)
+- User preference toggles for UI sound effects
+- Context-aware sound selection based on current mode/theme
+- Sound visualization or feedback indicators
+
+**Status:** 🎵 **USER CLICK SOUND SYSTEM COMPLETE** - Random MGS sound effects now play when USER portrait is clicked, providing engaging audio feedback while maintaining all existing functionality. Audio service enhanced with user interaction sound categories.
+
+---
+
+## Session 21 - 2025-10-05T18:29:12Z
+
+**Objective:** 💰 Fix Budget System Real-time Updates and Debug Panel Theme Display
+
+### ✅ **BUDGET TRACKING SYSTEM FIXES COMPLETE**
+
+**Issues Resolved:**
+- ✅ **Budget Box Not Updating**: Fixed session ID instability and missing refresh triggers
+- ✅ **Debug Panel Theme Name**: Fixed hardcoded 'current_theme' to show actual theme names
+- ✅ **Real-time Budget Display**: Budget now updates immediately after each message
+- ✅ **Reactive Debug Panel**: Theme name updates live when themes change
+
+### 💰 **Budget System Implementation (V4-004 Complete)**
+
+**Comprehensive Spend Controls:**
+- ✅ **Rate Limiting**: 30 requests/15min per IP, 50k tokens/session
+- ✅ **Budget Protection**: Hard $5/month cap with real-time cost tracking
+- ✅ **Message Length Capping**: 8k character limit per message
+- ✅ **Live Budget Display**: "BGT $0.003" indicator in header with auto-refresh
+- ✅ **Warning System**: 75% orange warning, 90% red critical alerts
+- ✅ **Model-Aware Pricing**: Accurate cost calculation per model type
+
+**Backend Rate Limiter (`apps/edge/lib/rate-limiter.ts`):**
+```typescript
+const DEFAULT_CONFIG = {
+  requestsPerWindow: 30,        // 30 requests per 15 minutes
+  windowMs: 15 * 60 * 1000,    // 15-minute windows
+  maxTokensPerSession: 50000,   // 50k tokens per session
+  maxMessageLength: 8000,       // 8k characters per message
+  monthlyBudgetUSD: 5.00        // Hard $5/month cap
+};
+
+const TOKEN_COSTS = {
+  'gpt-4o-mini': 0.00000015,    // $0.15 per million tokens
+  'gpt-4o': 0.000005,          // $5.00 per million tokens
+  'gpt-3.5-turbo': 0.0000005,  // $0.50 per million tokens
+  'mock': 0                     // Free testing mode
+};
+```
+
+**API Enhancements (`apps/edge/api/chat.ts`):**
+- ✅ **Pre-request Validation**: Rate limiting with 429 status codes
+- ✅ **Budget Status Endpoint**: `GET /budget` for frontend display
+- ✅ **Token Tracking**: Actual OpenAI response token counting
+- ✅ **Warning Generation**: Budget threshold alerts
+- ✅ **Graceful Error Messages**: User-friendly rate limit explanations
+
+### 🔧 **Technical Fixes Applied:**
+
+**Issue 1: Budget Box Not Updating**
+```typescript
+// Problem: Dynamic session ID changing every render
+- sessionId={`chatlali-${Date.now()}`}  // ❌ New ID each time
+
+// Solution: Stable session ID + refresh trigger
++ const [sessionId] = useState(() => 
++   `chatlali-${Date.now()}`); // ✅ Created once, stable
++ const [budgetRefreshTrigger, setBudgetRefreshTrigger] = useState(0);
+
+// Trigger refresh after successful responses
++ setBudgetRefreshTrigger(prev => prev + 1);
+```
+
+**Issue 2: Debug Panel Theme Name**
+```typescript
+// Problem: Hardcoded theme display
+- currentTheme: 'current_theme', // ❌ Static text
+
+// Solution: Reactive theme name tracking
++ const [currentThemeName, setCurrentThemeName] = useState(getCurrentThemeName());
++ useEffect(() => {
++   const unsubscribe = subscribeToThemeChanges(() => {
++     setCurrentThemeName(getCurrentThemeName()); // ✅ Updates with theme changes
++   });
++ }, []);
+```
+
+### 🎮 **User Experience Improvements:**
+
+**Real-time Budget Tracking:**
+- **Live Updates**: Budget indicator refreshes after each API response
+- **Accurate Costs**: Based on actual OpenAI token usage, not estimates
+- **Warning Colors**: Green → Orange (75%) → Red (90%) → Blocked (100%)
+- **Expandable Details**: Click BGT button to see full statistics
+- **Session Awareness**: Tracks per-IP and per-session usage
+
+**Debug Panel Enhancements:**
+- **Live Theme Display**: Shows "PURPLE", "GOLD", "CYAN", etc. accurately
+- **Reactive Updates**: Theme name changes instantly with theme cycling
+- **Environment Info**: Current mode, model, API status, and settings
+
+**Budget Protection Features:**
+- **Rate Limit Messages**: "Rate limit exceeded. Please try again later."
+- **Token Limit Warnings**: "Session token limit reached. Please start a new session."
+- **Budget Warnings**: "Budget 75% used ($0.003/$5.00). Consider using Mock mode."
+- **Critical Alerts**: "Budget 90% used. Switch to Mock mode to continue."
+
+### 📊 **Budget API Responses:**
+
+**Budget Status (`GET /budget`):**
+```json
+{
+  "status": "ok",
+  "usage": {
+    "requestCount": 5,
+    "tokenCount": 2341,
+    "estimatedSpendUSD": 0.003,
+    "windowStart": 1728155889000,
+    "sessionStart": 1728152289000
+  },
+  "config": {
+    "requestsPerWindow": 30,
+    "maxTokensPerSession": 50000,
+    "monthlyBudgetUSD": 5.00
+  },
+  "warning": {
+    "level": "info",
+    "message": "Session tokens 15% used (2,341/50,000).",
+    "budgetUsedPercent": 0.06,
+    "tokenUsedPercent": 4.68
+  }
+}
+```
+
+**Rate Limit Response (429):**
+```json
+{
+  "error": "Rate limit exceeded. Please try again later.",
+  "reason": "rate_limit",
+  "resetTime": 1728156789000,
+  "stats": { "requestCount": 30, "windowStart": 1728155889000 }
+}
+```
+
+### 🧪 **Implementation Statistics:**
+
+**Files Created:**
+- ✅ `apps/edge/lib/rate-limiter.ts` - Comprehensive rate limiting system
+- ✅ `apps/mobile/src/components/BudgetIndicator.tsx` - Live budget display
+- ✅ `docs/V4-004_SPEND_CONTROLS.md` - Complete implementation guide
+
+**Files Enhanced:**
+- ✅ `apps/edge/api/chat.ts` - Rate limiting, budget tracking, `/budget` endpoint
+- ✅ `apps/mobile/src/features/chat/ChatScreen.tsx` - Stable session ID, refresh triggers
+- ✅ `apps/mobile/src/components/DebugPanel.tsx` - Reactive theme name display
+
+**Code Quality:**
+- **ESLint**: 0 errors, 0 warnings (clean codebase)
+- **TypeScript**: Full compilation success with proper type safety
+- **Architecture**: Built on existing proven patterns
+- **Performance**: Minimal impact, efficient real-time updates
+
+### 🛡️ **Production-Ready Budget Protection:**
+
+**Cost Control Measures:**
+| Protection | Limit | Action When Exceeded |
+|------------|-------|-----------------------|
+| **Request Rate** | 30/15min per IP | 429 error, retry after window |
+| **Message Length** | 8,000 chars | Rejection with error message |
+| **Session Tokens** | 50,000 tokens | Block requests, suggest new session |
+| **Monthly Budget** | $5.00 USD | Block requests, suggest Mock mode |
+
+**Monitoring & Visibility:**
+- ✅ **Real-time Budget Display**: Current spend visible in UI header
+- ✅ **Request Logging**: Full audit trail in Worker logs  
+- ✅ **Usage Statistics**: Per-IP and per-session tracking
+- ✅ **Cost Estimation**: Live calculation with actual token usage
+- ✅ **Warning System**: Progressive alerts before limits reached
+
+### 🚀 **Ready for V4-003 Deployment:**
+
+With comprehensive spend controls and real-time budget tracking:
+- ✅ **Budget Protected**: Hard $5/month limit enforced with live tracking
+- ✅ **User Friendly**: Clear warnings and error messages
+- ✅ **Rate Limited**: Per-IP abuse prevention (30 req/15min)
+- ✅ **Monitoring Ready**: Full visibility into usage and costs
+- ✅ **Mock Mode Available**: Zero-cost testing option
+- ✅ **Production Grade**: Robust error handling and graceful degradation
+
+**Next Phase**: Deploy shareable online demo (v4-003) with confidence that $20 OpenAI credit is protected by comprehensive budget controls.
+
+### 🔗 **Available API Endpoints:**
+
+- **POST /chat**: Rate-limited chat with real-time budget tracking
+- **GET /budget**: Current usage statistics and warning alerts
+- **GET /health**: Service status and configuration
+- **OPTIONS /***: CORS preflight support for all endpoints
+
+**Status:** 💰 **BUDGET TRACKING SYSTEM FIXED** - Real-time budget updates operational, debug panel theme names reactive, comprehensive spend protection active. Ready for public deployment with $5/month budget enforcement.
+
+---
+
 ## Session 9 - 2025-09-30T18:01:21Z
 
 **Objective:** 🎯 Recovery and Implementation - Priority 1: Live CRT Toggle

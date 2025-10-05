@@ -3,6 +3,10 @@ import { buildSystemPrompt } from '../lib/composer';
 import { webSearch, formatResearchContext, buildSearchQuery } from '../lib/search';
 import { ChatRequestSchema } from '../lib/schema';
 import { logInfo, logError, logWarning, generateRequestId, redactApiKey } from '../lib/logger';
+import { RateLimiter, createBudgetWarning, DEFAULT_CONFIG } from '../lib/rate-limiter';
+
+// Global rate limiter instance
+const rateLimiter = new RateLimiter(DEFAULT_CONFIG);
 
 export default {
   async fetch(req: Request, env: any): Promise<Response> {
@@ -42,6 +46,47 @@ export default {
         }
       });
     }
+    
+    // Budget status endpoint for frontend display
+    if (url.pathname === '/budget') {
+      try {
+        const sessionId = url.searchParams.get('sessionId') || undefined;
+        const stats = rateLimiter.getUsageStats(req, sessionId);
+        
+        const budgetStatus = {
+          status: 'ok',
+          timestamp: Date.now(),
+          usage: stats || {
+            requestCount: 0,
+            tokenCount: 0,
+            estimatedSpendUSD: 0,
+            windowStart: Date.now(),
+            sessionStart: Date.now()
+          },
+          config: {
+            requestsPerWindow: DEFAULT_CONFIG.requestsPerWindow,
+            windowMs: DEFAULT_CONFIG.windowMs,
+            maxTokensPerSession: DEFAULT_CONFIG.maxTokensPerSession,
+            monthlyBudgetUSD: DEFAULT_CONFIG.monthlyBudgetUSD
+          },
+          warning: stats ? createBudgetWarning(stats, DEFAULT_CONFIG) : null
+        };
+        
+        return new Response(JSON.stringify(budgetStatus, null, 2), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (error) {
+        logError('Budget status error', error as Error, { requestId });
+        return new Response('Budget status error', { 
+          status: 500,
+          headers: corsHeaders
+        });
+      }
+    }
 
     // Only handle POST requests to /chat
     if (url.pathname !== '/chat' || req.method !== 'POST') {
@@ -66,9 +111,52 @@ export default {
 
       const { mode, messages = [], options = {}, client = {} } = parseResult.data;
       
+      // Get last user message for rate limiting
+      const lastUserMessage = [...messages].reverse()
+        .find(m => m.role === 'user')?.content ?? '';
+      
       // Validate and determine model to use
       const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4o-mini';
       const validatedModel = validateModel(requestedModel);
+      
+      // Check rate limits and budget before processing
+      const rateLimitResult = rateLimiter.checkRateLimit(
+        req,
+        lastUserMessage,
+        client.sessionId,
+        validatedModel
+      );
+      
+      if (!rateLimitResult.allowed) {
+        const errorMessages = {
+          rate_limit: 'Rate limit exceeded. Please try again later.',
+          session_tokens: 'Session token limit reached. Please start a new session.',
+          message_length: `Message too long. Maximum ${DEFAULT_CONFIG.maxMessageLength} characters allowed.`,
+          monthly_budget: 'Monthly budget limit reached. Please try Mock mode or wait for next month.'
+        };
+        
+        logWarning('Request blocked by rate limiter', {
+          requestId,
+          reason: rateLimitResult.reason,
+          stats: rateLimitResult.stats,
+          sessionId: client.sessionId
+        });
+        
+        return new Response(JSON.stringify({
+          error: errorMessages[rateLimitResult.reason!],
+          reason: rateLimitResult.reason,
+          resetTime: rateLimitResult.resetTime,
+          stats: rateLimitResult.stats
+        }), { 
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': rateLimitResult.resetTime ? 
+              Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString() : '900',
+            ...corsHeaders
+          }
+        });
+      }
 
       logInfo('Chat request received', {
         requestId,
@@ -153,14 +241,32 @@ export default {
             }
           }
           
-          // Send completion event
+          // Track actual token usage for budget calculations
+          rateLimiter.trackTokenUsage(
+            req,
+            tokenCount,
+            client.sessionId,
+            validatedModel
+          );
+          
+          // Get updated stats and budget warning
+          const updatedStats = rateLimiter.getUsageStats(req, client.sessionId);
+          const budgetWarning = updatedStats ? createBudgetWarning(updatedStats, DEFAULT_CONFIG) : null;
+          
+          // Send completion event with budget info
           await writer.write(encoder.encode(
-            `data: ${JSON.stringify({ type: 'done', usage: { completion_tokens: tokenCount } })}\n\n`
+            `data: ${JSON.stringify({ 
+              type: 'done', 
+              usage: { completion_tokens: tokenCount },
+              budgetWarning,
+              stats: updatedStats
+            })}\n\n`
           ));
           
           logInfo('Stream completed successfully', { 
             requestId, 
-            tokenCount 
+            tokenCount,
+            estimatedSpendUSD: updatedStats?.estimatedSpendUSD
           });
           
         } catch (error) {
@@ -170,6 +276,8 @@ export default {
           ));
         } finally {
           await writer.close();
+          // Periodic cleanup of expired rate limit entries
+          rateLimiter.cleanup();
         }
       })();
 
