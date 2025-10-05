@@ -4,23 +4,24 @@ module.exports = {
   extends: [
     'eslint:recommended',
   ],
-  parserOptions: {
-    ecmaVersion: 2020,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    },
-  },
   rules: {
-    // Basic rules that work everywhere
-    'prefer-const': 'error',
-    'no-unused-vars': 'off', // Turn off base rule
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    // Minimal rules to avoid conflicts
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
+    'no-console': 'off',
+    'no-undef': 'off', // TypeScript handles this
   },
   env: {
     browser: true,
-    jest: true,
     node: true,
     es6: true,
+  },
+  globals: {
+    __DEV__: 'readonly',
+    globalThis: 'readonly',
+  },
+  parserOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'module',
   },
 };

@@ -36,6 +36,11 @@ jobs:
           cd apps/mobile
           npm ci
 
+      - name: Run linting
+        run: |
+          cd apps/mobile
+          npm run lint
+
       - name: Build web export for GitHub Pages
         run: |
           cd apps/mobile
