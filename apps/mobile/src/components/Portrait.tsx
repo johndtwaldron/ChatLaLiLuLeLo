@@ -15,12 +15,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait } from '@/lib/theme';
+import { asImg } from '@/lib/asset';
 
-// Import colonel portraits - using URI for web compatibility
+// Import colonel portraits - unified compatibility for local and web
 const colonelImages = [
-  { uri: require('../../assets/images/colonel.jpeg') },
-  { uri: require('../../assets/images/colonel_1.jpg') },
-  { uri: require('../../assets/images/colonel_2.jpg') },
+  asImg(require('../../assets/images/colonel.jpeg')),
+  asImg(require('../../assets/images/colonel_1.jpg')),
+  asImg(require('../../assets/images/colonel_2.jpg')),
 ];
 
 interface PortraitProps {

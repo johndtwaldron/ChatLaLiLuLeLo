@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { asAudio } from './asset';
 
 // Audio settings storage keys
 const AUDIO_SETTINGS_KEY = '@codec_audio_settings';
@@ -33,31 +34,31 @@ class CodecAudioService {
     {
       id: 'codec_startup',
       name: 'Codec Send',
-      file: { uri: require('../../assets/audio/codec-send.mp3') },
+      file: asAudio(require('../../assets/audio/codec-send.mp3')),
       description: 'MGS codec communication startup sound'
     },
     {
       id: 'codec_lock',
       name: 'Codec Lock',
-      file: { uri: require('../../assets/audio/codec_lock.mp3') },
+      file: asAudio(require('../../assets/audio/codec_lock.mp3')),
       description: 'MGS codec frequency lock sound'
     },
     {
       id: 'impressive',
       name: 'Impressive Snake',
-      file: { uri: require('../../assets/audio/metal-gear-solid-impressive-snake.mp3') },
+      file: asAudio(require('../../assets/audio/metal-gear-solid-impressive-snake.mp3')),
       description: 'MGS impressive Snake voice clip'
     },
     {
       id: 'kept_waiting',
       name: 'Kept You Waiting',
-      file: { uri: require('../../assets/audio/mgs2-snake-kept-you-waiting-huh.mp3') },
+      file: asAudio(require('../../assets/audio/mgs2-snake-kept-you-waiting-huh.mp3')),
       description: 'MGS2 Snake kept you waiting voice clip'
     },
     {
       id: 'codec_close',
       name: 'Codec Close',
-      file: { uri: require('../../assets/audio/metal_gear_solid_exit_sound_effect.mp3') },
+      file: asAudio(require('../../assets/audio/metal_gear_solid_exit_sound_effect.mp3')),
       description: 'MGS codec communication close sound'
     }
   ];
@@ -67,31 +68,31 @@ class CodecAudioService {
     {
       id: 'rations',
       name: 'Rations',
-      file: { uri: require('../../assets/audio/mgs-rations.mp3') },
+      file: asAudio(require('../../assets/audio/mgs-rations.mp3')),
       description: 'MGS rations pickup sound'
     },
     {
       id: 'item_drop',
       name: 'Item Drop',
-      file: { uri: require('../../assets/audio/metal-gear-item-drop.mp3') },
+      file: asAudio(require('../../assets/audio/metal-gear-item-drop.mp3')),
       description: 'MGS item acquisition sound'
     },
     {
       id: 'reflex_mode',
       name: 'Reflex Mode',
-      file: { uri: require('../../assets/audio/mgs-reflex-mode.mp3') },
+      file: asAudio(require('../../assets/audio/mgs-reflex-mode.mp3')),
       description: 'MGS reflex mode activation'
     },
     {
       id: 'impressive_snake',
       name: 'Impressive Snake',
-      file: { uri: require('../../assets/audio/metal-gear-solid-impressive-snake.mp3') },
+      file: asAudio(require('../../assets/audio/metal-gear-solid-impressive-snake.mp3')),
       description: 'MGS impressive Snake voice clip'
     },
     {
       id: 'if_you_say_so',
       name: 'If You Say So',
-      file: { uri: require('../../assets/audio/mgs2-snake-if-you-say-so.mp3') },
+      file: asAudio(require('../../assets/audio/mgs2-snake-if-you-say-so.mp3')),
       description: 'MGS2 Snake voice clip'
     }
   ];
