@@ -101,6 +101,11 @@ export const Portrait: React.FC<PortraitProps> = ({
     const currentPortraitIndex = getCurrentColonelPortrait();
     const currentColonelImage = colonelImages[currentPortraitIndex];
     
+    // Debug logging for colonel image rendering
+    console.log('[PORTRAIT] Current portrait index:', currentPortraitIndex);
+    console.log('[PORTRAIT] Colonel images array:', colonelImages);
+    console.log('[PORTRAIT] Current colonel image:', currentColonelImage);
+    
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
         {/* Colonel portrait image */}

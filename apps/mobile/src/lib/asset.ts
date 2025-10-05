@@ -8,6 +8,8 @@ import { Platform } from 'react-native';
  */
 
 export function asImg(file: any) {
+  console.log('[ASSET DEBUG] Input file:', typeof file, file);
+  
   // Check if we're in local development mode
   const isLocalDev = Platform.OS === 'web' && (
     typeof window !== 'undefined' && (
@@ -30,8 +32,17 @@ export function asImg(file: any) {
     if (typeof file === 'string' && file.startsWith('/')) {
       assetPath = '.' + file;
     }
+    
+    // Try different formats to see which one React Native Web accepts
     const result = { uri: assetPath };
-    console.log('[ASSET] Web production - using wrapped format with relative path:', assetPath);
+    console.log('[ASSET] Web production - input file:', file);
+    console.log('[ASSET] Web production - processed path:', assetPath);
+    console.log('[ASSET] Web production - final result:', result);
+    
+    // Also log the current hostname to verify production detection
+    console.log('[ASSET] Current hostname:', window.location.hostname);
+    console.log('[ASSET] Current port:', window.location.port);
+    
     return result;
   }
   
