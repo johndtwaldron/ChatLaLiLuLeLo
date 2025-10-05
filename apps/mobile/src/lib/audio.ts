@@ -62,6 +62,40 @@ class CodecAudioService {
     }
   ];
 
+  // User interaction sounds (non-codec related)
+  private readonly userSounds: CodecSound[] = [
+    {
+      id: 'rations',
+      name: 'Rations',
+      file: require('../../assets/audio/mgs-rations.mp3'),
+      description: 'MGS rations pickup sound'
+    },
+    {
+      id: 'item_drop',
+      name: 'Item Drop',
+      file: require('../../assets/audio/metal-gear-item-drop.mp3'),
+      description: 'MGS item acquisition sound'
+    },
+    {
+      id: 'reflex_mode',
+      name: 'Reflex Mode',
+      file: require('../../assets/audio/mgs-reflex-mode.mp3'),
+      description: 'MGS reflex mode activation'
+    },
+    {
+      id: 'impressive_snake',
+      name: 'Impressive Snake',
+      file: require('../../assets/audio/metal-gear-solid-impressive-snake.mp3'),
+      description: 'MGS impressive Snake voice clip'
+    },
+    {
+      id: 'if_you_say_so',
+      name: 'If You Say So',
+      file: require('../../assets/audio/mgs2-snake-if-you-say-so.mp3'),
+      description: 'MGS2 Snake voice clip'
+    }
+  ];
+
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
@@ -172,7 +206,9 @@ class CodecAudioService {
 
       // Load sound if not preloaded
       if (!sound) {
-        const codecSound = this.codecSounds.find(s => s.id === soundId);
+        // Search in both codec and user sounds
+        const codecSound = this.codecSounds.find(s => s.id === soundId) || 
+                          this.userSounds.find(s => s.id === soundId);
         if (!codecSound) {
           throw new Error(`Sound not found: ${soundId}`);
         }
@@ -244,9 +280,36 @@ class CodecAudioService {
     await this.updateSettings({ volume: clampedVolume });
   }
 
+  // User interaction methods
+  async playRandomUserSound(): Promise<void> {
+    if (this.userSounds.length === 0) {
+      console.warn('[CODEC AUDIO] No user sounds available');
+      return;
+    }
+
+    try {
+      // Select a random sound from user sounds
+      const randomIndex = Math.floor(Math.random() * this.userSounds.length);
+      const selectedSound = this.userSounds[randomIndex];
+      
+      console.log(`[CODEC AUDIO] Playing random user sound: ${selectedSound.name}`);
+      
+      // Play with reduced volume for UI feedback
+      await this.playSound(selectedSound.id, {
+        volume: this.settings.volume * 0.8, // Slightly quieter for UI sounds
+      });
+    } catch (error) {
+      console.error('[CODEC AUDIO] Failed to play random user sound:', error);
+    }
+  }
+
   // Utility methods
   getAvailableSounds(): CodecSound[] {
     return [...this.codecSounds];
+  }
+
+  getUserSounds(): CodecSound[] {
+    return [...this.userSounds];
   }
 
   async stopAll(): Promise<void> {
@@ -287,6 +350,7 @@ export const codecAudioService = new CodecAudioService();
 export const initializeCodecAudio = () => codecAudioService.initialize();
 export const playCodecStartup = () => codecAudioService.playStartupSequence();
 export const playCodecClose = () => codecAudioService.playSound('codec_close', { volume: codecAudioService.getSettings().volume });
+export const playRandomUserSound = () => codecAudioService.playRandomUserSound();
 export const getCodecAudioSettings = () => codecAudioService.getSettings();
 export const updateCodecAudioSettings = (settings: Partial<AudioSettings>) => 
   codecAudioService.updateSettings(settings);

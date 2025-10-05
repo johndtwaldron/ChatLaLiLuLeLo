@@ -5,6 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Portrait } from '@/components/Portrait';
 import { cycleColonelPortrait } from '@/lib/theme';
+import { playRandomUserSound } from '@/lib/audio';
 
 export interface Rect {
   x: number; // relative to container
@@ -90,10 +91,15 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
     return { x, y };
   };
 
-  // Handle portrait cycling on tap for colonel portraits
-  const handlePortraitCycle = () => {
+  // Handle portrait interactions on tap
+  const handlePortraitInteraction = () => {
     if (type === 'colonel') {
+      // Cycle colonel portrait images
       cycleColonelPortrait();
+    } else if (type === 'user') {
+      // Play random sound effect for user clicks
+      playRandomUserSound();
+      console.log('[DRAGGABLE PORTRAIT] User portrait clicked - playing random sound');
     }
   };
 
@@ -104,9 +110,9 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   const tap = Gesture.Tap()
     .maxDuration(250) // Quick tap only
     .onEnd(() => {
-      // Only cycle if we're not dragging
+      // Only trigger interaction if we're not dragging
       if (!isDragging.value) {
-        runOnJS(handlePortraitCycle)();
+        runOnJS(handlePortraitInteraction)();
       }
     });
 
