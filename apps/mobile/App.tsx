@@ -6,6 +6,7 @@ import { ChatScreen } from './src/features/chat/ChatScreen';
 import { StartupAnimation } from './src/components/StartupAnimation';
 import { CodecStandby } from './src/components/CodecStandby';
 import { initializeCodecAudio } from './src/lib/audio';
+import { parseUrlParams } from './src/lib/basePath';
 
 export default function App() {
   const [showStartup, setShowStartup] = useState(false);
@@ -14,6 +15,15 @@ export default function App() {
   const [shouldPlayCloseSound, setShouldPlayCloseSound] = useState(false);
 
   useEffect(() => {
+    // Set page title for GitHub Pages deployment
+    if (typeof document !== 'undefined') {
+      document.title = '140.85 — ChatLaLiLuLeLo';
+    }
+    
+    // Parse URL parameters for future extensibility
+    const urlParams = parseUrlParams();
+    console.log('[APP] URL parameters:', urlParams);
+    
     // Initialize codec audio system
     const initAudio = async () => {
       try {

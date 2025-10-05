@@ -13,12 +13,36 @@ export default {
     const url = new URL(req.url);
     const requestId = generateRequestId();
     
-    // CORS headers for all responses
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+    // CORS headers with origin-specific allowlist
+    const getCorsHeaders = (origin: string | null = null) => {
+      // Development and GitHub Pages allowed origins
+      const allowedOrigins = [
+        'http://localhost:14085',
+        'http://localhost:8082',
+        'http://127.0.0.1:14085',
+        'https://johndtwaldron.github.io',
+        ...(env.CORS_ORIGINS ? env.CORS_ORIGINS.split(',').map((o: string) => o.trim()) : [])
+      ];
+      
+      // Check if origin is allowed
+      const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : '*';
+      
+      const headers: Record<string, string> = {
+        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+      
+      // Add Vary header when using specific origins
+      if (allowedOrigin !== '*') {
+        headers['Vary'] = 'Origin';
+      }
+      
+      return headers;
     };
+    
+    const origin = req.headers.get('Origin');
+    const corsHeaders = getCorsHeaders(origin);
 
     // Handle preflight requests for any endpoint
     if (req.method === 'OPTIONS') {

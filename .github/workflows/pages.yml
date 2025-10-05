@@ -1,0 +1,70 @@
+name: Deploy Web to GitHub Pages
+
+on:
+  push:
+    branches: [develop-v4]
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install mobile dependencies
+        run: |
+          cd apps/mobile
+          npm ci
+
+      - name: Build web export for GitHub Pages
+        run: |
+          cd apps/mobile
+          npm run export:web
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
+          EXPO_PUBLIC_DEBUG_MODE: "0"
+          BASE_PATH: "/${{ github.event.repository.name }}"
+
+      - name: Create 404.html for SPA routing
+        run: |
+          cp apps/mobile/dist/index.html apps/mobile/dist/404.html
+          echo "Created 404.html for SPA routing support"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/mobile/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

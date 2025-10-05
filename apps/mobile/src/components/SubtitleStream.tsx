@@ -154,8 +154,14 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   const renderMessageText = (message: Message): string => {
     const messageWithMeta = ensureMessageMeta(message);
     
+    // Skip prefix for intro banner messages (system messages with specific content)
+    const isIntroBanner = message.speaker === 'colonel' && 
+      messageWithMeta.meta?.kind === 'system' &&
+      (message.text.includes('Codec connection established') ||
+       message.text.includes('MGS2 MEME Philosophy, Bitcoin, Haywire'));
+    
     // Only add tag prefix for colonel messages, and only if not already present
-    if (message.speaker === 'colonel') {
+    if (message.speaker === 'colonel' && !isIntroBanner) {
       const prefix = createTagFromMeta(messageWithMeta.meta);
       const text = message.text;
       
