@@ -228,3 +228,39 @@ After deployment, you can verify security headers are active by:
 - **develop-v4** → Active development branch
 - **main** → Production branch with all features
 - **GitHub Pages** → Auto-deployed from develop-v4
+
+## ☁️ Cloudflare Workers Deployment
+
+### Manual Deployment Commands
+
+```bash
+# Deploy to development environment (default)
+npm run deploy
+
+# Deploy to production environment
+npm run deploy:production
+
+# Deploy to staging environment
+npm run deploy:staging
+```
+
+### Automatic CI/CD Deployment
+
+Cloudflare Workers automatically deploys from the `develop-v4` branch:
+- **Trigger**: Push to `develop-v4`
+- **Environment**: Production (`chatlalilulelo-backend-prod`)
+- **URL**: https://chatlalilulelo-backend.chatlalilulelo.workers.dev
+
+### Backend API Endpoints
+
+- **Health Check**: `GET /health` - Service status and configuration
+- **Budget Status**: `GET /budget?sessionId=<id>` - Usage statistics and limits
+- **Chat API**: `POST /chat` - Main chat interaction endpoint
+
+### Environment Variables (Secrets)
+
+Required secrets (set via Cloudflare dashboard or `wrangler secret put`):
+- `OPENAI_API_KEY` - OpenAI API access (required)
+- `OPENAI_MODEL` - Model to use (optional, defaults to gpt-4o-mini)
+- `TAVILY_API_KEY` - Search functionality (optional)
+- `CORS_ORIGINS` - Additional allowed origins (optional)
