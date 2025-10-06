@@ -23,17 +23,13 @@ export const DebugToggle: React.FC<DebugToggleProps> = ({ onToggle, enabled }) =
 
   const staticStyles = StyleSheet.create({
     debugButton: {
-      position: 'absolute',
-      top: 20,
-      left: '50%',
-      marginLeft: 250, // Position with proper spacing after THEME button
+      // Remove absolute positioning to participate in flex layout
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderWidth: 2,
       borderRadius: 8,
       minWidth: 100,
       alignItems: 'center',
-      zIndex: 100,
     },
     debugText: {
       fontSize: 14,

@@ -8,6 +8,9 @@ export const MessageSchema = z.object({
   content: z.string(),
 });
 
+export const ModelSchema = z.enum(['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock']);
+export type ModelType = z.infer<typeof ModelSchema>;
+
 export const ChatRequestSchema = z.object({
   mode: ModeSchema,
   messages: z.array(MessageSchema).optional(),
@@ -15,6 +18,7 @@ export const ChatRequestSchema = z.object({
     research: z.boolean().optional(),
     max_tokens: z.number().min(50).max(1000).optional(),
     temperature: z.number().min(0).max(2).optional(),
+    model: ModelSchema.optional(),
   }).optional(),
   client: z.object({
     sessionId: z.string().optional(),

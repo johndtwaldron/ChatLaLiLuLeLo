@@ -66,7 +66,19 @@ export const CodecStandby: React.FC<CodecStandbyProps> = ({ onReactivate, playCl
     startPulse();
   }, [playCloseSound]);
 
-  const handleReactivate = () => {
+  const handleReactivate = async () => {
+    // On web, first user interaction is the time to activate audio context
+    if (typeof window !== 'undefined') {
+      try {
+        // Attempt to play a silent sound to activate web audio context
+        const { initializeCodecAudio } = require('@/lib/audio');
+        await initializeCodecAudio();
+        console.log('[CODEC STANDBY] Web audio context activated on user interaction');
+      } catch (error) {
+        console.warn('[CODEC STANDBY] Failed to activate web audio context:', error);
+      }
+    }
+    
     // Fade out before reactivating
     Animated.timing(fadeAnim, {
       toValue: 0,

@@ -15,12 +15,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait } from '@/lib/theme';
+import { asImg } from '@/lib/asset';
 
-// Import colonel portraits
+// Import colonel portraits - unified compatibility for local and web
 const colonelImages = [
-  require('@/assets/images/colonel.jpeg'),
-  require('@/assets/images/colonel_1.jpg'),
-  require('@/assets/images/colonel_2.jpg'),
+  asImg(require('../../assets/images/colonel.jpeg')),
+  asImg(require('../../assets/images/colonel_1.jpg')),
+  asImg(require('../../assets/images/colonel_2.jpg')),
 ];
 
 interface PortraitProps {
@@ -99,6 +100,11 @@ export const Portrait: React.FC<PortraitProps> = ({
   const renderColonelPortrait = () => {
     const currentPortraitIndex = getCurrentColonelPortrait();
     const currentColonelImage = colonelImages[currentPortraitIndex];
+    
+    // Debug logging for colonel image rendering
+    console.log('[PORTRAIT] Current portrait index:', currentPortraitIndex);
+    console.log('[PORTRAIT] Colonel images array:', colonelImages);
+    console.log('[PORTRAIT] Current colonel image:', currentColonelImage);
     
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>

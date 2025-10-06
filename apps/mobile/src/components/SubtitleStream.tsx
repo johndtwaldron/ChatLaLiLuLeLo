@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   ScrollView,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -12,17 +13,13 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import { getCodecTheme, subscribeToThemeChanges, codecTheme } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentModeKey, getCurrentModelKey, makeTag } from '@/lib/theme';
+import type { Message } from '@/types/chat';
 
 // const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SubtitleStreamProps {
-  messages: Array<{
-    id: string;
-    text: string;
-    speaker: 'colonel' | 'user';
-    timestamp: number;
-  }>;
+  messages: Message[];
   isStreaming?: boolean;
   currentStreamText?: string;
 }
@@ -36,6 +33,8 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
+  const [streamBuffer, setStreamBuffer] = useState('');
+  const bufferTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Subscribe to theme changes
   useEffect(() => {
@@ -48,22 +47,52 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   // const typingProgress = useSharedValue(0);
   const blinkOpacity = useSharedValue(1);
 
-  // Typewriter effect for streaming text
+  // Word-boundary streaming buffer with whitespace flush
   useEffect(() => {
     if (isStreaming && currentStreamText) {
-      const timer = setTimeout(() => {
-        if (charIndex < currentStreamText.length) {
-          setDisplayText(currentStreamText.substring(0, charIndex + 1));
-          setCharIndex(charIndex + 1);
+      const newChar = currentStreamText[charIndex];
+      
+      if (charIndex < currentStreamText.length && newChar) {
+        // Add character to buffer
+        const updatedBuffer = streamBuffer + newChar;
+        setStreamBuffer(updatedBuffer);
+        
+        // Check if we hit whitespace (space, tab, newline) or end of text
+        const isWhitespace = /\s/.test(newChar);
+        const isEndOfText = charIndex === currentStreamText.length - 1;
+        
+        if (isWhitespace || isEndOfText) {
+          // Clear any existing timer
+          if (bufferTimerRef.current) {
+            clearTimeout(bufferTimerRef.current);
+          }
+          
+          // Set timer to flush buffer after delay for better readability
+          bufferTimerRef.current = setTimeout(() => {
+            setDisplayText(prev => prev + updatedBuffer);
+            setStreamBuffer('');
+            setCharIndex(charIndex + 1);
+          }, 40); // 40ms flush delay on whitespace as specified in theme config
+        } else {
+          // For non-whitespace characters, continue immediately
+          const timer = setTimeout(() => {
+            setCharIndex(charIndex + 1);
+          }, 50); // Regular character streaming speed
+          
+          return () => clearTimeout(timer);
         }
-      }, 50); // Adjust speed as needed
-
-      return () => clearTimeout(timer);
+      }
     } else {
+      // Reset state when not streaming
       setDisplayText(currentStreamText);
       setCharIndex(0);
+      setStreamBuffer('');
+      if (bufferTimerRef.current) {
+        clearTimeout(bufferTimerRef.current);
+        bufferTimerRef.current = null;
+      }
     }
-  }, [isStreaming, currentStreamText, charIndex]);
+  }, [isStreaming, currentStreamText, charIndex, streamBuffer]);
 
   // Cursor blink animation
   useEffect(() => {
@@ -115,6 +144,82 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     return speaker === 'colonel' ? currentTheme.colors.primary : currentTheme.colors.secondary;
   };
 
+  // Helper function to create a tag from MsgMeta
+  const createTagFromMeta = (meta: any): string => {
+    if (!meta) return '[JD:gpt-4o-mini]'; // fallback
+    
+    // If it's the new MsgMeta format
+    if ('mode' in meta && 'model' in meta && !('tag' in meta)) {
+      return `[${meta.mode}:${meta.model}]`;
+    }
+    
+    // If it's the old MessageMeta format with tag
+    if ('tag' in meta) {
+      return meta.tag;
+    }
+    
+    return '[JD:gpt-4o-mini]'; // fallback
+  };
+  
+  // Guard rail function to backfill meta for older messages that lack it
+  const ensureMessageMeta = (message: Message) => {
+    if (!message.meta) {
+      // Backfill with current settings as a fallback
+      const currentModeKey = getCurrentModeKey();
+      const currentModelKey = getCurrentModelKey();
+      return {
+        ...message,
+        meta: {
+          mode: currentModeKey === 'haywire' ? 'GW' : 
+                currentModeKey === 'jd' ? 'JD' : 
+                currentModeKey === 'lore' ? 'MGS' :
+                currentModeKey === 'bitcoin' ? 'BTC' : 'JD',
+          model: currentModelKey as 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'mock',
+          at: Date.now(),
+          kind: message.speaker === 'user' ? 'user' : 'ai'
+        }
+      };
+    }
+    return message;
+  };
+
+  // Render message with frozen meta tag (no global state lookups)
+  const renderMessageText = (message: Message): string => {
+    const messageWithMeta = ensureMessageMeta(message);
+    
+    // Skip prefix for intro banner messages (system messages with specific content)
+    const isIntroBanner = message.speaker === 'colonel' && 
+      messageWithMeta.meta?.kind === 'system' &&
+      (message.text.includes('Codec connection established') ||
+       message.text.includes('MGS2 MEME Philosophy, Bitcoin, Haywire'));
+    
+    // Only add tag prefix for colonel messages, and only if not already present
+    if (message.speaker === 'colonel' && !isIntroBanner) {
+      const prefix = createTagFromMeta(messageWithMeta.meta);
+      const text = message.text;
+      
+      // Check if tag is already present to avoid duplication
+      if (!text.startsWith('[') || !text.includes(']:')) {
+        return `${prefix} ${text}`;
+      }
+    }
+    
+    return message.text;
+  };
+
+  // For streaming text, use current mode/model (since it's being created now)
+  const renderStreamingText = (text: string): string => {
+    const currentModeKey = getCurrentModeKey();
+    const currentModelKey = getCurrentModelKey();
+    const currentTag = makeTag(currentModeKey, currentModelKey);
+    
+    // Only add tag if not already present
+    if (!text.startsWith('[') || !text.includes(']:')) {
+      return `${currentTag} ${text}`;
+    }
+    return text;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }]}>
       {/* Header with frequency indicator */}
@@ -145,8 +250,20 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
                 {formatTimestamp(message.timestamp)}
               </Text>
             </View>
-            <Text style={[styles.messageText, { color: getSpeakerColor(message.speaker) }]}>
-              {message.text}
+            <Text style={[
+              styles.messageText, 
+              { 
+                color: getSpeakerColor(message.speaker),
+                // Apply dynamic typography from theme
+                fontFamily: currentTheme.fonts.body,
+                lineHeight: currentTheme.fonts.sizes.body * 1.35,
+                letterSpacing: 0.2,
+                // Apply CRT text shadow conditionally
+                textShadowRadius: currentTheme.crt ? 3 : 0,
+                textShadowColor: currentTheme.crt ? getSpeakerColor(message.speaker) : 'transparent',
+              }
+            ]}>
+              {renderMessageText(message)}
             </Text>
           </View>
         ))}
@@ -163,8 +280,20 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
               </Text>
             </View>
             <View style={styles.streamingContainer}>
-              <Text style={[styles.messageText, { color: currentTheme.colors.primary }]}>
-                {displayText}
+              <Text style={[
+                styles.messageText, 
+                { 
+                  color: currentTheme.colors.primary,
+                  // Apply dynamic typography from theme
+                  fontFamily: currentTheme.fonts.body,
+                  lineHeight: currentTheme.fonts.sizes.body * 1.35,
+                  letterSpacing: 0.2,
+                  // Apply CRT text shadow conditionally
+                  textShadowRadius: currentTheme.crt ? 3 : 0,
+                  textShadowColor: currentTheme.crt ? currentTheme.colors.primary : 'transparent',
+                }
+              ]}>
+                {renderStreamingText(displayText + streamBuffer)}
               </Text>
               <Animated.View style={[styles.cursor, { backgroundColor: currentTheme.colors.primary }, animatedCursorStyle]} />
             </View>
@@ -259,11 +388,20 @@ const styles = StyleSheet.create({
 
   messageText: {
     fontSize: codecTheme.fonts.sizes.body,
-    fontFamily: codecTheme.fonts.mono,
-    lineHeight: 20,
+    // Use new MGS codec font from theme
+    fontFamily: Platform.OS === 'web' ? 
+      '"TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif' : 
+      'System',
+    // Enhanced typography for Priority 6
+    lineHeight: codecTheme.fonts.sizes.body * 1.35, // 1.35 line height ratio
+    letterSpacing: 0.2,
+    // Conditional text shadow based on CRT state (will be updated dynamically)
     textShadowColor: codecTheme.colors.primary,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
+    textShadowRadius: 0, // Will be set conditionally in component
+    // Enhanced text wrapping and breaking
+    // Note: React Native doesn't support all CSS properties directly
+    // These will be applied via style object conditionally
   },
 
   streamingContainer: {

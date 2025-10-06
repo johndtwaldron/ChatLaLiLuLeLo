@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "prod": "concurrently -n EDGE,MOBILE -c blue,green \"cd apps/edge && npx wrangler dev --local --env=development --port=8787\" \"cd apps/mobile && npx expo start --web --port=8082\"",
+    "prod": "concurrently -n EDGE,MOBILE -c blue,green \"cd apps/edge && npx wrangler dev --local --env=development --port=8787\" \"cd apps/mobile && npx expo start --web --port=14085\"",
     "dev": "node scripts/dev-with-ci.js",
     "ci-check": "node scripts/test-ci.js",
     "typecheck": "cd apps/mobile && npm run typecheck",

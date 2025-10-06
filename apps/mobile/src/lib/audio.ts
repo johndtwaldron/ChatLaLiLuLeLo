@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { asAudio } from './asset';
 
 // Audio settings storage keys
 const AUDIO_SETTINGS_KEY = '@codec_audio_settings';
@@ -33,32 +34,66 @@ class CodecAudioService {
     {
       id: 'codec_startup',
       name: 'Codec Send',
-      file: require('../../assets/audio/codec-send.mp3'),
+      file: asAudio(require('../../assets/audio/codec-send.mp3')),
       description: 'MGS codec communication startup sound'
     },
     {
       id: 'codec_lock',
       name: 'Codec Lock',
-      file: require('../../assets/audio/codec_lock.mp3'),
+      file: asAudio(require('../../assets/audio/codec_lock.mp3')),
       description: 'MGS codec frequency lock sound'
     },
     {
       id: 'impressive',
       name: 'Impressive Snake',
-      file: require('../../assets/audio/metal-gear-solid-impressive-snake.mp3'),
+      file: asAudio(require('../../assets/audio/metal-gear-solid-impressive-snake.mp3')),
       description: 'MGS impressive Snake voice clip'
     },
     {
       id: 'kept_waiting',
       name: 'Kept You Waiting',
-      file: require('../../assets/audio/mgs2-snake-kept-you-waiting-huh.mp3'),
+      file: asAudio(require('../../assets/audio/mgs2-snake-kept-you-waiting-huh.mp3')),
       description: 'MGS2 Snake kept you waiting voice clip'
     },
     {
       id: 'codec_close',
       name: 'Codec Close',
-      file: require('../../assets/audio/metal_gear_solid_exit_sound_effect.mp3'),
+      file: asAudio(require('../../assets/audio/metal_gear_solid_exit_sound_effect.mp3')),
       description: 'MGS codec communication close sound'
+    }
+  ];
+
+  // User interaction sounds (non-codec related)
+  private readonly userSounds: CodecSound[] = [
+    {
+      id: 'rations',
+      name: 'Rations',
+      file: asAudio(require('../../assets/audio/mgs-rations.mp3')),
+      description: 'MGS rations pickup sound'
+    },
+    {
+      id: 'item_drop',
+      name: 'Item Drop',
+      file: asAudio(require('../../assets/audio/metal-gear-item-drop.mp3')),
+      description: 'MGS item acquisition sound'
+    },
+    {
+      id: 'reflex_mode',
+      name: 'Reflex Mode',
+      file: asAudio(require('../../assets/audio/mgs-reflex-mode.mp3')),
+      description: 'MGS reflex mode activation'
+    },
+    {
+      id: 'impressive_snake',
+      name: 'Impressive Snake',
+      file: asAudio(require('../../assets/audio/metal-gear-solid-impressive-snake.mp3')),
+      description: 'MGS impressive Snake voice clip'
+    },
+    {
+      id: 'if_you_say_so',
+      name: 'If You Say So',
+      file: asAudio(require('../../assets/audio/mgs2-snake-if-you-say-so.mp3')),
+      description: 'MGS2 Snake voice clip'
     }
   ];
 
@@ -82,15 +117,28 @@ class CodecAudioService {
         // Preload sounds on native platforms
         await this.preloadSounds(['codec_startup', 'codec_lock']);
       } else {
-        // On web, defer preloading until first user interaction
-        console.log('[CODEC AUDIO] Web platform detected - deferring sound preloading');
+        // On web, prepare audio context and defer preloading until first user interaction
+        console.log('[CODEC AUDIO] Web platform detected - preparing web audio context');
+        // Attempt to prepare audio context
+        try {
+          const { sound: testSound } = await Audio.Sound.createAsync(
+            this.codecSounds[0].file,
+            { shouldPlay: false, volume: 0 }
+          );
+          this.sounds.set('_test_', testSound);
+          console.log('[CODEC AUDIO] Web audio context prepared successfully');
+        } catch (webError) {
+          console.warn('[CODEC AUDIO] Web audio preparation failed (will retry on first play):', webError);
+        }
       }
       
       this.isInitialized = true;
       console.log('[CODEC AUDIO] Service initialized successfully');
     } catch (error) {
       console.error('[CODEC AUDIO] Failed to initialize:', error);
-      throw error;
+      // Don't throw error - allow app to continue without audio
+      this.isInitialized = true;
+      console.warn('[CODEC AUDIO] Continuing without audio initialization');
     }
   }
 
@@ -172,7 +220,9 @@ class CodecAudioService {
 
       // Load sound if not preloaded
       if (!sound) {
-        const codecSound = this.codecSounds.find(s => s.id === soundId);
+        // Search in both codec and user sounds
+        const codecSound = this.codecSounds.find(s => s.id === soundId) || 
+                          this.userSounds.find(s => s.id === soundId);
         if (!codecSound) {
           throw new Error(`Sound not found: ${soundId}`);
         }
@@ -244,9 +294,36 @@ class CodecAudioService {
     await this.updateSettings({ volume: clampedVolume });
   }
 
+  // User interaction methods
+  async playRandomUserSound(): Promise<void> {
+    if (this.userSounds.length === 0) {
+      console.warn('[CODEC AUDIO] No user sounds available');
+      return;
+    }
+
+    try {
+      // Select a random sound from user sounds
+      const randomIndex = Math.floor(Math.random() * this.userSounds.length);
+      const selectedSound = this.userSounds[randomIndex];
+      
+      console.log(`[CODEC AUDIO] Playing random user sound: ${selectedSound.name}`);
+      
+      // Play with reduced volume for UI feedback
+      await this.playSound(selectedSound.id, {
+        volume: this.settings.volume * 0.8, // Slightly quieter for UI sounds
+      });
+    } catch (error) {
+      console.error('[CODEC AUDIO] Failed to play random user sound:', error);
+    }
+  }
+
   // Utility methods
   getAvailableSounds(): CodecSound[] {
     return [...this.codecSounds];
+  }
+
+  getUserSounds(): CodecSound[] {
+    return [...this.userSounds];
   }
 
   async stopAll(): Promise<void> {
@@ -287,6 +364,7 @@ export const codecAudioService = new CodecAudioService();
 export const initializeCodecAudio = () => codecAudioService.initialize();
 export const playCodecStartup = () => codecAudioService.playStartupSequence();
 export const playCodecClose = () => codecAudioService.playSound('codec_close', { volume: codecAudioService.getSettings().volume });
+export const playRandomUserSound = () => codecAudioService.playRandomUserSound();
 export const getCodecAudioSettings = () => codecAudioService.getSettings();
 export const updateCodecAudioSettings = (settings: Partial<AudioSettings>) => 
   codecAudioService.updateSettings(settings);

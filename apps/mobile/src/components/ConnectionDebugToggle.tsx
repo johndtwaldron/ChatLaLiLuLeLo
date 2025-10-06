@@ -23,17 +23,13 @@ export const ConnectionDebugToggle: React.FC<ConnectionDebugToggleProps> = ({ on
 
   const staticStyles = StyleSheet.create({
     connectionDebugButton: {
-      position: 'absolute',
-      top: 20,
-      left: '50%',
-      marginLeft: 420, // Position with proper spacing after DEBUG button
+      // Remove absolute positioning to participate in flex layout
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderWidth: 2,
       borderRadius: 8,
       minWidth: 120,
       alignItems: 'center',
-      zIndex: 100,
     },
     connectionDebugText: {
       fontSize: 12,

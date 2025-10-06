@@ -42,11 +42,7 @@ export const ThemeCycleToggle: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 20,
-    left: '50%',
-    marginLeft: 100, // Move further right to prevent overlap
-    zIndex: 100,
+    // Remove absolute positioning to participate in flex layout
   },
   
   button: {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, getCurrentThemeName } from '@/lib/theme';
 import { CodecAudioControls } from './CodecAudioControls';
 
 interface DebugInfo {
@@ -31,6 +31,7 @@ interface DebugPanelProps {
 
 export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  const [currentThemeName, setCurrentThemeName] = useState(getCurrentThemeName());
   const [showAudioControls, setShowAudioControls] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     api: true,
@@ -42,6 +43,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
       setCurrentTheme(getCodecTheme());
+      setCurrentThemeName(getCurrentThemeName()); // Update theme name when theme changes
     });
     return unsubscribe;
   }, []);
@@ -193,7 +195,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787',
       openaiKeyPresent: true,
       currentMode: 'JD [Colonel AI]',
-      currentTheme: 'current_theme', // Theme determined dynamically
+      currentTheme: currentThemeName, // Use reactive theme name
     },
     performance: {
       averageResponseTime: 980,

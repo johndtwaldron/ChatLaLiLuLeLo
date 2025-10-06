@@ -53,15 +53,11 @@ export const ModeToggle: React.FC = () => {
 
 const styles = StyleSheet.create({
   toggle: {
-    position: 'absolute',
-    top: 20,
-    left: '50%',
-    marginLeft: -200, // Move further left to prevent overlap
+    // Remove absolute positioning to participate in flex layout
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 2,
     borderRadius: 4,
-    zIndex: 10,
   },
   
   toggleText: {

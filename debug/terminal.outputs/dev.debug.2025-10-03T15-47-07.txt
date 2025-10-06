@@ -1,0 +1,24 @@
+[2025-10-03T15:47:07.024Z] 🚀 ChatLaLiLuLeLo Enhanced Development Startup
+[2025-10-03T15:47:07.028Z] 📝 Debug log: debug\terminal.outputs\dev.debug.2025-10-03T15-47-07.txt
+[2025-10-03T15:47:07.029Z] 
+[2025-10-03T15:47:07.029Z] ⚡ Phase 0: System Health Check...
+[2025-10-03T15:47:07.490Z] ⚠️  Low disk space: 250MB (0.24GB) free on C: drive
+[2025-10-03T15:47:07.490Z] 💡 Consider cleaning up files soon
+[2025-10-03T15:47:07.494Z] ✅ Default ports available (8082, 8787)
+[2025-10-03T15:47:07.494Z] ✅ System health check completed
+[2025-10-03T15:47:07.494Z] 📋 Phase 1: Checking Project Structure...
+[2025-10-03T15:47:07.495Z] ✅ Project structure validated
+[2025-10-03T15:47:07.505Z] 🛡️ Phase 2: Running Code Linting...
+[2025-10-03T15:47:10.391Z] ❌ Linting failed:
+[2025-10-03T15:47:10.392Z] Command failed: npm run lint
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path C:\c.projects\ChatLaLiLuLeLo.JDW\apps\mobile
+npm error workspace @chatlalilulelo/mobile@0.1.0
+npm error location C:\c.projects\ChatLaLiLuLeLo.JDW\apps\mobile
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c eslint . --ext .ts,.tsx
+
+[2025-10-03T15:47:10.392Z] 
+[2025-10-03T15:47:10.392Z] 💡 Quick fix: Run `npm run lint:fix` to auto-fix many issues
+[2025-10-03T15:47:10.392Z] 🔧 Then run `npm run dev` again

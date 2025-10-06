@@ -21,7 +21,7 @@ if ([string]::IsNullOrEmpty($PSScriptRoot)) {
     $ScriptDir = $PSScriptRoot
     $ProjectRoot = Split-Path -Parent $ScriptDir
 }
-$FrontendUrl = "http://localhost:8082"  # Correct Expo web port
+$FrontendUrl = "http://localhost:14085"  # Correct Expo web port
 $BackendUrl = "http://localhost:8787"   # Correct Wrangler dev port
 $MaxStartupWait = 60
 $ProcessCheckInterval = 3

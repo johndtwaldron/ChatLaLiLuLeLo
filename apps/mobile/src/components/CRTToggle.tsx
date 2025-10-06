@@ -39,11 +39,7 @@ export const CRTToggle: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 20,
-    left: '50%',
-    marginLeft: -50, // Adjust center position slightly
-    zIndex: 100,
+    // Remove absolute positioning to participate in flex layout
   },
   
   button: {
