@@ -283,21 +283,52 @@ async function runDevWithValidation() {
       shell: true
     });
 
-    // Handle process cleanup
-    process.on('SIGINT', () => {
+    // Handle process cleanup with enhanced Windows support
+    let isShuttingDown = false;
+    
+    const gracefulShutdown = (signal = 'SIGINT') => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      
       logAndSave('', 'reset');
-      logAndSave('🛑 Shutting down development servers...', 'yellow');
+      logAndSave(`🛑 Received ${signal}, shutting down development servers...`, 'yellow');
       saveLogBuffer();
-      devProcess.kill('SIGINT');
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', () => {
-      logAndSave('🛑 Received SIGTERM, shutting down...', 'yellow');
-      saveLogBuffer();
-      devProcess.kill('SIGTERM');
-      process.exit(0);
-    });
+      
+      // Kill child processes more aggressively on Windows
+      if (process.platform === 'win32') {
+        try {
+          // Try to kill the entire process tree
+          require('child_process').execSync(`taskkill /pid ${devProcess.pid} /t /f`, { stdio: 'ignore' });
+        } catch (e) {
+          // Fallback to normal kill if taskkill fails
+          devProcess.kill('SIGKILL');
+        }
+      } else {
+        devProcess.kill(signal);
+      }
+      
+      // Give processes a moment to clean up
+      setTimeout(() => {
+        logAndSave('✅ Shutdown complete', 'green');
+        process.exit(0);
+      }, 1000);
+    };
+    
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    
+    // Windows-specific cleanup
+    if (process.platform === 'win32') {
+      process.on('SIGBREAK', () => gracefulShutdown('SIGBREAK'));
+      
+      // Handle Ctrl+C more gracefully on Windows
+      require('readline').createInterface({
+        input: process.stdin,
+        output: process.stdout
+      }).on('SIGINT', () => {
+        gracefulShutdown('SIGINT');
+      });
+    }
 
     devProcess.on('close', (code) => {
       logAndSave(`🔚 Development servers exited with code ${code}`, 'gray');

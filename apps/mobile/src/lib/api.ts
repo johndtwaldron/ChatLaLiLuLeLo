@@ -56,6 +56,16 @@ export function streamReply(
     body: JSON.stringify(request)
   }).then(async (response) => {
     if (!response.ok) {
+      // Try to extract error details from response body
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+      } catch (jsonError) {
+        // Fallback to status-based error
+      }
+      
       throw new Error(`API error: ${response.status}`);
     }
 
