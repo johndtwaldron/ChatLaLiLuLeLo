@@ -84,11 +84,11 @@ jobs:
           
           # Create security headers meta tags
           SECURITY_HEADERS_META='<meta http-equiv="Content-Security-Policy" content="default-src '\''self'\'' https: data:; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' https: data:; style-src '\''self'\'' '\''unsafe-inline'\'' https: data:; img-src '\''self'\'' https: data: blob:; font-src '\''self'\'' https: data:; connect-src '\''self'\'' https: wss: ws:; media-src '\''self'\'' https: data: blob:; object-src '\''none'\'' frame-src '\''none'\''">
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="DENY">
-<meta http-equiv="X-XSS-Protection" content="1; mode=block">
-<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-<meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=(), usb=(), vr=(), accelerometer=(), gyroscope=(), magnetometer=(), fullscreen=(self)">';
+          <meta http-equiv="X-Content-Type-Options" content="nosniff">
+          <meta http-equiv="X-Frame-Options" content="DENY">
+          <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+          <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+          <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=(), usb=(), vr=(), accelerometer=(), gyroscope=(), magnetometer=(), fullscreen=(self)">'
           
           # Inject security headers after opening <head> tag in index.html
           if [ -f "index.html" ]; then
