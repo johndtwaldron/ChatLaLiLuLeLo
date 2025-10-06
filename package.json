@@ -18,7 +18,10 @@
     "e2e": "cd apps/mobile && npm run e2e",
     "build:mobile": "cd apps/mobile && npm run build",
     "build:edge": "cd edge/api && npm run build",
-    "build-launcher": "powershell -ExecutionPolicy Bypass -Command \"Import-Module ps2exe; ps2exe -InputFile './scripts/launcher.ps1' -OutputFile './dist/ChatLaLiLuLeLo-Launcher.exe' -Title 'ChatLaLiLuLeLo MGS2 Codec System' -Description 'MGS2 Codec Interface - Desktop Launcher v3' -Company 'JDW Development' -Product 'ChatLaLiLuLeLo Codec Interface' -Version '3.0.0.0' -STA\""
+    "build-launcher": "powershell -ExecutionPolicy Bypass -Command \"Import-Module ps2exe; ps2exe -InputFile './scripts/launcher.ps1' -OutputFile './dist/ChatLaLiLuLeLo-Launcher.exe' -Title 'ChatLaLiLuLeLo MGS2 Codec System' -Description 'MGS2 Codec Interface - Desktop Launcher v3' -Company 'JDW Development' -Product 'ChatLaLiLuLeLo Codec Interface' -Version '3.0.0.0' -STA\"",
+    "deploy": "cd apps/edge && npx wrangler deploy",
+    "deploy:production": "cd apps/edge && npx wrangler deploy --env=production",
+    "deploy:staging": "cd apps/edge && npx wrangler deploy --env=staging"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",
