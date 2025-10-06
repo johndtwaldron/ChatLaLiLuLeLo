@@ -77,6 +77,39 @@ jobs:
         run: |
           cp apps/mobile/dist/index.html apps/mobile/dist/404.html
           echo "Created 404.html for SPA routing support"
+          
+      - name: Inject security headers into HTML
+        run: |
+          cd apps/mobile/dist
+          
+          # Create security headers meta tags
+          SECURITY_HEADERS_META='<meta http-equiv="Content-Security-Policy" content="default-src '\''self'\'' https: data:; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' https: data:; style-src '\''self'\'' '\''unsafe-inline'\'' https: data:; img-src '\''self'\'' https: data: blob:; font-src '\''self'\'' https: data:; connect-src '\''self'\'' https: wss: ws:; media-src '\''self'\'' https: data: blob:; object-src '\''none'\'' frame-src '\''none'\''">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="X-XSS-Protection" content="1; mode=block">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=(), usb=(), vr=(), accelerometer=(), gyroscope=(), magnetometer=(), fullscreen=(self)">';
+          
+          # Inject security headers after opening <head> tag in index.html
+          if [ -f "index.html" ]; then
+            # Add security headers after the opening head tag
+            sed -i "s|<head>|<head>\n$SECURITY_HEADERS_META|" index.html
+            echo "Injected security headers into index.html"
+            
+            # Verify injection worked
+            echo "Security headers verification:"
+            grep -o 'Content-Security-Policy\|X-Content-Type-Options\|X-Frame-Options' index.html | head -3
+          else
+            echo "Warning: index.html not found"
+          fi
+          
+          # Also inject into 404.html
+          if [ -f "404.html" ]; then
+            sed -i "s|<head>|<head>\n$SECURITY_HEADERS_META|" 404.html
+            echo "Injected security headers into 404.html"
+          else
+            echo "Warning: 404.html not found"
+          fi
 
       - name: Inject runtime API URL
         run: |

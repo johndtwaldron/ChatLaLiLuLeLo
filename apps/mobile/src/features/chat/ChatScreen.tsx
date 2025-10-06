@@ -24,6 +24,7 @@ import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getCurrentModel
 import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
 import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
 import { playCodecClose } from '@/lib/audio';
+import { extractUserFriendlyError } from '@/lib/security';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -269,14 +270,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           setBudgetRefreshTrigger(prev => prev + 1);
         },
         (error) => {
-          // Handle errors
+          // Handle errors with user-friendly messages
           console.error('Stream error:', error);
+          
+          const userFriendlyError = extractUserFriendlyError({ message: error });
           
           const errorTimestamp = Date.now();
           const errorRandomSuffix = Math.random().toString(36).substring(7);
           const errorMessage: Message = {
             id: `colonel-${errorTimestamp}-${errorRandomSuffix}`,
-            text: `[ERROR] Connection failed: ${error}`,
+            text: `[ERROR] ${userFriendlyError}`,
             speaker: 'colonel',
             timestamp: errorTimestamp,
             meta, // use the SAME meta that was stamped for the user message

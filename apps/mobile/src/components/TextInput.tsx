@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
+import { validateMessageForSubmission } from '@/lib/security';
 
 interface TextInputProps {
   onSendMessage: (message: string) => void;
@@ -22,6 +23,8 @@ export const TextInput: React.FC<TextInputProps> = ({
 }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const [inputText, setInputText] = useState('');
+  const [validationFeedback, setValidationFeedback] = useState<string>('');
+  const [isValidInput, setIsValidInput] = useState(true);
 
   // Subscribe to theme changes
   useEffect(() => {
@@ -30,12 +33,35 @@ export const TextInput: React.FC<TextInputProps> = ({
     });
     return unsubscribe;
   }, []);
+  
+  // Validate input in real-time and provide feedback
+  useEffect(() => {
+    if (inputText.trim()) {
+      const validation = validateMessageForSubmission(inputText);
+      setIsValidInput(validation.canSend);
+      setValidationFeedback(validation.userFeedback || '');
+    } else {
+      setIsValidInput(true);
+      setValidationFeedback('');
+    }
+  }, [inputText]);
 
   const handleSend = () => {
-    if (inputText.trim()) {
-      onSendMessage(inputText.trim());
-      setInputText(''); // Clear input after sending
+    if (!inputText.trim()) return;
+    
+    // Validate message before sending
+    const validation = validateMessageForSubmission(inputText);
+    
+    if (!validation.canSend) {
+      // Show validation error feedback
+      setValidationFeedback(validation.userFeedback || 'Please check your message and try again');
+      return;
     }
+    
+    // Send the sanitized message
+    onSendMessage(validation.sanitizedMessage);
+    setInputText(''); // Clear input after sending
+    setValidationFeedback(''); // Clear any validation feedback
   };
 
   const handleKeyPress = (event: any) => {
@@ -111,13 +137,33 @@ export const TextInput: React.FC<TextInputProps> = ({
         </TouchableOpacity>
       </View>
       
+      {/* Validation Feedback */}
+      {validationFeedback && (
+        <View style={[
+          styles.feedbackBar, 
+          { 
+            backgroundColor: isValidInput ? currentTheme.colors.surface : '#2a1f1f',
+            borderColor: isValidInput ? '#d4af37' : '#cc3030'
+          }
+        ]}>
+          <Text style={[
+            styles.feedbackText, 
+            { 
+              color: isValidInput ? '#d4af37' : '#ff6b6b',
+            }
+          ]}>
+            {validationFeedback}
+          </Text>
+        </View>
+      )}
+      
       {/* Status Indicator */}
       <View style={[styles.statusBar, { backgroundColor: currentTheme.colors.surface }]}>
         <Text style={[styles.statusText, { color: currentTheme.colors.textSecondary }]}>
           [INPUT MODE: ACTIVE] [SHIFT+ENTER: NEW LINE]
         </Text>
         <Text style={[styles.statusText, { color: currentTheme.colors.textSecondary }]}>
-          {inputText.length}/1000 CHARS | {(inputText.match(/\n/g) || []).length + 1} LINES
+          {inputText.length}/2000 CHARS | {(inputText.match(/\n/g) || []).length + 1} LINES
         </Text>
       </View>
     </KeyboardAvoidingView>
@@ -183,5 +229,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'monospace',
     letterSpacing: 0.5,
+  },
+  
+  feedbackBar: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderTopWidth: 0, // Connect to input container
+  },
+  
+  feedbackText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
 });

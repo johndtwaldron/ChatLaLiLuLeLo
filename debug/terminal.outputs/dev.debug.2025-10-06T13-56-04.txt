@@ -1,0 +1,27 @@
+[2025-10-06T13:56:04.817Z] 🚀 ChatLaLiLuLeLo Enhanced Development Startup
+[2025-10-06T13:56:04.820Z] 📝 Debug log: debug\terminal.outputs\dev.debug.2025-10-06T13-56-04.txt
+[2025-10-06T13:56:04.821Z] 
+[2025-10-06T13:56:04.822Z] ⚡ Phase 0: System Health Check...
+[2025-10-06T13:56:05.277Z] ⚠️  Low disk space: 150MB (0.15GB) free on C: drive
+[2025-10-06T13:56:05.278Z] 💡 Consider cleaning up files soon
+[2025-10-06T13:56:05.281Z] ✅ Default ports available (14085, 8787)
+[2025-10-06T13:56:05.281Z] ✅ System health check completed
+[2025-10-06T13:56:05.282Z] 📋 Phase 1: Checking Project Structure...
+[2025-10-06T13:56:05.282Z] ✅ Project structure validated
+[2025-10-06T13:56:05.293Z] 🛡️ Phase 2: Running Code Linting...
+[2025-10-06T13:56:08.444Z] ✅ Code linting passed
+[2025-10-06T13:56:08.444Z] 🔍 Phase 3: Running TypeScript Validation...
+[2025-10-06T13:56:22.195Z] ✅ TypeScript validation passed
+[2025-10-06T13:56:22.206Z] 
+[2025-10-06T13:56:22.206Z] 🎉 All validation checks passed!
+[2025-10-06T13:56:22.206Z] 🚀 Starting development servers...
+[2025-10-06T13:56:22.206Z] 
+[2025-10-06T13:56:22.207Z] 📡 Launching backend (Cloudflare Workers) and frontend (Expo)...
+[2025-10-06T13:56:22.207Z] 🔗 Frontend will be available at: http://localhost:14085
+[2025-10-06T13:56:22.207Z] 🔗 Backend API will be available at: http://localhost:8787
+[2025-10-06T13:56:22.207Z] 
+[2025-10-06T13:56:22.207Z] 💡 To stop servers: Ctrl+C
+[2025-10-06T13:56:22.207Z] 📝 This session logged to: debug\terminal.outputs\dev.debug.2025-10-06T13-56-04.txt
+[2025-10-06T13:56:22.216Z] 
+[2025-10-06T13:59:26.495Z] 
+[2025-10-06T13:59:26.496Z] 🛑 Shutting down development servers...

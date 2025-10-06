@@ -4,6 +4,7 @@ import { webSearch, formatResearchContext, buildSearchQuery } from '../lib/searc
 import { ChatRequestSchema } from '../lib/schema';
 import { logInfo, logError, logWarning, generateRequestId, redactApiKey } from '../lib/logger';
 import { RateLimiter, createBudgetWarning, DEFAULT_CONFIG } from '../lib/rate-limiter';
+import { validateAndSanitizeInput, SAFE_ERROR_MESSAGES, logSecurityEvent } from '../lib/security';
 
 // Global rate limiter instance
 const rateLimiter = new RateLimiter(DEFAULT_CONFIG);
@@ -135,8 +136,71 @@ export default {
 
       const { mode, messages = [], options = {}, client = {} } = parseResult.data;
       
-      // Get last user message for rate limiting
-      const lastUserMessage = [...messages].reverse()
+      // Get client IP for security logging
+      const clientIP = req.headers.get('CF-Connecting-IP') || 
+                      req.headers.get('X-Forwarded-For') || 
+                      'unknown';
+      
+      // Security validation for all user messages
+      const sanitizedMessages = [];
+      let securityBlocked = false;
+      let securityReason = '';
+      
+      for (const message of messages) {
+        if (message.role === 'user') {
+          const securityResult = validateAndSanitizeInput(message.content, clientIP);
+          
+          if (securityResult.blocked) {
+            securityBlocked = true;
+            securityReason = securityResult.reason || 'security_violation';
+            
+            logWarning('Security validation blocked message', {
+              requestId,
+              reason: securityResult.reason,
+              warnings: securityResult.warnings,
+              clientIP,
+              sessionId: client.sessionId
+            });
+            
+            break;
+          }
+          
+          // Log security warnings (non-blocking)
+          if (securityResult.warnings.length > 0) {
+            logInfo('Security warnings for message', {
+              requestId,
+              warnings: securityResult.warnings,
+              clientIP
+            });
+          }
+          
+          sanitizedMessages.push({
+            ...message,
+            content: securityResult.sanitized
+          });
+        } else {
+          sanitizedMessages.push(message);
+        }
+      }
+      
+      // Return security error if any message was blocked
+      if (securityBlocked) {
+        const errorKey = securityReason === 'prompt_injection' ? 'injection' : 'suspicious';
+        
+        return new Response(JSON.stringify({
+          error: SAFE_ERROR_MESSAGES[errorKey as keyof typeof SAFE_ERROR_MESSAGES],
+          reason: 'security_violation'
+        }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      // Get last user message for rate limiting (use sanitized version)
+      const lastUserMessage = [...sanitizedMessages].reverse()
         .find(m => m.role === 'user')?.content ?? '';
       
       // Validate and determine model to use
@@ -206,7 +270,7 @@ export default {
       // Research context (optional)
       let researchBlock = '';
       if (options.research) {
-        const lastUserMessage = [...messages].reverse()
+        const lastUserMessage = [...sanitizedMessages].reverse()
           .find(m => m.role === 'user')?.content ?? '';
         
         if (lastUserMessage) {
@@ -239,7 +303,7 @@ export default {
       const stream = await streamChat({
         openai,
         systemPrompt,
-        messages,
+        messages: sanitizedMessages,
         model: validatedModel,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.max_tokens ?? 600,
