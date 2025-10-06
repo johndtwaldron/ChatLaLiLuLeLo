@@ -1,4 +1,4 @@
-# ChatLaLiLuLeLo v3 Development Guide
+# ChatLaLiLuLeLo v4 Development Guide
 
 ## 🚀 Quick Start
 
@@ -172,3 +172,59 @@ The repository includes comprehensive GitHub Actions CI that:
 4. **Servers** → Only start when everything is valid
 
 Happy coding! 🚀
+
+---
+
+## 🔒 V4 Security Enhancements
+
+### Web Deployment Security
+
+**🛡️ Multi-Layer Security Hardening Implemented:**
+
+#### Security Headers
+- **Content Security Policy (CSP)**: Prevents XSS attacks with strict resource controls
+- **X-Frame-Options**: DENY - Prevents clickjacking attacks
+- **X-Content-Type-Options**: nosniff - Prevents MIME-type confusion attacks
+- **X-XSS-Protection**: Enables browser XSS filtering
+- **Referrer-Policy**: strict-origin-when-cross-origin - Controls referrer information
+- **Permissions-Policy**: Restricts access to sensitive APIs (geolocation, camera, etc.)
+
+#### GitHub Pages Optimization
+- **Asset Path Fixing**: Converts absolute paths to relative for proper loading
+- **SPA Routing Support**: 404.html fallback for single-page application routing
+- **Runtime API Configuration**: Dynamic API URL injection for environment flexibility
+- **Page Title Enhancement**: Updated to "140.85 — ChatLaLiLuLeLo" for thematic consistency
+
+#### CI/CD Pipeline
+- **Automated Security Headers**: Injected during build process
+- **Asset Verification**: Automatic checking of audio/image assets
+- **Build Validation**: Comprehensive testing before deployment
+- **GitHub Actions Integration**: Fully automated deployment to GitHub Pages
+
+### Web Export Commands
+
+```bash
+# Development export
+cd apps/mobile
+npm run export:web
+
+# Production deployment (GitHub Pages)
+# Automatically triggered on push to develop-v4 branch
+```
+
+### Security Features Verification
+
+After deployment, you can verify security headers are active by:
+1. **Browser DevTools**: Check Network tab for response headers
+2. **Security Testing Tools**: Use online header scanners
+3. **Console Inspection**: No CSP violations should appear
+
+**Archive Tags Available:**
+- `v2-archive` → v2 final state
+- `v3-archive` → v3 final state  
+- `v4-005-security-hardening-complete` → v4 security implementation
+
+### Branch Strategy
+- **develop-v4** → Active development branch
+- **main** → Production branch with all features
+- **GitHub Pages** → Auto-deployed from develop-v4
