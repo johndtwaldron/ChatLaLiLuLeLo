@@ -166,12 +166,33 @@ export const getCodecTheme = () => {
   
   fonts: {
     mono: 'Courier New', // Monospace for authentic terminal feel
+    // MGS codec font family with fallbacks
+    codec: '"TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    // Enhanced typography for readability
+    body: '"TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif',
     sizes: {
       caption: 12,
       body: 14,
       subtitle: 16,
       title: 18,
       header: 24,
+    },
+  },
+  
+  // Enhanced typography configuration for Priority 6
+  typography: {
+    // CSS properties for improved text handling
+    whiteSpace: 'pre-wrap', // Preserve \n, wrap long tokens/URLs
+    wordBreak: 'break-word', // Break long words
+    overflowWrap: 'anywhere', // Break anywhere if needed
+    lineHeight: 1.35, // Optimal readability
+    letterSpacing: 0.2, // Subtle character spacing
+    // CRT text shadow when enabled
+    textShadow: crtEnabled ? '0 0 3px currentColor' : 'none',
+    // Word-boundary streaming configuration
+    streamBuffer: {
+      flushDelay: 40, // 33-50ms flush on whitespace
+      wordBoundary: /\s+/, // Whitespace regex for word boundaries
     },
   },
   

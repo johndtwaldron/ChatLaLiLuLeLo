@@ -144,8 +144,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     fontSize: 14,
-    fontFamily: 'monospace',
+    // Use new MGS codec font
+    fontFamily: Platform.OS === 'web' ? 
+      '"TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif' : 
+      'System',
     textAlign: 'left',
+    // Enhanced typography
+    lineHeight: 18.9, // 14 * 1.35
+    letterSpacing: 0.2,
     // Removed fixed height for multiline support
   },
 
