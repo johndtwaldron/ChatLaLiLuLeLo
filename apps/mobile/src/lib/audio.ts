@@ -365,6 +365,15 @@ export const initializeCodecAudio = () => codecAudioService.initialize();
 export const playCodecStartup = () => codecAudioService.playStartupSequence();
 export const playCodecClose = () => codecAudioService.playSound('codec_close', { volume: codecAudioService.getSettings().volume });
 export const playRandomUserSound = () => codecAudioService.playRandomUserSound();
+
+// Lightning donation specific sound
+export const playRationsSound = () => {
+  console.log('[CODEC AUDIO] Playing rations sound for Lightning donation copy');
+  return codecAudioService.playSound('rations', { 
+    volume: codecAudioService.getSettings().volume * 0.8 // Slightly quieter for UI feedback
+  });
+};
+
 export const getCodecAudioSettings = () => codecAudioService.getSettings();
 export const updateCodecAudioSettings = (settings: Partial<AudioSettings>) => 
   codecAudioService.updateSettings(settings);

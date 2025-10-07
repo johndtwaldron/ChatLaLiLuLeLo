@@ -82,3 +82,7 @@ secrets.json
 api-keys.json
 dev.vars
 .dev.vars
+
+# Large archive files
+*.zip
+c.ChatLaLiLuLeLo.JDW.zip

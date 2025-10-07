@@ -113,6 +113,7 @@ let debugEnabled = false;
 
 // Colonel portrait cycling state
 let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
+let currentBitcoinColonelPortrait = 0; // 0-4 for the five Bitcoin portraits (default to Sayloresque)
 
 // Model selection system
 export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
@@ -342,15 +343,30 @@ export const isDebugEnabled = () => debugEnabled;
 
 // Colonel portrait cycling functions
 export const cycleColonelPortrait = () => {
-  currentColonelPortrait = (currentColonelPortrait + 1) % 3; // 0, 1, 2
+  if (currentMode === 'bitcoin') {
+    // Cycle through Bitcoin colonel portraits (5 images)
+    currentBitcoinColonelPortrait = (currentBitcoinColonelPortrait + 1) % 5; // 0-4
+  } else {
+    // Cycle through regular colonel portraits
+    currentColonelPortrait = (currentColonelPortrait + 1) % 3; // 0, 1, 2
+  }
   notifyThemeChange(); // Notify components of the portrait change
 };
 
 export const getCurrentColonelPortrait = () => currentColonelPortrait;
 
+export const getCurrentBitcoinColonelPortrait = () => currentBitcoinColonelPortrait;
+
 export const setColonelPortrait = (index: number) => {
   if (index >= 0 && index <= 2) {
     currentColonelPortrait = index;
+    notifyThemeChange();
+  }
+};
+
+export const setBitcoinColonelPortrait = (index: number) => {
+  if (index >= 0 && index <= 4) {
+    currentBitcoinColonelPortrait = index;
     notifyThemeChange();
   }
 };
