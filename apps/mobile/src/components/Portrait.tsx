@@ -24,13 +24,13 @@ const colonelImages = [
   asImg(require('../../assets/images/colonel_2.jpg')),
 ];
 
-// Import Bitcoin colonel portraits - using working fallback images
+// Import Bitcoin colonel portraits - real Bitcoin images
 const bitcoinColonelImages = [
-  asImg(require('../../assets/images/colonel.jpeg')), // Fallback 0 - Sayloresque (original)
-  asImg(require('../../assets/images/colonel_1.jpg')), // Fallback 1 - Keiseresque
-  asImg(require('../../assets/images/colonel_2.jpg')), // Fallback 2 - Miner 
-  asImg(require('../../assets/images/colonel.jpeg')), // Fallback 3 - S3
-  asImg(require('../../assets/images/colonel_1.jpg')), // Fallback 4 - GPT
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Sayloresque.png')), // 0 - Sayloresque (Michael Saylor style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Keiseresque.png')), // 1 - Keiseresque (Max Keiser style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Miner.png')), // 2 - Miner (Bitcoin miner style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.S3.png')), // 3 - S3 (Satoshi style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.png')), // 4 - GPT (General Bitcoin maximalist)
 ];
 
 interface PortraitProps {
