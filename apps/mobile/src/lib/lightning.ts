@@ -74,7 +74,7 @@ export function formatLightningAddress(address: string): string {
 
 /**
  * Generates the data for QR code from lightning address
- * For lightning addresses, we typically use "lightning:" prefix
+ * Uses lightning: URI scheme for proper wallet detection
  */
 export function getLightningQRData(address: string): string {
   const validation = validateLightningAddress(address);
@@ -82,9 +82,9 @@ export function getLightningQRData(address: string): string {
     throw new Error(`Invalid lightning address: ${validation.error}`);
   }
   
-  // For lightning addresses, use the address directly
-  // Some wallets support "lightning:" prefix, others just the address
-  return validation.address.full;
+  // Use lightning: URI scheme for proper wallet recognition
+  // This ensures mobile wallets detect it as a Lightning payment instead of email
+  return `lightning:${validation.address.full}`;
 }
 
 /**
@@ -132,7 +132,7 @@ export function getQRCodeSize(context: 'portrait' | 'modal' | 'fullscreen' = 'po
  * Default lightning address configuration
  * This will be replaced with user's actual lightning address
  */
-export const DEFAULT_LIGHTNING_ADDRESS = 'donations@example.com';
+export const DEFAULT_LIGHTNING_ADDRESS = 'johndtwaldron@strike.me';
 
 /**
  * Lightning donation configuration

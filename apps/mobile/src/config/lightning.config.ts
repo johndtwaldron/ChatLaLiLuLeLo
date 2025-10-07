@@ -15,7 +15,7 @@ export const LIGHTNING_DONATION_CONFIG = {
    * - 'you@blink.sv' (Blink)
    * - 'you@lnurl.com' (LNURL services)
    */
-  lightningAddress: 'donations@example.com', // 👈 CHANGE THIS TO YOUR LIGHTNING ADDRESS
+  lightningAddress: 'johndtwaldron@strike.me', // ✅ YOUR STRIKE LIGHTNING ADDRESS
   
   /**
    * Display settings for the QR code
@@ -43,7 +43,7 @@ export const LIGHTNING_DONATION_CONFIG = {
     copyError: '❌ Failed to copy address',
     invalidAddress: '⚠️ Invalid Lightning address',
     bitcoinModeHint: 'Switch to BTC mode to see Lightning donations',
-    donationMessage: 'Please scan the QR code to explore how to donate satoshis to this project and its development team to keep fighting the La Li Lu Le Lo',
+    donationMessage: 'Support ChatLaLiLuLeLo development with Bitcoin! Scan to send sats via Lightning ⚡',
   },
   
   /**
