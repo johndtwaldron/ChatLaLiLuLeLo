@@ -481,7 +481,67 @@ jobs:
           [ -f deployed_page.html ] && echo "deployed_page.html" >> artifact_files.txt
           [ -f deployed_env.js ] && echo "deployed_env.js" >> artifact_files.txt
 
-      - name: 📁 Upload deployment validation artifacts
+      - name: 📤 Save build failure logs
+        uses: actions/upload-artifact@v4
+        if: failure() && needs.build.result == 'failure'
+        with:
+          name: pages-build-failure-logs
+          path: |
+            apps/mobile/npm-debug.log*
+            apps/mobile/.npm/_logs/*.log
+            apps/mobile/dist/
+            health_check.json
+            cors_check.txt
+            lightning_validation.js
+            security_validation.js
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: 📊 Generate comprehensive failure report
+        if: failure()
+        run: |
+          echo "📊 GitHub Pages Deployment Failure Report" > pages-failure-report.md
+          echo "Timestamp: $(date -u)" >> pages-failure-report.md
+          echo "Branch: ${{ github.ref_name }}" >> pages-failure-report.md
+          echo "Commit: ${{ github.sha }}" >> pages-failure-report.md
+          echo "" >> pages-failure-report.md
+          
+          echo "## Build Job Status" >> pages-failure-report.md
+          echo "Build Job Result: ${{ needs.build.result }}" >> pages-failure-report.md
+          echo "" >> pages-failure-report.md
+          
+          echo "## Environment Info" >> pages-failure-report.md
+          echo "Node Version: $(node --version)" >> pages-failure-report.md
+          echo "NPM Version: $(npm --version)" >> pages-failure-report.md
+          echo "" >> pages-failure-report.md
+          
+          echo "## API Configuration" >> pages-failure-report.md
+          echo "DEMO_API_URL: ${{ vars.DEMO_API_URL }}" >> pages-failure-report.md
+          echo "" >> pages-failure-report.md
+          
+          echo "## Network Connectivity" >> pages-failure-report.md
+          if [ -f "health_check.json" ]; then
+            echo "API Health Check Result:" >> pages-failure-report.md
+            cat health_check.json >> pages-failure-report.md
+          else
+            echo "API Health Check: FAILED (no health_check.json)" >> pages-failure-report.md
+          fi
+          echo "" >> pages-failure-report.md
+          
+          if [ -f "cors_check.txt" ]; then
+            echo "CORS Check Result: PASSED" >> pages-failure-report.md
+          else
+            echo "CORS Check Result: FAILED" >> pages-failure-report.md
+          fi
+          echo "" >> pages-failure-report.md
+          
+          echo "## Troubleshooting Steps" >> pages-failure-report.md
+          echo "1. Check backend deployment: https://chatlalilulelo-backend-prod.chatlalilulelo.workers.dev/health" >> pages-failure-report.md
+          echo "2. Verify repository variables: DEMO_API_URL in GitHub repository settings" >> pages-failure-report.md
+          echo "3. Check CORS configuration in backend for GitHub Pages origin" >> pages-failure-report.md
+          echo "4. Review build logs in artifacts for specific error details" >> pages-failure-report.md
+
+      - name: 📡 Upload deployment validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -491,5 +551,6 @@ jobs:
             deployed_page.html
             deployed_env.js
             test_deployed_api.js
+            pages-failure-report.md
           retention-days: 7
           if-no-files-found: ignore

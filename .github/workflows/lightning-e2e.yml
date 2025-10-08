@@ -179,6 +179,58 @@ jobs:
           path: tests/e2e-web/test-results/lightning/
           retention-days: 3
 
+      - name: 📤 Save failure logs and diagnostics
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lightning-failure-logs-${{ matrix.browser }}
+          path: |
+            apps/mobile/npm-debug.log*
+            apps/mobile/.npm/_logs/*.log
+            tests/e2e-web/test-results/
+            tests/e2e-web/reports/
+            scripts/test-lightning-e2e.log
+            /tmp/lightning-*.log
+          retention-days: 14
+          if-no-files-found: ignore
+      
+      - name: 📊 Generate debug report on failure
+        if: failure()
+        run: |
+          echo "📊 Lightning E2E Debug Report" > lightning-debug-report.md
+          echo "Browser: ${{ matrix.browser }}" >> lightning-debug-report.md
+          echo "Timestamp: $(date -u)" >> lightning-debug-report.md
+          echo "" >> lightning-debug-report.md
+          
+          echo "## Environment Info" >> lightning-debug-report.md
+          echo "Node Version: $(node --version)" >> lightning-debug-report.md
+          echo "NPM Version: $(npm --version)" >> lightning-debug-report.md
+          echo "Playwright Version: $(npx playwright --version)" >> lightning-debug-report.md
+          echo "" >> lightning-debug-report.md
+          
+          echo "## Process Status" >> lightning-debug-report.md
+          echo "Running Node processes:" >> lightning-debug-report.md
+          ps aux | grep node | head -10 >> lightning-debug-report.md
+          echo "" >> lightning-debug-report.md
+          
+          echo "## Network Status" >> lightning-debug-report.md
+          echo "Port 14085 status:" >> lightning-debug-report.md
+          netstat -tulpn | grep 14085 || echo "Port 14085 not in use" >> lightning-debug-report.md
+          echo "" >> lightning-debug-report.md
+          
+          echo "## Lightning Test Files" >> lightning-debug-report.md
+          ls -la tests/utils/lightning-test-utils.js 2>/dev/null || echo "Lightning test utilities not found" >> lightning-debug-report.md
+          ls -la tests/e2e-web/lightning*.spec.ts 2>/dev/null || echo "No Lightning E2E spec files found" >> lightning-debug-report.md
+          
+      - name: 📤 Upload debug report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lightning-debug-report-${{ matrix.browser }}
+          path: lightning-debug-report.md
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: 🧹 Cleanup
         if: always()
         run: |

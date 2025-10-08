@@ -270,6 +270,23 @@ jobs:
           retention-days: ${{ fromJson(env.LOG_RETENTION_DAYS) }}
           if-no-files-found: ignore
 
+      - name: 📤 Save failure debug info
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: debug-failure-info-${{ matrix.node-version }}
+          path: |
+            apps/mobile/typescript-check.log
+            apps/mobile/eslint.log
+            apps/mobile/test-results.log
+            apps/mobile/build.log
+            apps/mobile/dependency-info.json
+            lightning-test-results.log
+            apps/mobile/npm-debug.log*
+            apps/mobile/.npm/_logs/*.log
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Upload test coverage
         uses: codecov/codecov-action@v4
         if: matrix.node-version == '20.x'
