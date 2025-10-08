@@ -1,4 +1,4 @@
-name = "chatlalilulelo-backend"
+name = "chatlalilulelo-backend-prod"
 main = "apps/edge/src/index.ts"
 compatibility_date = "2024-03-08"
 compatibility_flags = ["nodejs_compat"]
