@@ -26,11 +26,11 @@ function validateLightningAddress(address) {
 
   const [username, domain] = trimmed.split('@');
   
-  if (!username || username.length < 1) {
+  if (!username || username.length < 1 || username.length > 64) {
     return false;
   }
 
-  if (!domain || domain.length < 3) {
+  if (!domain || domain.length < 3 || domain.length > 253) {
     return false;
   }
 
@@ -123,12 +123,40 @@ function runQRTests() {
   return { passed, failed };
 }
 
+/**
+ * Test data for Lightning Network tests
+ */
+const TEST_DATA = {
+  validAddresses: [
+    'johndtwaldron@strike.me',
+    'user@getalby.com', 
+    'test@walletofsatoshi.com',
+    'demo@zbd.gg'
+  ],
+  
+  invalidAddresses: [
+    '',
+    'invalid',
+    'no-at-sign.com',
+    '@missingusername.com',
+    'missingdomain@',
+    'spaces in@address.com',
+    'toolongusernamethatexceedsmaximumlengthfortestingpurposes@domain.com'
+  ],
+  
+  expectedQRData: {
+    'johndtwaldron@strike.me': 'lightning:johndtwaldron@strike.me',
+    'user@getalby.com': 'lightning:user@getalby.com'
+  }
+};
+
 // Export functions for use in CI
 module.exports = {
   validateLightningAddress,
   generateQRData,
   runValidationTests,
-  runQRTests
+  runQRTests,
+  TEST_DATA
 };
 
 // If run directly, execute tests
