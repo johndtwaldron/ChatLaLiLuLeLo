@@ -3,31 +3,31 @@ name: Lightning Network E2E Tests (Disabled for v4)
 # Temporarily disabled for v4 branch completion
 # Re-enable after v4 is merged and stable
 on:
+  # DISABLED: All automatic triggers commented out for v4 completion
   # push:
   #   branches: [main, develop, develop-v4]
-  workflow_dispatch: # Manual triggering only
-    paths:
-      - 'apps/mobile/src/components/ui/LightningQR.tsx'
-      - 'apps/mobile/src/lib/lightning.ts'
-      - 'apps/mobile/src/lib/bitcoin.ts'
-      - 'apps/mobile/src/config/lightning.ts'
-      - 'tests/e2e-web/lightning-*.spec.ts'
-      - 'tests/e2e-web/lightning*.ts'
-      - 'scripts/test-lightning-e2e.js'
-      - '.github/workflows/lightning-e2e.yml'
+  #   paths:
+  #     - 'apps/mobile/src/components/ui/LightningQR.tsx'
+  #     - 'apps/mobile/src/lib/lightning.ts' 
+  #     - 'apps/mobile/src/lib/bitcoin.ts'
+  #     - 'apps/mobile/src/config/lightning.ts'
+  #     - 'tests/e2e-web/lightning-*.spec.ts'
+  #     - 'tests/e2e-web/lightning*.ts'
+  #     - 'scripts/test-lightning-e2e.js'
+  #     - '.github/workflows/lightning-e2e.yml'
+  #
+  # pull_request:
+  #   branches: [main, develop, develop-v4]
+  #   paths:
+  #     - 'apps/mobile/src/components/ui/LightningQR.tsx'
+  #     - 'apps/mobile/src/lib/lightning.ts'
+  #     - 'apps/mobile/src/lib/bitcoin.ts'
+  #     - 'apps/mobile/src/config/lightning.ts'
+  #     - 'tests/e2e-web/lightning-*.spec.ts'
+  #     - 'tests/e2e-web/lightning*.ts'
+  #     - 'scripts/test-lightning-e2e.js'
 
-  pull_request:
-    branches: [main, develop, develop-v4]
-    paths:
-      - 'apps/mobile/src/components/ui/LightningQR.tsx'
-      - 'apps/mobile/src/lib/lightning.ts'
-      - 'apps/mobile/src/lib/bitcoin.ts'
-      - 'apps/mobile/src/config/lightning.ts'
-      - 'tests/e2e-web/lightning-*.spec.ts'
-      - 'tests/e2e-web/lightning*.ts'
-      - 'scripts/test-lightning-e2e.js'
-
-  # Allow manual triggering
+  # Manual triggering only
   workflow_dispatch:
     inputs:
       browser:
