@@ -160,7 +160,7 @@ jobs:
               console.error('Stack trace:', error.stack);
               process.exit(1);
             }
-'LIGHTNING_TEST_EOF'
+            'LIGHTNING_TEST_EOF'
             
             node lightning-validation-test.js
             rm lightning-validation-test.js

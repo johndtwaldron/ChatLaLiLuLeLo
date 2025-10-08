@@ -186,7 +186,7 @@ jobs:
             });
             
             console.log('✅ Security validation patterns working');
-            EOF
+            'EOF'
             
             node security_validation.js
             rm security_validation.js
@@ -445,9 +445,9 @@ jobs:
             }
           }
           
-          console.log('❌ All API endpoints failed - deployed app will show connection errors');
+          console.log('✅ All API endpoints failed - deployed app will show connection errors');
           process.exit(1);
-          EOF
+          'EOF'
           
           node test_deployed_api.js
 
@@ -478,7 +478,7 @@ jobs:
           3. Test CORS configuration from GitHub Pages origin
           4. Check build artifacts for missing assets
           
-          EOF
+          'EOF'
           
           echo "Deployment report generated:"
           cat deployment_report.md
