@@ -286,6 +286,63 @@ npm run e2e
 
 **Specialized testing for Bitcoin Lightning Network integration**
 
+### **🔧 Lightning Network Diagnostics**
+
+**Before running any Lightning tests, use our comprehensive diagnostic tools to catch issues early:**
+
+**For all environments (Node.js):**
+```powershell
+# Basic diagnostic
+node scripts/diagnose-lightning.js
+
+# Verbose output with details
+node scripts/diagnose-lightning.js --verbose
+
+# Attempt to fix missing files automatically
+node scripts/diagnose-lightning.js --verbose --fix
+
+# CI-compatible mode (no colors)
+node scripts/diagnose-lightning.js --ci-mode
+```
+
+**For Windows PowerShell users:**
+```powershell
+# Basic diagnostic
+.\scripts\Test-Lightning.ps1
+
+# Verbose output with details
+.\scripts\Test-Lightning.ps1 -Verbose
+
+# Attempt to fix issues automatically
+.\scripts\Test-Lightning.ps1 -Verbose -Fix
+
+# Show help
+.\scripts\Test-Lightning.ps1 -Help
+```
+
+**What the Diagnostics Check:**
+- ✅ Environment compatibility (Node.js, OS, PowerShell detection)
+- ✅ Required Lightning files (bitcoin.ts, lightning.ts, config, test utilities)
+- ✅ Dependencies (QR libraries, Lightning-related packages)
+- ✅ Test structure (directories, test files, scripts)
+- ✅ Lightning validation (address validation, QR generation)
+
+**Common Issues Detected:**
+| Issue | Diagnostic Output | Fix |
+|-------|------------------|-----|
+| Missing Lightning files | ❌ `[File] missing` | Run with `--fix` flag |
+| Invalid Lightning addresses | ❌ `Lightning validation tests failed` | Check address format |
+| Node.js not found | ❌ `Node.js not found in PATH` | Install Node.js |
+| Wrong directory | ⚠️ `Not in project root` | `cd` to project root |
+| Empty files | ⚠️ `[File] is empty` | Regenerate with `--fix` |
+
+**Best Practices:**
+1. **Run diagnostics before committing** Lightning-related changes
+2. **Use both tools**: Node.js for comprehensive checks, PowerShell for Windows-specific validation
+3. **Check verbose output** for detailed error information
+4. **Fix missing files** automatically with `--fix` before manual intervention
+5. **Validate in CI-mode** to simulate GitHub Actions environment locally
+
 ### **Lightning Test Files**
 ```
 scripts/
