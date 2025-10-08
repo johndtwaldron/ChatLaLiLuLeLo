@@ -89,6 +89,7 @@ jobs:
       - name: ⚡ Lightning Network validation
         run: |
           echo "⚡ Running Lightning Network validation tests..."
+          # Fixed EOF delimiter indentation issue
           
           # Run the Lightning Network test script if it exists
           if [ -f "scripts/test-lightning-fixes.js" ]; then
