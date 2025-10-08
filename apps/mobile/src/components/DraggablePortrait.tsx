@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ViewStyle } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Portrait } from '@/components/Portrait';
-import { cycleColonelPortrait } from '@/lib/theme';
+import { LightningQR } from '@/components/LightningQR';
+import { cycleColonelPortrait, getCurrentMode, subscribeToThemeChanges } from '@/lib/theme';
 import { playRandomUserSound } from '@/lib/audio';
+import { isBitcoinModeActive } from '@/lib/lightning';
 
 export interface Rect {
   x: number; // relative to container
@@ -21,6 +23,7 @@ interface DraggablePortraitProps {
   container: Rect; // bounds to stay within
   otherPortraitPosition?: { x: number; y: number }; // position of the other draggable portrait
   onPositionChange?: (x: number, y: number) => void; // callback when this portrait moves
+  lightningAddress?: string; // Lightning address for donations (user portrait only)
   style?: ViewStyle;
 }
 
@@ -41,8 +44,32 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   container,
   otherPortraitPosition,
   onPositionChange,
+  lightningAddress,
   style,
 }) => {
+  const [currentMode, setCurrentMode] = useState(getCurrentMode());
+  const [showLightningQR, setShowLightningQR] = useState(false);
+
+  // Subscribe to mode/theme changes
+  useEffect(() => {
+    const unsubscribe = subscribeToThemeChanges(() => {
+      const newMode = getCurrentMode();
+      setCurrentMode(newMode);
+      
+      // Show Lightning QR for user portrait when in Bitcoin mode
+      if (type === 'user') {
+        setShowLightningQR(isBitcoinModeActive(newMode));
+      }
+    });
+    return unsubscribe;
+  }, [type]);
+
+  // Initialize Lightning QR visibility
+  useEffect(() => {
+    if (type === 'user') {
+      setShowLightningQR(isBitcoinModeActive(currentMode));
+    }
+  }, [type, currentMode]);
   // Portrait size is currently fixed by Portrait styles: 120x140
   const portraitSize = useMemo(() => ({ width: 120, height: 140 }), []);
 
@@ -97,9 +124,22 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       // Cycle colonel portrait images
       cycleColonelPortrait();
     } else if (type === 'user') {
-      // Play random sound effect for user clicks
-      playRandomUserSound();
-      console.log('[DRAGGABLE PORTRAIT] User portrait clicked - playing random sound');
+      // In Bitcoin mode, Lightning QR handles its own interactions
+      // Otherwise, play random sound effect for user clicks
+      if (!showLightningQR) {
+        playRandomUserSound();
+        console.log('[DRAGGABLE PORTRAIT] User portrait clicked - playing random sound');
+      }
+    }
+  };
+
+  // Handle Lightning QR copy success
+  const handleLightningCopy = (success: boolean) => {
+    if (success) {
+      console.log('[DRAGGABLE PORTRAIT] Lightning address copied successfully');
+      // Sound is handled by LightningQR component (rations sound)
+    } else {
+      console.warn('[DRAGGABLE PORTRAIT] Failed to copy lightning address');
     }
   };
 
@@ -173,7 +213,16 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={[animatedStyle, style]}>
-        <Portrait type={type} isActive={type === 'colonel'} isSpeaking={false} />
+        {/* Show Lightning QR for user portrait in Bitcoin mode, otherwise show normal portrait */}
+        {type === 'user' && showLightningQR ? (
+          <LightningQR 
+            lightningAddress={lightningAddress}
+            size="small"
+            onCopy={handleLightningCopy}
+          />
+        ) : (
+          <Portrait type={type} isActive={type === 'colonel'} isSpeaking={false} />
+        )}
       </Animated.View>
     </GestureDetector>
   );

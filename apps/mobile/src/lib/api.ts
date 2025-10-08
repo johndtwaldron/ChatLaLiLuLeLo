@@ -36,8 +36,27 @@ export interface StreamEvent {
 export function getApiUrl(): string {
   // 1) Prefer runtime var injected by Pages workflow
   // 2) Fallback to Expo env for local dev
+  // 3) Production fallback to Cloudflare Worker
   const runtime = (globalThis as any).__DEMO_API_URL as string | undefined;
-  return runtime ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  
+  // If we have a runtime URL from Pages deployment, use it
+  if (runtime && runtime !== 'undefined') {
+    return runtime;
+  }
+  
+  // If we have an environment URL, use it
+  if (envUrl && envUrl !== 'undefined') {
+    return envUrl;
+  }
+  
+  // Production fallback - use the deployed Cloudflare Worker
+  if (typeof window !== 'undefined' && window.location.origin.includes('github.io')) {
+    return 'https://chatlalilulelo-backend-prod.chatlalilulelo.workers.dev';
+  }
+  
+  // Local development fallback
+  return 'http://localhost:8787';
 }
 
 export function streamReply(

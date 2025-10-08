@@ -246,6 +246,64 @@ async function runDevWithValidation() {
       process.exit(1);
     }
 
+    // Phase 3.5: AI Prompt Validation (New for v4.5)
+    logAndSave('🤖 Phase 3.5: Validating AI Prompt Files...', 'yellow');
+    
+    const promptFiles = [
+      'prompts/modes/btc.md',
+      'prompts/modes/gw.md',
+      'prompts/modes/jd.md',
+      'prompts/modes/mgs.md'
+    ];
+    
+    for (const promptFile of promptFiles) {
+      if (!fs.existsSync(promptFile)) {
+        logAndSave(`❌ Missing AI prompt file: ${promptFile}`, 'red');
+        logAndSave('💡 AI personalities will not work without prompt files', 'yellow');
+        saveLogBuffer();
+        process.exit(1);
+      } else {
+        // Quick validation - check file size
+        const stats = fs.statSync(promptFile);
+        const sizeKB = Math.round(stats.size / 1024 * 100) / 100;
+        
+        if (stats.size < 1000) {
+          logAndSave(`⚠️  ${promptFile} is small (${sizeKB}KB) - may be incomplete`, 'yellow');
+        } else {
+          logAndSave(`✅ ${promptFile} validated (${sizeKB}KB)`, 'green');
+        }
+      }
+    }
+    
+    // Check for uncommitted prompt changes
+    try {
+      const gitDiff = runCommand('git diff --name-only prompts/modes/', { silent: true });
+      const gitStaged = runCommand('git diff --cached --name-only prompts/modes/', { silent: true });
+      
+      const uncommittedFiles = [];
+      
+      if (gitDiff.success && gitDiff.output.trim()) {
+        uncommittedFiles.push(...gitDiff.output.trim().split('\n').filter(f => f));
+      }
+      
+      if (gitStaged.success && gitStaged.output.trim()) {
+        uncommittedFiles.push(...gitStaged.output.trim().split('\n').filter(f => f));
+      }
+      
+      if (uncommittedFiles.length > 0) {
+        logAndSave('⚠️  Uncommitted prompt changes detected:', 'yellow');
+        for (const file of uncommittedFiles) {
+          logAndSave(`   📝 Modified: ${file}`, 'yellow');
+        }
+        logAndSave('💡 Ensure AI personality changes are intentional', 'yellow');
+      }
+      
+    } catch (error) {
+      logAndSave('⚠️  Could not check prompt git status', 'yellow');
+    }
+    
+    logAndSave('✅ AI prompt validation completed', 'green');
+
     // Save all validation results
     saveLogBuffer();
 

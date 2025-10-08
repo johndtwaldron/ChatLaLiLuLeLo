@@ -25,6 +25,7 @@ import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
 import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
 import { playCodecClose } from '@/lib/audio';
 import { extractUserFriendlyError } from '@/lib/security';
+import { getLightningAddress } from '@/config/lightning.config';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -366,6 +367,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
                 container={portraitSectionLayout}
                 otherPortraitPosition={colonelPosition}
                 onPositionChange={(x, y) => setUserPosition({ x, y })}
+                lightningAddress={getLightningAddress()}
               />
             )}
           </View>

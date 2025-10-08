@@ -14,7 +14,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 
-import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait } from '@/lib/theme';
+import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
 
 // Import colonel portraits - unified compatibility for local and web
@@ -22,6 +22,15 @@ const colonelImages = [
   asImg(require('../../assets/images/colonel.jpeg')),
   asImg(require('../../assets/images/colonel_1.jpg')),
   asImg(require('../../assets/images/colonel_2.jpg')),
+];
+
+// Import Bitcoin colonel portraits - real Bitcoin images
+const bitcoinColonelImages = [
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Sayloresque.png')), // 0 - Sayloresque (Michael Saylor style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Keiseresque.png')), // 1 - Keiseresque (Max Keiser style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.Miner.png')), // 2 - Miner (Bitcoin miner style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.S3.png')), // 3 - S3 (Satoshi style)
+  asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.png')), // 4 - GPT (General Bitcoin maximalist)
 ];
 
 interface PortraitProps {
@@ -98,12 +107,21 @@ export const Portrait: React.FC<PortraitProps> = ({
   });
 
   const renderColonelPortrait = () => {
-    const currentPortraitIndex = getCurrentColonelPortrait();
-    const currentColonelImage = colonelImages[currentPortraitIndex];
+    const currentMode = getCurrentMode();
+    const isBitcoinMode = currentMode === 'bitcoin';
+    
+    // Select appropriate image set and index based on mode
+    const currentPortraitIndex = isBitcoinMode 
+      ? getCurrentBitcoinColonelPortrait() 
+      : getCurrentColonelPortrait();
+    const imageSet = isBitcoinMode ? bitcoinColonelImages : colonelImages;
+    const currentColonelImage = imageSet[currentPortraitIndex];
+    const labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
     
     // Debug logging for colonel image rendering
+    console.log('[PORTRAIT] Bitcoin mode:', isBitcoinMode);
     console.log('[PORTRAIT] Current portrait index:', currentPortraitIndex);
-    console.log('[PORTRAIT] Colonel images array:', colonelImages);
+    console.log('[PORTRAIT] Image set:', isBitcoinMode ? 'Bitcoin' : 'Regular');
     console.log('[PORTRAIT] Current colonel image:', currentColonelImage);
     
     return (
@@ -135,9 +153,9 @@ export const Portrait: React.FC<PortraitProps> = ({
         )}
       </View>
       
-      {/* ID Label */}
+      {/* ID Label - changes based on mode */}
       <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
-        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>COLONEL</Text>
+        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>{labelText}</Text>
       </View>
     </View>
   );

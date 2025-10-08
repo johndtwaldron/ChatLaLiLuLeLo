@@ -1,5 +1,7 @@
 # ChatLaLiLuLeLo v4 Development Guide
 
+> **📂 Workspace Location:** This project has been migrated to external drive (`F:\JDW (diskF-Samsung)-PoW\ChatLaLiLuLeLo.JDW`) for better disk space management and V4.5 QA testing requirements.
+
 ## 🚀 Quick Start
 
 ### Enhanced Development (Recommended)
@@ -264,3 +266,85 @@ Required secrets (set via Cloudflare dashboard or `wrangler secret put`):
 - `OPENAI_MODEL` - Model to use (optional, defaults to gpt-4o-mini)
 - `TAVILY_API_KEY` - Search functionality (optional)
 - `CORS_ORIGINS` - Additional allowed origins (optional)
+
+## 🧪 V4.5 QA Testing Framework
+
+### Comprehensive Testing Suite
+
+V4.5 introduces a comprehensive QA-focused testing framework with multiple test types:
+
+#### Asset Verification Tests
+```bash
+# Run asset verification tests (mobile)
+cd apps/mobile
+npm test -- --testPathPattern=assets.test.ts
+```
+
+**What it tests:**
+- ✅ **32 comprehensive tests** for audio and image assets
+- ✅ Asset availability, size limits, format validation
+- ✅ Performance testing for concurrent loading
+- ✅ Bundle size verification (<3MB as per V4 plan)
+- ✅ Build process and deployment verification
+- ✅ Asset path resolution for different environments
+
+#### API Smoke Tests
+```bash
+# Run API smoke tests against live Cloudflare Workers
+cd apps/edge
+npm run test:api                    # Production API
+npm run test:api:staging            # Staging API
+```
+
+**What it tests:**
+- ✅ **21 comprehensive API tests** for all endpoints
+- ✅ Health, budget, and chat endpoint validation
+- ✅ CORS, security headers, performance testing
+- ✅ Rate limiting and error handling verification
+- ✅ **20/21 tests passing** - identified improvement opportunity
+
+#### Local Environment Validation
+```bash
+# Comprehensive local CI check
+.\test-local.ps1
+```
+
+**What it validates:**
+- ✅ Project structure integrity
+- ✅ TypeScript compilation
+- ✅ Dependencies and versions
+- ✅ Backend configuration
+- ✅ Environment setup
+
+### Test Coverage Status
+
+| Test Type | Status | Coverage | Notes |
+|-----------|--------|----------|---------|
+| **Asset Verification** | ✅ Complete | 32 tests | Full asset pipeline testing |
+| **API Smoke Tests** | ✅ Complete | 21 tests | Live API endpoint validation |
+| **Security Hardening** | 🚧 In Progress | - | CSP, input validation tests |
+| **Unit Tests** | 🚧 In Progress | - | React Native components |
+| **E2E Tests** | 🚧 Planned | - | Playwright integration |
+| **CI/CD Enhancements** | 🚧 Planned | - | Coverage reporting |
+
+### Testing Best Practices
+
+#### Running All Tests
+```bash
+# Full test suite
+npm test                           # Mobile tests
+cd apps/edge && npm run test:api   # API tests
+.\test-local.ps1                  # Local environment
+```
+
+#### Debugging Test Failures
+```bash
+# Verbose test output
+npm test -- --verbose
+
+# Run specific test file
+npm test -- --testPathPattern=assets.test.ts
+
+# Debug API tests with different endpoints
+API_BASE_URL=http://localhost:8787 npm run test:api
+```

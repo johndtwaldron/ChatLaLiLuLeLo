@@ -168,7 +168,100 @@ async function runCITests() {
       log('   WARNING: Could not check Node.js version', 'yellow');
     }
 
-    // 6. Test backend health endpoint (optional, only if requested)
+    // 6. AI Prompt Validation (New Step for v4.5)
+    log('\nValidating AI prompt files...', 'yellow');
+    
+    const promptFiles = [
+      'prompts/modes/btc.md',
+      'prompts/modes/gw.md',
+      'prompts/modes/jd.md',
+      'prompts/modes/mgs.md'
+    ];
+    
+    // Check file existence
+    for (const promptFile of promptFiles) {
+      if (fs.existsSync(promptFile)) {
+        log(`OK ${promptFile} exists`, 'green');
+        
+        // Check file size (should be between 1KB and 50KB)
+        const stats = fs.statSync(promptFile);
+        const sizeKB = Math.round(stats.size / 1024 * 100) / 100;
+        
+        if (stats.size < 1000) {
+          log(`WARNING ${promptFile} is very small (${sizeKB}KB) - may be incomplete`, 'yellow');
+        } else if (stats.size > 50000) {
+          log(`WARNING ${promptFile} is very large (${sizeKB}KB) - may contain unexpected content`, 'yellow');
+        } else {
+          log(`   Size: ${sizeKB}KB`, 'gray');
+        }
+        
+        // Basic structure validation
+        try {
+          const content = fs.readFileSync(promptFile, 'utf8');
+          
+          // Check for required sections (case insensitive)
+          const requiredSections = [
+            { name: 'Role Definition', patterns: ['you are', 'mode -', 'personality'] },
+            { name: 'Communication Style', patterns: ['patterns', 'phrases', 'cadence', 'style'] },
+            { name: 'Behavioral', patterns: ['behavioral', 'imperatives', 'framework'] }
+          ];
+          
+          let structureValid = true;
+          
+          for (const section of requiredSections) {
+            const hasSection = section.patterns.some(pattern => 
+              content.toLowerCase().includes(pattern.toLowerCase())
+            );
+            
+            if (hasSection) {
+              log(`   ✓ ${section.name} section found`, 'gray');
+            } else {
+              log(`   WARNING: ${section.name} section may be missing`, 'yellow');
+              // Don't mark as error - prompts might have different structures
+            }
+          }
+          
+        } catch (error) {
+          log(`ERROR Cannot read ${promptFile}: ${error.message}`, 'red');
+          hasErrors = true;
+        }
+        
+      } else {
+        log(`ERROR ${promptFile} missing - AI personality will not work`, 'red');
+        hasErrors = true;
+      }
+    }
+    
+    // Check for uncommitted changes in prompt files
+    try {
+      const gitDiff = runCommand('git diff --name-only prompts/modes/', { silent: true });
+      const gitStaged = runCommand('git diff --cached --name-only prompts/modes/', { silent: true });
+      
+      const uncommittedFiles = [];
+      
+      if (gitDiff.success && gitDiff.output.trim()) {
+        uncommittedFiles.push(...gitDiff.output.trim().split('\n').filter(f => f));
+      }
+      
+      if (gitStaged.success && gitStaged.output.trim()) {
+        uncommittedFiles.push(...gitStaged.output.trim().split('\n').filter(f => f));
+      }
+      
+      if (uncommittedFiles.length > 0) {
+        log(`WARNING: Uncommitted prompt changes detected:`, 'yellow');
+        for (const file of uncommittedFiles) {
+          log(`   Modified: ${file}`, 'yellow');
+        }
+        log('   Ensure AI personality changes are intentional and tested', 'yellow');
+      } else {
+        log(`OK No uncommitted prompt changes`, 'green');
+      }
+      
+    } catch (error) {
+      log('WARNING: Could not check git status for prompts (not in git repo?)', 'yellow');
+    }
+
+    // 7. Test backend health endpoint (optional, only if requested)
     if (process.env.TEST_BACKEND_HEALTH) {
       log('\nTesting backend health endpoint...', 'yellow');
       
