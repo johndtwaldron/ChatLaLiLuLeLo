@@ -91,30 +91,88 @@ jobs:
 
       - name: 🔧 Validate Lightning configuration
         run: |
-          # Check Lightning configuration files exist
-          test -f apps/mobile/src/config/lightning.ts
-          test -f apps/mobile/src/lib/lightning.ts
-          test -f apps/mobile/src/lib/bitcoin.ts
+          echo "🔍 Validating Lightning Network configuration..."
+          echo "Current directory: $(pwd)"
+          echo "Checking required files..."
           
-          # Validate Lightning test utilities
-          node -e "
-            const { validateLightningAddress, generateQRData } = require('./tests/utils/lightning-test-utils');
-            console.log('Lightning utilities loaded successfully');
+          # Check Lightning configuration files exist
+          if [ -f "apps/mobile/src/config/lightning.ts" ]; then
+            echo "✅ apps/mobile/src/config/lightning.ts found"
+          else
+            echo "❌ apps/mobile/src/config/lightning.ts missing"
+            exit 1
+          fi
+          
+          if [ -f "apps/mobile/src/lib/lightning.ts" ]; then
+            echo "✅ apps/mobile/src/lib/lightning.ts found"
+          else
+            echo "❌ apps/mobile/src/lib/lightning.ts missing"
+            exit 1
+          fi
+          
+          if [ -f "apps/mobile/src/lib/bitcoin.ts" ]; then
+            echo "✅ apps/mobile/src/lib/bitcoin.ts found"
+          else
+            echo "❌ apps/mobile/src/lib/bitcoin.ts missing"
+            exit 1
+          fi
+          
+          # Check for Lightning test utilities
+          echo "\nChecking Lightning test utilities..."
+          if [ -f "tests/utils/lightning-test-utils.js" ]; then
+            echo "✅ tests/utils/lightning-test-utils.js found"
             
-            // Test address validation
-            const validAddress = 'johndtwaldron@strike.me';
-            if (!validateLightningAddress(validAddress)) {
-              throw new Error('Lightning address validation failed');
+            # Test the utilities with comprehensive error handling
+            cat > lightning-validation-test.js << 'LIGHTNING_TEST_EOF'
+            try {
+              console.log('Loading Lightning test utilities...');
+              const { validateLightningAddress, generateQRData } = require('./tests/utils/lightning-test-utils');
+              console.log('Lightning utilities loaded successfully');
+              
+              // Test address validation
+              const validAddress = 'johndtwaldron@strike.me';
+              console.log('Testing validation for:', validAddress);
+              
+              const validationResult = validateLightningAddress(validAddress);
+              console.log('Validation result:', validationResult);
+              
+              if (!validationResult) {
+                console.error('Lightning address validation failed for:', validAddress);
+                process.exit(1);
+              }
+              
+              // Test QR generation
+              console.log('Testing QR generation for:', validAddress);
+              const qrData = generateQRData(validAddress);
+              console.log('Generated QR data:', qrData);
+              
+              if (!qrData || !qrData.includes(validAddress)) {
+                console.error('QR data generation failed. Expected data containing:', validAddress, 'Got:', qrData);
+                process.exit(1);
+              }
+              
+              console.log('✅ Lightning configuration validation successful!');
+              console.log('Address validation: PASS');
+              console.log('QR generation: PASS');
+              
+            } catch (error) {
+              console.error('Lightning validation error:', error.message);
+              console.error('Stack trace:', error.stack);
+              process.exit(1);
             }
+            LIGHTNING_TEST_EOF
             
-            // Test QR generation
-            const qrData = generateQRData(validAddress);
-            if (!qrData.includes(validAddress)) {
-              throw new Error('QR data generation failed');
-            }
+            node lightning-validation-test.js
+            rm lightning-validation-test.js
             
-            console.log('✅ Lightning configuration validated');
-          "
+          else
+            echo "⚠️ tests/utils/lightning-test-utils.js not found"
+            echo "Available files in tests/:"
+            ls -la tests/ || echo "tests directory not found"
+            echo "Available files in tests/utils/:"
+            ls -la tests/utils/ || echo "tests/utils directory not found"
+            exit 1
+          fi
 
       - name: 🚀 Start development servers
         run: |
