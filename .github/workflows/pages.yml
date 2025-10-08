@@ -137,7 +137,7 @@ jobs:
             }
             
             console.log('✅ Lightning Network validation completed');
-            LIGHTNING_EOF
+            'LIGHTNING_EOF'
             
             node lightning_validation.js || {
               echo "❌ Basic Lightning validation failed"
