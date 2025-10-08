@@ -89,10 +89,15 @@ jobs:
       - name: ⚡ Lightning Network validation
         run: |
           echo "⚡ Running Lightning Network validation tests..."
-          # Fixed EOF delimiter indentation issue
+          
+          # Debug: Check current directory and files
+          echo "Current directory: $(pwd)"
+          echo "Looking for scripts/test-lightning-fixes.js..."
+          ls -la scripts/ || echo "scripts directory not found"
           
           # Run the Lightning Network test script if it exists
           if [ -f "scripts/test-lightning-fixes.js" ]; then
+            echo "✅ Found Lightning test script, running comprehensive tests..."
             node scripts/test-lightning-fixes.js || {
               echo "❌ Lightning Network validation failed"
               echo "This will cause QR code issues in deployment"
@@ -100,13 +105,11 @@ jobs:
             }
             echo "✅ Lightning Network tests completed successfully"
           else
-            echo "⚠️ Warning: Lightning Network test script not found"
+            echo "⚠️ Warning: Lightning Network test script not found at scripts/test-lightning-fixes.js"
+            echo "Running basic Lightning Network validation as fallback..."
             
-            # Basic Lightning URI validation
-            echo "Running basic Lightning Network validation..."
-            
-            # Create a simple Lightning validation test
-            cat > lightning_validation.js << 'EOF'
+            # Create a simple Lightning validation test (fallback)
+            cat > lightning_validation.js << 'LIGHTNING_EOF'
             // Basic Lightning Network QR code validation
             const testAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
             const lightningAddress = "test@wallet.of.satoshi.com";
@@ -134,10 +137,14 @@ jobs:
             }
             
             console.log('✅ Lightning Network validation completed');
-            EOF
+            LIGHTNING_EOF
             
-            node lightning_validation.js
+            node lightning_validation.js || {
+              echo "❌ Basic Lightning validation failed"
+              exit 1
+            }
             rm lightning_validation.js
+            echo "✅ Basic Lightning Network validation completed"
           fi
 
       - name: 🔒 Security validation
