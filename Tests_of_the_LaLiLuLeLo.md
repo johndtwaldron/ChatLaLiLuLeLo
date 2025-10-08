@@ -841,7 +841,7 @@ npm run dev
 # 2. Run comprehensive linting (new in Session 26)
 npm run lint:all
 # This validates:
-# - YAML syntax (GitHub workflows, config files)
+# - YAML syntax (GitHub workflows, config files) [Fixed v4.6: heredoc issues resolved]
 # - Shell script syntax (heredoc validation in workflows)
 # - ESLint (TypeScript/JavaScript code quality)
 # - Package.json syntax validation
