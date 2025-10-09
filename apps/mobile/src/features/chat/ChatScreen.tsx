@@ -26,6 +26,8 @@ import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types
 import { playCodecClose } from '@/lib/audio';
 import { extractUserFriendlyError } from '@/lib/security';
 import { getLightningAddress } from '@/config/lightning.config';
+import { VoiceControls } from '@/components/VoiceControls';
+import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceService';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -111,6 +113,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [colonelPosition, setColonelPosition] = useState({ x: 0, y: 0 });
   const [userPosition, setUserPosition] = useState({ x: 0, y: 0 });
   
+  // Initialize voice service on component mount
+  useEffect(() => {
+    const initVoice = async () => {
+      try {
+        await initializeVoiceService();
+        console.log('[CHAT] Voice service initialization attempted');
+      } catch (error) {
+        console.warn('[CHAT] Voice service initialization failed:', error);
+        // Don't block the app if voice fails
+      }
+    };
+    
+    initVoice();
+  }, []);
+
   // Subscribe to theme changes
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
@@ -267,6 +284,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           setIsStreaming(false);
           setCurrentStreamText('');
           
+          // Process message for TTS (non-blocking)
+          processMessageForTTS(fullResponseText, 'ai').catch(error => {
+            console.warn('[CHAT] TTS processing failed:', error);
+          });
+          
           // Trigger budget refresh after successful response
           setBudgetRefreshTrigger(prev => prev + 1);
         },
@@ -328,6 +350,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             refreshTrigger={budgetRefreshTrigger}
           />
           
+          <VoiceControls compact={true} />
           <CRTToggle />
           <ThemeCycleToggle />
           <ModeToggle />

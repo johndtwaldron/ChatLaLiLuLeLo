@@ -12,6 +12,8 @@
     "typecheck": "tsc -p . --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest",
+    "test:voice": "jest --testPathPattern=voice --verbose",
+    "dev:voice": "cross-env VOICE_ENABLED=true VOICE_ENGINE=openai expo start",
     "e2e": "detox test -c ios.sim.debug",
     "build": "expo build",
     "prebuild": "expo prebuild"

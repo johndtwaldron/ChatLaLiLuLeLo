@@ -214,6 +214,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
+    zIndex: 999,
+    elevation: 10, // For Android
   },
   
   qrContainer: {
