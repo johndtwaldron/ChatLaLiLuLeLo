@@ -71,7 +71,7 @@ class VoiceService {
       // Check if voice is globally disabled (safe default)
       const voiceEnabled = process.env.EXPO_PUBLIC_VOICE_ENABLED === 'true';
       
-      // Force disable on web preview environments unless explicitly enabled
+      // Check if we're in a web environment with proper voice configuration
       const isWebPreview = typeof window !== 'undefined' && (
         window.location.hostname.includes('vercel.app') ||
         window.location.hostname.includes('netlify.app') ||
@@ -79,14 +79,20 @@ class VoiceService {
         process.env.NODE_ENV === 'preview'
       );
       
-      if (isWebPreview && process.env.PAGES_VOICE_ENABLE !== '1') {
-        console.log('[VOICE] Voice disabled on web preview deployment');
+      // Only disable voice on web preview if voice is NOT explicitly enabled AND configured
+      if (isWebPreview && !voiceEnabled) {
+        console.log('[VOICE] Voice disabled on web preview deployment - set EXPO_PUBLIC_VOICE_ENABLED=true to enable');
         this.config = {
           ...DEFAULT_VOICE_CONFIG,
           enabled: false,
           engine: 'disabled'
         };
         return;
+      }
+      
+      // If we're on GitHub Pages and voice is enabled, allow it through
+      if (isWebPreview && voiceEnabled) {
+        console.log('[VOICE] Voice enabled for web deployment with proper configuration');
       }
 
       // Determine engine preference with fallback

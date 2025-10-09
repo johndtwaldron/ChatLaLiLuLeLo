@@ -121,6 +121,15 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
           EXPO_PUBLIC_DEBUG_MODE: "0"
+          # Voice/TTS Configuration for web deployment
+          EXPO_PUBLIC_VOICE_ENABLED: "true"
+          EXPO_PUBLIC_VOICE_ENGINE: "elevenlabs"
+          EXPO_PUBLIC_ELEVENLABS_ENABLED: "true"
+          EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          EXPO_PUBLIC_VOICE_AUTOPLAY: "true"
+          EXPO_PUBLIC_VOICE_VOLUME: "0.7"
+          EXPO_PUBLIC_VOICE_PRESET: "colonel-neutral"
+          EXPO_PUBLIC_VOICE_SFX: "true"
 
       - name: Fix asset paths for GitHub Pages
         run: |
