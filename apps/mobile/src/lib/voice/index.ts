@@ -48,6 +48,15 @@ class VoiceService {
    */
   private loadConfig(): void {
     try {
+      console.log('[VOICE] DEBUG: Environment variables check:');
+      console.log('  VOICE_ENABLED:', process.env.VOICE_ENABLED);
+      console.log('  VOICE_ENGINE:', process.env.VOICE_ENGINE);
+      console.log('  ELEVENLABS_ENABLED:', process.env.ELEVENLABS_ENABLED);
+      console.log('  ELEVENLABS_API_KEY present:', !!process.env.ELEVENLABS_API_KEY);
+      console.log('  ELEVENLABS_API_KEY length:', process.env.ELEVENLABS_API_KEY?.length || 0);
+      console.log('  OPENAI_API_KEY present:', !!process.env.OPENAI_API_KEY);
+      console.log('  VOICE_AUTOPLAY:', process.env.VOICE_AUTOPLAY);
+      
       // Check if voice is globally disabled (safe default)
       const voiceEnabled = process.env.VOICE_ENABLED === 'true';
       
