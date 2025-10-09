@@ -214,8 +214,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    zIndex: 999,
-    elevation: 10, // For Android
+    zIndex: 9999, // Increased from 999
+    elevation: 20, // Increased from 10 for Android
+    // Force rendering above other components
+    ...(Platform.OS === 'web' && {
+      position: 'relative',
+    }),
   },
   
   qrContainer: {
@@ -258,6 +262,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#FF8C00', // Bitcoin orange border
+    zIndex: 10000, // Ensure donation message is above everything
+    elevation: 25, // Higher elevation for Android
   },
   
   donationText: {

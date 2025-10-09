@@ -438,6 +438,8 @@ const staticStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    // Ensure this doesn't interfere with Lightning QR z-indexing
+    zIndex: 1,
   },
   
   portraitPlaceholder: {
