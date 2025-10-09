@@ -2,7 +2,7 @@ name: Deploy Web to GitHub Pages
 
 on:
   push:
-    branches: [develop-v4]
+    branches: [Dev-Voice.V1]
   workflow_dispatch: # Allow manual triggering
 
 permissions:
