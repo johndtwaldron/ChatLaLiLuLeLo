@@ -20,19 +20,19 @@ interface ElevenLabsTTSRequest {
 
 /**
  * Maps Colonel voice presets to ElevenLabs voice configuration
- * Uses voice name lookup to find the actual voice ID
+ * Uses the actual voice ID: jm07e4kf2MeuSuRJx5vk (Col.nonAI.v1)
  */
-const VOICE_PRESET_MAPPING: Record<string, { voiceName: string; settings: ElevenLabsTTSRequest['voice_settings'] }> = {
+const VOICE_PRESET_MAPPING: Record<string, { voiceId: string; settings: ElevenLabsTTSRequest['voice_settings'] }> = {
   'colonel-neutral': {
-    voiceName: 'Col.nonAI.v1', // Your configured ElevenLabs voice name
+    voiceId: 'jm07e4kf2MeuSuRJx5vk', // Your Col.nonAI.v1 voice ID
     settings: { stability: 0.8, similarity_boost: 0.7, style: 0.6 }
   },
   'colonel-gravel': {
-    voiceName: 'Col.nonAI.v1', // Same voice, more gravelly settings
+    voiceId: 'jm07e4kf2MeuSuRJx5vk', // Same voice, more gravelly settings
     settings: { stability: 0.9, similarity_boost: 0.8, style: 0.8 }
   },
   'narrator': {
-    voiceName: 'Col.nonAI.v1', // Same voice, clearer/neutral settings
+    voiceId: 'jm07e4kf2MeuSuRJx5vk', // Same voice, clearer/neutral settings
     settings: { stability: 0.7, similarity_boost: 0.6, style: 0.3 }
   }
 };
@@ -109,55 +109,19 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
     return COLONEL_VOICE_PRESETS.map(preset => preset.id);
   }
 
-  private async resolveVoiceSettings(opts?: SynthesizeOpts): Promise<{ voiceId: string; settings: ElevenLabsTTSRequest['voice_settings'] }> {
+  private resolveVoiceSettings(opts?: SynthesizeOpts): { voiceId: string; settings: ElevenLabsTTSRequest['voice_settings'] } {
     const presetId = opts?.voiceId || 'colonel-neutral';
     
     const mapping = VOICE_PRESET_MAPPING[presetId] || VOICE_PRESET_MAPPING['colonel-neutral'];
     
-    // Try to find the voice ID by name
-    const voiceId = await this.findVoiceIdByName(mapping.voiceName);
+    console.log(`[VOICE] Using voice preset '${presetId}' with voice ID: ${mapping.voiceId}`);
     
     return {
-      voiceId,
+      voiceId: mapping.voiceId,
       settings: mapping.settings
     };
   }
 
-  /**
-   * Find voice ID by name from ElevenLabs API
-   */
-  private async findVoiceIdByName(voiceName: string): Promise<string> {
-    try {
-      const response = await fetch(`${this.baseUrl}/voices`, {
-        method: 'GET',
-        headers: {
-          'xi-api-key': this.apiKey!,
-        },
-      });
-      
-      if (!response.ok) {
-        console.warn(`[VOICE] Failed to fetch voices: ${response.status}`);
-        // Fallback: try using the name as ID directly
-        return voiceName;
-      }
-      
-      const data = await response.json();
-      const voice = data.voices?.find((v: any) => v.name === voiceName);
-      
-      if (voice) {
-        console.log(`[VOICE] Found voice "${voiceName}" with ID: ${voice.voice_id}`);
-        return voice.voice_id;
-      } else {
-        console.warn(`[VOICE] Voice "${voiceName}" not found, available voices:`, data.voices?.map((v: any) => v.name) || []);
-        // Fallback: use first available voice or name as ID
-        return data.voices?.[0]?.voice_id || voiceName;
-      }
-    } catch (error) {
-      console.error('[VOICE] Voice lookup failed:', error);
-      // Fallback: use name as ID
-      return voiceName;
-    }
-  }
 
   async *synthesizeStream(text: string, opts?: SynthesizeOpts): AsyncIterable<VoiceChunk> {
     if (!this.featureFlagEnabled) {
@@ -169,7 +133,7 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
     }
 
     const sanitizedText = this.sanitizeText(text);
-    const voiceSettings = await this.resolveVoiceSettings(opts);
+    const voiceSettings = this.resolveVoiceSettings(opts);
     
     console.log(`[VOICE] Synthesizing with ElevenLabs: "${sanitizedText.substring(0, 50)}..." using voice ${voiceSettings.voiceId}`);
     
