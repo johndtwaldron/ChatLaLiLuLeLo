@@ -1,10 +1,8 @@
 /**
- * ElevenLabs TTS Engine Adapter (STUB)
+ * ElevenLabs TTS Engine Adapter
  * 
- * This is a stub implementation with the real ElevenLabs API shape.
- * Feature-flagged and ready for implementation when needed.
- * 
- * TODO: Complete implementation when ElevenLabs integration is required
+ * Production implementation of ElevenLabs API integration.
+ * Configured for Col.nonAI.v1 voice with streaming support.
  */
 
 import { VoiceEngine, VoiceChunk, SynthesizeOpts, VoiceEngineError, VoiceEngineNotReadyError, VoiceEngineNetworkError, COLONEL_VOICE_PRESETS } from '../VoiceEngine';
@@ -22,19 +20,19 @@ interface ElevenLabsTTSRequest {
 
 /**
  * Maps Colonel voice presets to ElevenLabs voice IDs
- * NOTE: These are placeholder IDs - real implementation would use actual ElevenLabs voice IDs
+ * Uses the configured Col.nonAI.v1 voice for all Colonel presets with different settings
  */
 const VOICE_PRESET_MAPPING: Record<string, { voiceId: string; settings: ElevenLabsTTSRequest['voice_settings'] }> = {
   'colonel-neutral': {
-    voiceId: 'EXAVITQu4vr4xnSDxMaL', // Placeholder - would be a deep, authoritative voice
+    voiceId: 'Col.nonAI.v1', // Your configured ElevenLabs voice
     settings: { stability: 0.8, similarity_boost: 0.7, style: 0.6 }
   },
   'colonel-gravel': {
-    voiceId: 'VR6AewLTigWG4xSOukaG', // Placeholder - would be gravelly, commanding
+    voiceId: 'Col.nonAI.v1', // Same voice, more gravelly settings
     settings: { stability: 0.9, similarity_boost: 0.8, style: 0.8 }
   },
   'narrator': {
-    voiceId: 'pNInz6obpgDQGcFmaJgB', // Placeholder - would be clear, neutral
+    voiceId: 'Col.nonAI.v1', // Same voice, clearer/neutral settings
     settings: { stability: 0.7, similarity_boost: 0.6, style: 0.3 }
   }
 };
@@ -75,11 +73,29 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
       throw new VoiceEngineError('ElevenLabs API key not provided', this.name, 'MISSING_API_KEY');
     }
 
-    // TODO: Implement actual API key validation
-    console.warn('[VOICE] ElevenLabs TTS engine is STUBBED - not fully implemented yet');
+    // Validate API key by making a test request to get user info
+    try {
+      const response = await fetch(`${this.baseUrl}/user`, {
+        method: 'GET',
+        headers: {
+          'xi-api-key': this.apiKey,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new VoiceEngineError(`ElevenLabs API key validation failed: ${response.status}`, this.name, 'INVALID_API_KEY');
+      }
+      
+      const userInfo = await response.json();
+      console.log(`[VOICE] ElevenLabs initialized for user: ${userInfo.subscription?.tier || 'free'} tier`);
+      
+    } catch (error) {
+      console.error('[VOICE] ElevenLabs API key validation failed:', error);
+      throw new VoiceEngineError(`ElevenLabs initialization failed: ${error}`, this.name, 'INITIALIZATION_FAILED');
+    }
     
     this.initialized = true;
-    console.log('[VOICE] ElevenLabs TTS engine initialized (STUB)');
+    console.log('[VOICE] ElevenLabs TTS engine initialized successfully');
   }
 
   isReady(): boolean {
@@ -102,7 +118,6 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
     return VOICE_PRESET_MAPPING['colonel-neutral'];
   }
 
-  // eslint-disable-next-line require-yield
   async *synthesizeStream(text: string, opts?: SynthesizeOpts): AsyncIterable<VoiceChunk> {
     if (!this.featureFlagEnabled) {
       throw new VoiceEngineError('ElevenLabs engine is disabled by feature flag', this.name, 'FEATURE_DISABLED');
@@ -112,60 +127,68 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
       throw new VoiceEngineNotReadyError(this.name);
     }
 
-    // STUB: Log what would be synthesized
-    console.warn(`[VOICE] STUB: ElevenLabs would synthesize: "${text.substring(0, 50)}..." with voice ${opts?.voiceId || 'colonel-neutral'}`);
-
-    // STUB: Return empty - real implementation would:
-    // 1. Sanitize text
-    // 2. Resolve voice settings
-    // 3. Make streaming API call to ElevenLabs
-    // 4. Yield audio chunks as they arrive
-
-    /*
-    // TODO: Real implementation would look like this:
-    
     const sanitizedText = this.sanitizeText(text);
     const voiceSettings = this.resolveVoiceSettings(opts);
     
+    console.log(`[VOICE] Synthesizing with ElevenLabs: "${sanitizedText.substring(0, 50)}..." using voice ${voiceSettings.voiceId}`);
+    
     const request: ElevenLabsTTSRequest = {
       text: sanitizedText,
-      model_id: 'eleven_monolingual_v1', // or 'eleven_multilingual_v2'
+      model_id: 'eleven_monolingual_v1', // Use the stable model
       voice_settings: voiceSettings.settings
     };
 
-    const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceSettings.voiceId}/stream`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
-        'xi-api-key': this.apiKey!,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      throw new VoiceEngineError(`ElevenLabs API error: ${response.status}`, this.name);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new VoiceEngineError('No response body', this.name);
-    }
-
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        yield value.buffer; // Yield audio chunk
-      }
-    } finally {
-      reader.releaseLock();
-    }
-    */
+      const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceSettings.voiceId}/stream`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey!,
+        },
+        body: JSON.stringify(request),
+      });
 
-    // STUB: Early return for disabled/stub generator function
-    return;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[VOICE] ElevenLabs API error ${response.status}: ${errorText}`);
+        throw new VoiceEngineError(`ElevenLabs API error: ${response.status} - ${errorText}`, this.name, 'API_ERROR');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new VoiceEngineError('No response body from ElevenLabs API', this.name, 'NO_RESPONSE_BODY');
+      }
+
+      console.log('[VOICE] Starting ElevenLabs audio stream...');
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('[VOICE] ElevenLabs stream completed');
+            break;
+          }
+          
+          if (value && value.length > 0) {
+            yield value.buffer as VoiceChunk;
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      
+    } catch (error) {
+      console.error('[VOICE] ElevenLabs synthesis error:', error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new VoiceEngineNetworkError(this.name, error);
+      } else if (error instanceof VoiceEngineError) {
+        throw error;
+      } else {
+        throw new VoiceEngineError(`ElevenLabs synthesis failed: ${error}`, this.name, 'SYNTHESIS_ERROR');
+      }
+    }
   }
 
   private sanitizeText(text: string): string {
@@ -179,6 +202,6 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
 
   async cleanup(): Promise<void> {
     this.initialized = false;
-    console.log('[VOICE] ElevenLabs TTS engine cleaned up (STUB)');
+    console.log('[VOICE] ElevenLabs TTS engine cleaned up');
   }
 }
