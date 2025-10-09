@@ -50,7 +50,7 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
     this.apiKey = apiKey || null;
     
     // Check feature flag from environment
-    this.featureFlagEnabled = process.env.ELEVENLABS_ENABLED === 'true';
+    this.featureFlagEnabled = process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED === 'true';
     
     if (!this.featureFlagEnabled) {
       console.log('[VOICE] ElevenLabs engine is feature-flagged OFF');
@@ -66,7 +66,7 @@ export class ElevenLabsTTSEngine implements VoiceEngine {
 
     // Get API key from environment if not provided
     if (!this.apiKey) {
-      this.apiKey = process.env.ELEVENLABS_API_KEY || null;
+      this.apiKey = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || null;
     }
 
     console.log(`[VOICE] ElevenLabs API Key present: ${!!this.apiKey}`);

@@ -252,10 +252,8 @@ export class AudioMixer {
       
       item.onStart?.();
       
-      // Play all audio chunks sequentially
-      for (const chunk of item.audioChunks) {
-        await this.playTTSChunk(chunk);
-      }
+      // Play all audio chunks as a combined stream
+      await this.playTTSChunks(item.audioChunks);
       
       item.onComplete?.();
       console.log(`[AUDIO] Completed TTS item: ${item.id}`);
@@ -278,41 +276,126 @@ export class AudioMixer {
   }
 
   /**
-   * Play a single TTS audio chunk
+   * Play TTS audio chunks - combines all chunks into complete audio before decoding
    */
-  private async playTTSChunk(chunk: VoiceChunk): Promise<void> {
+  private async playTTSChunks(chunks: VoiceChunk[]): Promise<void> {
     if (!this.audioContext || !this.ttsGain) {
       throw new Error('AudioMixer not initialized');
     }
     
+    if (chunks.length === 0) {
+      console.warn('[AUDIO] No chunks to play');
+      return;
+    }
+    
     try {
-      // Decode the audio chunk
-      const audioBuffer = await this.audioContext.decodeAudioData(chunk.slice(0));
+      console.log(`[AUDIO] Playing ${chunks.length} TTS chunks as combined audio`);
       
-      // Create and configure audio source
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.ttsGain);
-      
-      // Play the chunk
-      return new Promise<void>((resolve, reject) => {
-        source.onended = () => resolve();
+      // Method 1: Try Web Audio API with combined chunks
+      try {
+        await this.playChunksWithWebAudio(chunks);
+        return;
+      } catch (webAudioError) {
+        console.warn('[AUDIO] Web Audio API failed, trying fallback method:', webAudioError);
         
-        // Handle potential errors during playback
-        const handleError = () => reject(new Error('Audio playback error'));
-        source.addEventListener('error', handleError);
-        
-        try {
-          source.start(0);
-        } catch (error) {
-          reject(error);
-        }
-      });
+        // Method 2: Fallback to HTML5 Audio for better MP3 compatibility
+        await this.playChunksWithHtml5Audio(chunks);
+      }
       
     } catch (error) {
-      console.error('[AUDIO] Failed to play TTS chunk:', error);
+      console.error('[AUDIO] Failed to play TTS chunks:', error);
       throw error;
     }
+  }
+  
+  /**
+   * Play chunks using Web Audio API by combining them first
+   */
+  private async playChunksWithWebAudio(chunks: VoiceChunk[]): Promise<void> {
+    // Combine all chunks into a single ArrayBuffer
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const combined = new Uint8Array(totalLength);
+    
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(new Uint8Array(chunk), offset);
+      offset += chunk.byteLength;
+    }
+    
+    console.log(`[AUDIO] Combined ${chunks.length} chunks into ${totalLength} bytes`);
+    
+    // Decode the complete audio
+    const audioBuffer = await this.audioContext!.decodeAudioData(combined.buffer.slice(0));
+    
+    // Create and configure audio source
+    const source = this.audioContext!.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.ttsGain!);
+    
+    // Play the combined audio
+    return new Promise<void>((resolve, reject) => {
+      source.onended = () => {
+        console.log('[AUDIO] Combined TTS audio playback completed');
+        resolve();
+      };
+      
+      const handleError = (event: Event) => {
+        console.error('[AUDIO] Audio playback error:', event);
+        reject(new Error('Audio playback error'));
+      };
+      source.addEventListener('error', handleError);
+      
+      try {
+        source.start(0);
+        console.log('[AUDIO] Started combined TTS audio playback');
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Fallback method using HTML5 Audio element for MP3 compatibility
+   */
+  private async playChunksWithHtml5Audio(chunks: VoiceChunk[]): Promise<void> {
+    // Combine chunks into a blob URL
+    const combinedBlob = new Blob(chunks, { type: 'audio/mpeg' });
+    const audioUrl = URL.createObjectURL(combinedBlob);
+    
+    console.log(`[AUDIO] Using HTML5 Audio fallback for ${chunks.length} chunks`);
+    
+    return new Promise<void>((resolve, reject) => {
+      const audio = new Audio(audioUrl);
+      
+      // Set volume to match TTS channel
+      const masterVolume = this.config.masterVolume;
+      const ttsVolume = this.config.ttsVolume;
+      audio.volume = Math.min(1.0, masterVolume * ttsVolume);
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        console.log('[AUDIO] HTML5 Audio TTS playback completed');
+        resolve();
+      };
+      
+      audio.onerror = (error) => {
+        URL.revokeObjectURL(audioUrl);
+        console.error('[AUDIO] HTML5 Audio playback error:', error);
+        reject(new Error('HTML5 Audio playback failed'));
+      };
+      
+      // Attempt to play
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch((error) => {
+          URL.revokeObjectURL(audioUrl);
+          console.error('[AUDIO] HTML5 Audio play() rejected:', error);
+          reject(error);
+        });
+      }
+      
+      console.log('[AUDIO] Started HTML5 Audio TTS playback');
+    });
   }
 
   /**

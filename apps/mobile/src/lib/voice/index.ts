@@ -9,6 +9,7 @@ import { VoiceEngine, VoiceEngineError, COLONEL_VOICE_PRESETS } from './VoiceEng
 import { OpenAITTSEngine } from './engines/openai';
 import { ElevenLabsTTSEngine } from './engines/elevenlabs';
 import { CoquiLocalTTSEngine } from './engines/coquiLocal';
+import { debugEnvironmentVariables, checkVoiceEnvironment } from './debugEnv';
 
 export type VoiceEngineType = 'openai' | 'elevenlabs' | 'coqui' | 'disabled';
 
@@ -48,17 +49,27 @@ class VoiceService {
    */
   private loadConfig(): void {
     try {
+      // Enhanced environment debugging
+      debugEnvironmentVariables();
+      
+      const envCheck = checkVoiceEnvironment();
+      if (!envCheck.configured) {
+        console.warn('[VOICE] Environment configuration issues detected:');
+        envCheck.issues.forEach(issue => console.warn(`  ❌ ${issue}`));
+        console.warn('[VOICE] Recommendations:');
+        envCheck.recommendations.forEach(rec => console.warn(`  💡 ${rec}`));
+      }
+      
       console.log('[VOICE] DEBUG: Environment variables check:');
-      console.log('  VOICE_ENABLED:', process.env.VOICE_ENABLED);
-      console.log('  VOICE_ENGINE:', process.env.VOICE_ENGINE);
-      console.log('  ELEVENLABS_ENABLED:', process.env.ELEVENLABS_ENABLED);
-      console.log('  ELEVENLABS_API_KEY present:', !!process.env.ELEVENLABS_API_KEY);
-      console.log('  ELEVENLABS_API_KEY length:', process.env.ELEVENLABS_API_KEY?.length || 0);
-      console.log('  OPENAI_API_KEY present:', !!process.env.OPENAI_API_KEY);
-      console.log('  VOICE_AUTOPLAY:', process.env.VOICE_AUTOPLAY);
+      console.log('  EXPO_PUBLIC_VOICE_ENABLED:', process.env.EXPO_PUBLIC_VOICE_ENABLED);
+      console.log('  EXPO_PUBLIC_VOICE_ENGINE:', process.env.EXPO_PUBLIC_VOICE_ENGINE);
+      console.log('  EXPO_PUBLIC_ELEVENLABS_ENABLED:', process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED);
+      console.log('  EXPO_PUBLIC_ELEVENLABS_API_KEY present:', !!process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY);
+      console.log('  EXPO_PUBLIC_ELEVENLABS_API_KEY length:', process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY?.length || 0);
+      console.log('  EXPO_PUBLIC_VOICE_AUTOPLAY:', process.env.EXPO_PUBLIC_VOICE_AUTOPLAY);
       
       // Check if voice is globally disabled (safe default)
-      const voiceEnabled = process.env.VOICE_ENABLED === 'true';
+      const voiceEnabled = process.env.EXPO_PUBLIC_VOICE_ENABLED === 'true';
       
       // Force disable on web preview environments unless explicitly enabled
       const isWebPreview = typeof window !== 'undefined' && (
@@ -82,26 +93,21 @@ class VoiceService {
       let enginePreference: VoiceEngineType = 'disabled';
       
       if (voiceEnabled) {
-        const configuredEngine = process.env.VOICE_ENGINE as VoiceEngineType;
+        const configuredEngine = process.env.EXPO_PUBLIC_VOICE_ENGINE as VoiceEngineType;
         
         switch (configuredEngine) {
-          case 'openai':
-            enginePreference = process.env.OPENAI_API_KEY ? 'openai' : 'disabled';
-            break;
           case 'elevenlabs':
-            enginePreference = (process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_ENABLED === 'true') 
+            enginePreference = (process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY && process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED === 'true') 
               ? 'elevenlabs' : 'disabled';
             break;
           case 'coqui':
-            enginePreference = process.env.COQUI_ENABLED === 'true' ? 'coqui' : 'disabled';
+            enginePreference = process.env.EXPO_PUBLIC_COQUI_ENABLED === 'true' ? 'coqui' : 'disabled';
             break;
           default:
-            // Auto-detect available engine
-            if (process.env.OPENAI_API_KEY) {
-              enginePreference = 'openai';
-            } else if (process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_ENABLED === 'true') {
+            // Auto-detect available engine - prefer ElevenLabs for this project
+            if (process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY && process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED === 'true') {
               enginePreference = 'elevenlabs';
-            } else if (process.env.COQUI_ENABLED === 'true') {
+            } else if (process.env.EXPO_PUBLIC_COQUI_ENABLED === 'true') {
               enginePreference = 'coqui';
             }
         }
@@ -110,10 +116,10 @@ class VoiceService {
       this.config = {
         enabled: voiceEnabled && enginePreference !== 'disabled',
         engine: enginePreference,
-        autoplayReplies: process.env.VOICE_AUTOPLAY === 'true',
-        volume: this.parseFloat(process.env.VOICE_VOLUME, DEFAULT_VOICE_CONFIG.volume),
-        voicePreset: process.env.VOICE_PRESET || DEFAULT_VOICE_CONFIG.voicePreset,
-        enableSFX: process.env.VOICE_SFX !== 'false' // Default enabled
+        autoplayReplies: process.env.EXPO_PUBLIC_VOICE_AUTOPLAY === 'true',
+        volume: this.parseFloat(process.env.EXPO_PUBLIC_VOICE_VOLUME, DEFAULT_VOICE_CONFIG.volume),
+        voicePreset: process.env.EXPO_PUBLIC_VOICE_PRESET || DEFAULT_VOICE_CONFIG.voicePreset,
+        enableSFX: process.env.EXPO_PUBLIC_VOICE_SFX !== 'false' // Default enabled
       };
 
       console.log('[VOICE] Configuration loaded:', {
@@ -197,20 +203,14 @@ class VoiceService {
    */
   private async createEngine(engineType: VoiceEngineType): Promise<VoiceEngine | null> {
     switch (engineType) {
-      case 'openai':
-        if (process.env.OPENAI_API_KEY) {
-          return new OpenAITTSEngine();
-        }
-        break;
-      
       case 'elevenlabs':
-        if (process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_ENABLED === 'true') {
+        if (process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY && process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED === 'true') {
           return new ElevenLabsTTSEngine();
         }
         break;
       
       case 'coqui':
-        if (process.env.COQUI_ENABLED === 'true') {
+        if (process.env.EXPO_PUBLIC_COQUI_ENABLED === 'true') {
           return new CoquiLocalTTSEngine();
         }
         break;
