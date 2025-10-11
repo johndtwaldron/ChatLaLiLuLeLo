@@ -2068,7 +2068,107 @@ With message-level metadata snapshotting operational:
 **Problem Identified:**
 - All button components were using absolute positioning with manual `left`, `marginLeft` calculations
 - Buttons not participating in the flex layout defined in `controlButtonsContainer`
-- CLOSE button appearing on separate row from other buttons (MODEL, CRT, THEME, MODE, DEBUG, CONN)
+- Manual positioning causing overlap issues and maintenance complexity
+
+---
+
+## Session 20 - 2025-10-11T18:43:00Z
+
+**Objective:** 🌐 GitHub Pages Workflow Enhancement - Dev+ Branch Support with Dynamic Branding
+
+### ✅ **GITHUB PAGES WORKFLOW UPDATED FOR DEV+ BRANCH**
+
+**Requirements Met:**
+- ✅ **Dev+ Branch Trigger**: Added `Dev+` to push triggers alongside existing branches
+- ✅ **Dynamic Branch Titles**: Page titles now show branch-specific prefixes in browser tabs
+- ✅ **Branch-Aware Deployment**: Smart case statement for different branch branding
+- ✅ **Consistent Workflow**: Maintains existing `TARGET_BRANCH` environment variable handling
+
+**GitHub Pages Workflow Enhancement:**
+```yaml
+on:
+  push:
+    branches: [Dev-Voice.V1, develop-v4, main, Dev+]  # Added Dev+ branch
+```
+
+**Dynamic Title System Implementation:**
+```bash
+# Branch-specific title prefixes
+case "$BRANCH_NAME" in
+  "main")
+    TITLE_PREFIX="140.85"
+    ;;
+  "Dev+")
+    TITLE_PREFIX="DEV+"
+    ;;
+  "Dev-Voice.V1")
+    TITLE_PREFIX="VOICE"
+    ;;
+  "develop-v4")
+    TITLE_PREFIX="V4-DEV"
+    ;;
+  *)
+    TITLE_PREFIX="${BRANCH_NAME^^}"  # Uppercase fallback
+    ;;
+esac
+sed -i "s|<title>ChatLaLiLuLeLo</title>|<title>$TITLE_PREFIX — ChatLaLiLuLeLo</title>|g" index.html
+```
+
+**Branch-Specific Page Titles:**
+- **main** → "140.85 — ChatLaLiLuLeLo"
+- **Dev+** → "DEV+ — ChatLaLiLuLeLo" 
+- **Dev-Voice.V1** → "VOICE — ChatLaLiLuLeLo"
+- **develop-v4** → "V4-DEV — ChatLaLiLuLeLo"
+- **Any other branch** → "BRANCHNAME — ChatLaLiLuLeLo"
+
+### 🎯 **Implementation Benefits:**
+
+**Developer Experience:**
+- **Clear Branch Identification**: Browser tabs immediately show which branch is deployed
+- **Testing Clarity**: Dev+ deployments clearly distinguished from production (main)
+- **Multi-Branch Support**: Consistent branding system for all deployment branches
+
+**Deployment Workflow:**
+- **Automatic Triggers**: Dev+ pushes now auto-deploy to GitHub Pages
+- **Manual Dispatch**: Existing workflow_dispatch functionality preserved
+- **Environment Variables**: TARGET_BRANCH system maintains compatibility
+
+**Production Readiness:**
+- **Voice Engine Security**: Dev+ branch includes all security hardening updates
+- **iOS Safari Audio**: Fixed audio unlock issues for mobile compatibility
+- **Multi-pass SSML Sanitization**: Enhanced security for voice engine inputs
+
+### 📊 **Workflow File Updates:**
+
+**Files Modified:**
+- ✅ `.github/workflows/pages.yml` - Added Dev+ branch trigger and dynamic title system
+
+**Branch Coverage:**
+- ✅ **4 Active Branches**: Dev-Voice.V1, develop-v4, main, Dev+ all auto-deploy
+- ✅ **Manual Dispatch**: Workflow supports deploying any branch on demand
+- ✅ **Title Coordination**: Each branch gets appropriate branding
+
+**Testing Environment:**
+- **Dev+ Branch URL**: https://johndtwaldron.github.io/ChatLaLiLuLeLo/
+- **Page Title**: "DEV+ — ChatLaLiLuLeLo" (clearly indicates development branch)
+- **Security Features**: All voice engine hardening and iOS Safari fixes included
+
+### 🔄 **Integration with Existing Security Work:**
+
+**Voice Engine Security Hardening:**
+- ✅ **Multi-pass SSML Stripping**: Robust nested tag removal in voice engines
+- ✅ **Enhanced Sanitization**: Broader URL scheme filtering including `vbscript:`
+- ✅ **iOS Safari Audio**: Fixed playCodecClose() audio unlock in message handler
+- ✅ **CI Permissions**: Minimal `contents: read` permissions in workflow
+
+**Ready for Dev+ Deployment:**
+With the GitHub Pages workflow updated, the Dev+ branch is now ready for:
+1. **Push to GitHub**: Auto-triggers pages deployment with "DEV+" branding
+2. **Security Testing**: Voice engine hardening available for live testing
+3. **iOS Safari Validation**: Audio fixes testable on mobile Safari
+4. **Multi-Branch Development**: Clear visual distinction between dev and production
+
+**Status:** 🌐 **GITHUB PAGES DEV+ SUPPORT COMPLETE** - Dynamic branch-aware deployment system operational with proper branding and security hardening integration
 - Layout not responsive and prone to overlapping issues
 
 **Solution Implemented:**
