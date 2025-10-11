@@ -28,6 +28,7 @@ import { extractUserFriendlyError } from '@/lib/security';
 import { getLightningAddress } from '@/config/lightning.config';
 import { VoiceControls } from '@/components/VoiceControls';
 import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceService';
+import { AudioDebugOverlay } from '@/components/AudioDebugOverlay';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -105,6 +106,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [haywireMode] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
   const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
+  const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -164,6 +166,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   // Handle connection debug toggle
   const handleConnectionDebugToggle = (enabled: boolean) => {
     setConnectionDebugEnabled(enabled);
+  };
+
+  // Handle audio debug toggle
+  const handleAudioDebugToggle = (enabled: boolean) => {
+    setAudioDebugEnabled(enabled);
   };
 
   // Handle close button press - enter standby mode
@@ -325,7 +332,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN */}
+        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */}
         <View style={staticStyles.controlButtonsContainer}>
           <ModelToggle />
           
@@ -356,6 +363,23 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           <ModeToggle />
           <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
           <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
+          
+          <Pressable 
+            onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
+            style={[
+              staticStyles.controlButton,
+              { 
+                borderColor: audioDebugEnabled ? currentTheme.colors.accent : currentTheme.colors.primary,
+                backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
+              }
+            ]}
+          >
+            <Text style={[staticStyles.controlButtonText, { 
+              color: audioDebugEnabled ? currentTheme.colors.accent : currentTheme.colors.primary 
+            }]}>
+              🔊
+            </Text>
+          </Pressable>
         </View>
         
         <View style={themeStyles.content}>
@@ -421,6 +445,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         {/* Connection Debug Panel */}
         {connectionDebugEnabled && (
           <ConnectionDebug />
+        )}
+        
+        {/* Audio Debug Panel */}
+        {audioDebugEnabled && (
+          <AudioDebugOverlay 
+            visible={audioDebugEnabled}
+            onClose={() => handleAudioDebugToggle(false)} 
+          />
         )}
       </CodecFrame>
     </SafeAreaView>
