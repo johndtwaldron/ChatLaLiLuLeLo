@@ -34,7 +34,7 @@
     "deploy:staging": "cd apps/edge && npx wrangler deploy --env=staging"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^10.0.0",
+    "@cucumber/cucumber": "^10.9.0",
     "@playwright/test": "^1.40.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
