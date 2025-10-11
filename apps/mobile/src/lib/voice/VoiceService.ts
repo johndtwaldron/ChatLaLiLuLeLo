@@ -277,6 +277,13 @@ class VoiceServiceManager {
   }
 
   /**
+   * Get the internal AudioMixer for direct access (e.g., for iOS audio unlock)
+   */
+  getAudioMixer(): AudioMixer | null {
+    return this.audioMixer;
+  }
+
+  /**
    * Get current voice service status
    */
   getStatus(): {

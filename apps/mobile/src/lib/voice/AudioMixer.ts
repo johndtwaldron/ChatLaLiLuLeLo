@@ -134,15 +134,30 @@ export class AudioMixer {
         
         if (isIOSSafari) {
           try {
-            // Create a silent buffer to unlock iOS audio
+            // Method 1: Create a silent buffer to unlock iOS Web Audio API
             const buffer = this.audioContext.createBuffer(1, 1, 22050);
             const source = this.audioContext.createBufferSource();
             source.buffer = buffer;
             source.connect(this.audioContext.destination);
             source.start();
-            console.log('[AUDIO] iOS Safari audio context unlocked with silent buffer');
+            console.log('[AUDIO] iOS Safari Web Audio API unlocked with silent buffer');
+            
+            // Method 2: Also unlock with HTML5 Audio for broader compatibility
+            const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==');
+            audio.volume = 0;
+            const playPromise = audio.play();
+            if (playPromise) {
+              playPromise.then(() => {
+                console.log('[AUDIO] iOS Safari HTML5 Audio also unlocked');
+                audio.pause();
+                // Don't remove the audio element on mobile
+              }).catch(() => {
+                console.log('[AUDIO] HTML5 Audio unlock not needed or failed');
+              });
+            }
+            
           } catch (silentError) {
-            console.warn('[AUDIO] iOS Safari silent audio unlock failed:', silentError);
+            console.warn('[AUDIO] iOS Safari audio unlock failed:', silentError);
           }
         }
       } catch (error) {

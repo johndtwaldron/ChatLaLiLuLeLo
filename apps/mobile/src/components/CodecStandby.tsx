@@ -81,11 +81,13 @@ export const CodecStandby: React.FC<CodecStandbyProps> = ({ onReactivate, playCl
           const { voiceService } = require('@/lib/voice');
           await voiceService.initialize();
           
-          // Get the voice engine's audio mixer and ensure it's activated
-          const voiceEngine = voiceService.getEngine();
-          if (voiceEngine?.audioMixer) {
-            await voiceEngine.audioMixer.ensureAudioContextRunning();
+          // Access the voice service's internal audioMixer and ensure it's activated
+          const audioMixer = voiceService.getAudioMixer();
+          if (audioMixer) {
+            await audioMixer.ensureAudioContextRunning();
             console.log('[CODEC STANDBY] Voice system audio context activated');
+          } else {
+            console.warn('[CODEC STANDBY] Voice service audioMixer not available');
           }
         } catch (voiceError) {
           console.warn('[CODEC STANDBY] Voice system activation failed (may not be enabled):', voiceError);
