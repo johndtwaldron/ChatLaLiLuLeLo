@@ -369,13 +369,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             style={[
               staticStyles.controlButton,
               { 
-                borderColor: audioDebugEnabled ? currentTheme.colors.accent : currentTheme.colors.primary,
+                borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
                 backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
               }
             ]}
           >
             <Text style={[staticStyles.controlButtonText, { 
-              color: audioDebugEnabled ? currentTheme.colors.accent : currentTheme.colors.primary 
+              color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
             }]}>
               🔊
             </Text>

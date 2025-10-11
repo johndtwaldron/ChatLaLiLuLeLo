@@ -25,6 +25,14 @@ export const AudioDebugOverlay: React.FC<AudioDebugOverlayProps> = ({ visible, o
   
   const theme = getCodecTheme();
 
+  // Add debug log function available to all component methods
+  const addDebugLog = (level: AudioDebugInfo['level'], message: string) => {
+    if (message.includes('[AUDIO]') || message.includes('🍎') || message.includes('voice') || message.includes('TTS')) {
+      const timestamp = new Date().toLocaleTimeString();
+      setDebugLogs(prev => [...prev.slice(-9), { timestamp, level, message }]); // Keep last 10 logs
+    }
+  };
+
   useEffect(() => {
     if (!visible) return;
 
@@ -39,12 +47,7 @@ export const AudioDebugOverlay: React.FC<AudioDebugOverlayProps> = ({ visible, o
     const originalConsoleError = console.error;
     const originalConsoleWarn = console.warn;
 
-    const addDebugLog = (level: AudioDebugInfo['level'], message: string) => {
-      if (message.includes('[AUDIO]') || message.includes('🍎') || message.includes('voice') || message.includes('TTS')) {
-        const timestamp = new Date().toLocaleTimeString();
-        setDebugLogs(prev => [...prev.slice(-9), { timestamp, level, message }]); // Keep last 10 logs
-      }
-    };
+    // Use the component-level addDebugLog function
 
     console.log = (...args) => {
       originalConsoleLog(...args);
