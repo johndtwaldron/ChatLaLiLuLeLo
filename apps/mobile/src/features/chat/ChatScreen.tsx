@@ -192,6 +192,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(7);
     
+    // iOS Audio Unlock: Ensure audio is unlocked on user interaction
+    try {
+      // Play a tiny codec sound to unlock iOS audio on user gesture
+      await playCodecClose();
+      console.log('[CHAT] 🍎 iOS audio unlock attempted via user message send');
+    } catch (error) {
+      console.warn('[CHAT] 🍎 iOS audio unlock failed (non-critical):', error);
+      // Don't block message sending if audio unlock fails
+    }
+    
     // Snapshot current mode/model at creation time (freeze them)
     const meta = snapshotMeta('user');
     
