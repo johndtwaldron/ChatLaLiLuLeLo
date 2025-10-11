@@ -2,7 +2,7 @@ name: Deploy Web to GitHub Pages (Dynamic Branch)
 
 on:
   push:
-    branches: [Dev-Voice.V1, develop-v4, main, Dev+] # Support multiple branches
+    branches: [Dev-Voice.V1, develop-v4, main, dev-plus] # Support multiple branches
   workflow_dispatch: # Allow manual triggering
     inputs:
       target_branch:
@@ -182,7 +182,7 @@ jobs:
               "main")
                 TITLE_PREFIX="140.85"
                 ;;
-              "Dev+")
+              "dev-plus")
                 TITLE_PREFIX="DEV+"
                 ;;
               "Dev-Voice.V1")
