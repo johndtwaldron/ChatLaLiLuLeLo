@@ -1,9 +1,29 @@
-name: Deploy Web to GitHub Pages
+name: Deploy Web to GitHub Pages (Dynamic Branch)
 
 on:
   push:
-    branches: [Dev-Voice.V1]
+    branches: [Dev-Voice.V1, develop-v4, main] # Support multiple branches
   workflow_dispatch: # Allow manual triggering
+    inputs:
+      target_branch:
+        description: 'Branch to deploy (overrides repository variable)'
+        required: false
+        default: ''
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  # Dynamic branch selection with fallback logic
+  TARGET_BRANCH: ${{ github.event.inputs.target_branch || vars.DEPLOY_BRANCH || github.ref_name }}
+  DEPLOY_ENVIRONMENT: ${{ github.event.inputs.environment || vars.DEPLOY_ENVIRONMENT || 'development' }}
+  WEB_TESTING_ENABLED: ${{ vars.WEB_TESTING_ENABLED || 'true' }}
 
 permissions:
   contents: read
@@ -19,8 +39,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: 🚀 Display deployment configuration
+        run: |
+          echo "🚀 ChatLaLiLuLeLo Dynamic Branch Deployment"
+          echo "====================================="
+          echo "Target Branch: ${{ env.TARGET_BRANCH }}"
+          echo "Environment: ${{ env.DEPLOY_ENVIRONMENT }}"
+          echo "Web Testing: ${{ env.WEB_TESTING_ENABLED }}"
+          echo "Triggered By: ${{ github.event_name }}"
+          echo "Source Branch: ${{ github.ref_name }}"
+          echo "====================================="
+          
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
