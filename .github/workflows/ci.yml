@@ -1,5 +1,8 @@
 name: ChatLaLiLuLeLo CI/CD
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main, Dev-QA, Dev-Voice.V1 ]
@@ -361,6 +364,8 @@ jobs:
 
   e2e-extended:
     name: E2E Extended Tests
+    permissions:
+      contents: read
     if: github.ref == 'refs/heads/Dev-QA' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [unit-lint-ci]

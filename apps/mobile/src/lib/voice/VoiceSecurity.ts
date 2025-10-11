@@ -23,14 +23,12 @@ const MIN_TTS_LENGTH = 1; // Must have at least some content
 
 // SSML security patterns
 const DANGEROUS_SSML_PATTERNS = [
-  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, // Script tags
-  /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, // Iframe tags
-  /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, // Object tags
-  /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, // Embed tags
-  /javascript:/gi, // JavaScript URLs
-  /data:(?!audio|image)/gi, // Data URLs (except safe media types)
-  /vbscript:/gi, // VBScript URLs
-  /file:/gi, // File URLs
+  // Script tags (allow optional whitespace before closing '>')
+  /<script\b[^<]*(?:(?!<\/script\s*>)[^<]*)*<\/script\s*>/gi,
+  /<iframe\b[^<]*(?:(?!<\/iframe\s*>)[^<]*)*<\/iframe\s*>/gi, // Iframe tags
+  /<object\b[^<]*(?:(?!<\/object\s*>)[^<]*)*<\/object\s*>/gi, // Object tags
+  /<embed\b[^<]*(?:(?!<\/embed\s*>)[^<]*)*<\/embed\s*>/gi, // Embed tags
+  /javascript:|data:|file:|vbscript:/gi, // Dangerous URL schemes
   /about:/gi, // About URLs
 ];
 
@@ -235,8 +233,8 @@ function sanitizeSSMLAttributes(attributes: string, allowedAttrs: string[]): str
     if (allowedAttrs.includes(attrName.toLowerCase())) {
       // Basic attribute value sanitization
       const cleanValue = attrValue
-        .replace(/[<>]/g, '') // Remove angle brackets
-        .replace(/javascript:|data:|file:/gi, '') // Remove dangerous URLs
+        .replace(/[<>"&]/g, '') // Remove angle brackets, quotes, and ampersands
+        .replace(/javascript:|data:|file:|vbscript:/gi, '') // Remove dangerous URLs
         .trim();
       
       if (cleanValue) {
@@ -249,10 +247,16 @@ function sanitizeSSMLAttributes(attributes: string, allowedAttrs: string[]): str
 }
 
 /**
- * Strip all SSML tags from text
+ * Strip all SSML tags from text (robust multi-pass)
  */
 function stripSSML(text: string): string {
-  return text.replace(/<[^>]*>/g, '').trim();
+  let sanitized = text;
+  let prev: string;
+  do {
+    prev = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  } while (sanitized !== prev);
+  return sanitized.trim();
 }
 
 /**
