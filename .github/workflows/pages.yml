@@ -2,7 +2,7 @@ name: Deploy Web to GitHub Pages (Dynamic Branch)
 
 on:
   push:
-    branches: [Dev-Voice.V1, develop-v4, main] # Support multiple branches
+    branches: [Dev-Voice.V1, develop-v4, main, Dev+] # Support multiple branches
   workflow_dispatch: # Allow manual triggering
     inputs:
       target_branch:
@@ -176,9 +176,27 @@ jobs:
             sed -i 's|href="/_expo/|href="./_expo/|g' index.html
             echo "Fixed asset paths in index.html"
             
-            # Update page title
-            sed -i 's|<title>ChatLaLiLuLeLo</title>|<title>140.85 — ChatLaLiLuLeLo</title>|g' index.html
-            echo "Updated page title"
+            # Update page title with branch name
+            BRANCH_NAME="${{ env.TARGET_BRANCH }}"
+            case "$BRANCH_NAME" in
+              "main")
+                TITLE_PREFIX="140.85"
+                ;;
+              "Dev+")
+                TITLE_PREFIX="DEV+"
+                ;;
+              "Dev-Voice.V1")
+                TITLE_PREFIX="VOICE"
+                ;;
+              "develop-v4")
+                TITLE_PREFIX="V4-DEV"
+                ;;
+              *)
+                TITLE_PREFIX="${BRANCH_NAME^^}" # Uppercase branch name
+                ;;
+            esac
+            sed -i "s|<title>ChatLaLiLuLeLo</title>|<title>$TITLE_PREFIX — ChatLaLiLuLeLo</title>|g" index.html
+            echo "Updated page title with branch prefix: $TITLE_PREFIX"
             
             # Show the patched result
             echo "Asset paths after fix:"
