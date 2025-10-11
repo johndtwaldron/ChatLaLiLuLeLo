@@ -28,3 +28,6 @@
 [2025-10-09T20:13:24.673Z] 💡 To stop servers: Ctrl+C
 [2025-10-09T20:13:24.673Z] 📝 This session logged to: debug\terminal.outputs\dev.debug.2025-10-09T20-13-14.txt
 [2025-10-09T20:13:24.674Z] 
+[2025-10-11T15:17:40.525Z] 
+[2025-10-11T15:17:40.526Z] 🛑 Received SIGINT, shutting down development servers...
+[2025-10-11T15:17:40.751Z] 🔚 Development servers exited with code 1
