@@ -117,52 +117,69 @@ export class AudioMixer {
    * Ensure audio context is running (handle browser autoplay policies)
    */
   async ensureAudioContextRunning(): Promise<void> {
+    const isIOSSafari = typeof navigator !== 'undefined' && 
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    if (isIOSSafari) {
+      console.log('[AUDIO] 🍎 iOS Safari detected in AudioMixer - starting comprehensive audio unlock');
+    }
+    
     if (!this.audioContext) {
+      console.log('[AUDIO] 🔧 No AudioContext - initializing...');
       await this.initialize();
       return;
     }
     
+    console.log(`[AUDIO] 📊 AudioContext state: ${this.audioContext.state}`);
+    
     if (this.audioContext.state === 'suspended') {
       try {
+        console.log('[AUDIO] 🔄 Resuming suspended AudioContext...');
         // For iOS Safari, we need to resume the audio context
         await this.audioContext.resume();
-        console.log('[AUDIO] AudioContext resumed from suspended state');
-        
-        // Additional iOS Safari fix - play a silent sound to fully activate
-        const isIOSSafari = typeof navigator !== 'undefined' && 
-          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        console.log(`[AUDIO] ✅ AudioContext resumed - new state: ${this.audioContext.state}`);
         
         if (isIOSSafari) {
           try {
+            console.log('[AUDIO] 🍎 Starting iOS Safari-specific unlock sequence...');
+            
             // Method 1: Create a silent buffer to unlock iOS Web Audio API
             const buffer = this.audioContext.createBuffer(1, 1, 22050);
             const source = this.audioContext.createBufferSource();
             source.buffer = buffer;
             source.connect(this.audioContext.destination);
             source.start();
-            console.log('[AUDIO] iOS Safari Web Audio API unlocked with silent buffer');
+            console.log('[AUDIO] 🍎 ✅ iOS Safari Web Audio API unlocked with silent buffer');
             
             // Method 2: Also unlock with HTML5 Audio for broader compatibility
             const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==');
             audio.volume = 0;
+            console.log('[AUDIO] 🍎 🔊 Attempting HTML5 Audio unlock...');
             const playPromise = audio.play();
             if (playPromise) {
               playPromise.then(() => {
-                console.log('[AUDIO] iOS Safari HTML5 Audio also unlocked');
+                console.log('[AUDIO] 🍎 ✅ iOS Safari HTML5 Audio also unlocked successfully');
                 audio.pause();
                 // Don't remove the audio element on mobile
-              }).catch(() => {
-                console.log('[AUDIO] HTML5 Audio unlock not needed or failed');
+              }).catch((htmlError) => {
+                console.log('[AUDIO] 🍎 ⚠️ HTML5 Audio unlock failed or not needed:', htmlError.message);
               });
             }
             
           } catch (silentError) {
-            console.warn('[AUDIO] iOS Safari audio unlock failed:', silentError);
+            console.error('[AUDIO] 🍎 ❌ iOS Safari audio unlock sequence failed:', silentError);
           }
         }
       } catch (error) {
-        console.warn('[AUDIO] Failed to resume AudioContext:', error);
+        console.error('[AUDIO] ❌ Failed to resume AudioContext:', error);
       }
+    } else {
+      console.log(`[AUDIO] ✅ AudioContext already running (state: ${this.audioContext.state})`);
+    }
+    
+    if (isIOSSafari) {
+      console.log('[AUDIO] 🍎 📊 iOS Safari unlock sequence completed');
+      console.log(`[AUDIO] 🍎 📊 Final AudioContext state: ${this.audioContext?.state}`);
     }
   }
 
@@ -392,11 +409,17 @@ export class AudioMixer {
    * Fallback method using HTML5 Audio element for MP3 compatibility
    */
   private async playChunksWithHtml5Audio(chunks: VoiceChunk[]): Promise<void> {
+    const isIOSSafari = typeof navigator !== 'undefined' && 
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
     // Combine chunks into a blob URL
     const combinedBlob = new Blob(chunks, { type: 'audio/mpeg' });
     const audioUrl = URL.createObjectURL(combinedBlob);
     
     console.log(`[AUDIO] Using HTML5 Audio fallback for ${chunks.length} chunks`);
+    if (isIOSSafari) {
+      console.log('[AUDIO] 🍎 HTML5 Audio fallback on iOS Safari - this is critical for TTS');
+    }
     
     return new Promise<void>((resolve, reject) => {
       const audio = new Audio(audioUrl);
@@ -404,26 +427,63 @@ export class AudioMixer {
       // Set volume to match TTS channel
       const masterVolume = this.config.masterVolume;
       const ttsVolume = this.config.ttsVolume;
-      audio.volume = Math.min(1.0, masterVolume * ttsVolume);
+      const finalVolume = Math.min(1.0, masterVolume * ttsVolume);
+      audio.volume = finalVolume;
+      
+      if (isIOSSafari) {
+        console.log(`[AUDIO] 🍎 🔊 iOS Safari HTML5 Audio configured - volume: ${finalVolume}`);
+      }
+      
+      audio.onloadstart = () => {
+        if (isIOSSafari) console.log('[AUDIO] 🍎 📥 iOS Safari HTML5 Audio loading started');
+      };
+      
+      audio.oncanplay = () => {
+        if (isIOSSafari) console.log('[AUDIO] 🍎 ▶️ iOS Safari HTML5 Audio can play - ready for playback');
+      };
+      
+      audio.onplay = () => {
+        if (isIOSSafari) console.log('[AUDIO] 🍎 🎵 iOS Safari HTML5 Audio play event fired');
+      };
       
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
-        console.log('[AUDIO] HTML5 Audio TTS playback completed');
+        if (isIOSSafari) {
+          console.log('[AUDIO] 🍎 ✅ iOS Safari HTML5 Audio TTS playback completed successfully');
+        } else {
+          console.log('[AUDIO] HTML5 Audio TTS playback completed');
+        }
         resolve();
       };
       
       audio.onerror = (error) => {
         URL.revokeObjectURL(audioUrl);
-        console.error('[AUDIO] HTML5 Audio playback error:', error);
+        if (isIOSSafari) {
+          console.error('[AUDIO] 🍎 ❌ iOS Safari HTML5 Audio playback error:', error);
+        } else {
+          console.error('[AUDIO] HTML5 Audio playback error:', error);
+        }
         reject(new Error('HTML5 Audio playback failed'));
       };
       
       // Attempt to play
+      if (isIOSSafari) {
+        console.log('[AUDIO] 🍎 🚀 Attempting to play HTML5 Audio on iOS Safari...');
+      }
+      
       const playPromise = audio.play();
       if (playPromise) {
-        playPromise.catch((error) => {
+        playPromise.then(() => {
+          if (isIOSSafari) {
+            console.log('[AUDIO] 🍎 ✅ iOS Safari HTML5 Audio play() promise resolved successfully');
+          }
+        }).catch((error) => {
           URL.revokeObjectURL(audioUrl);
-          console.error('[AUDIO] HTML5 Audio play() rejected:', error);
+          if (isIOSSafari) {
+            console.error('[AUDIO] 🍎 ❌ iOS Safari HTML5 Audio play() promise rejected:', error.name, error.message);
+          } else {
+            console.error('[AUDIO] HTML5 Audio play() rejected:', error);
+          }
           reject(error);
         });
       }
