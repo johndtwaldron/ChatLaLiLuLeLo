@@ -242,6 +242,14 @@ jobs:
           fi
           echo "✅ Tests completed successfully"
 
+      - name: 📱 Validate iOS Audio Compatibility
+        run: |
+          cd apps/mobile
+          echo "📱 Running iOS audio compatibility tests..."
+          # Run iOS-specific audio tests to ensure iPhone Safari fixes work
+          npm test -- --testPathPattern="ios-audio-fixes.test.ts" --verbose
+          echo "✅ iOS audio compatibility verified"
+
       - name: 🔊 Voice System Tests
         if: github.ref == 'refs/heads/Dev-Voice.V1' || contains(github.ref, 'voice')
         env:

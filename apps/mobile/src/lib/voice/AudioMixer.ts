@@ -124,8 +124,27 @@ export class AudioMixer {
     
     if (this.audioContext.state === 'suspended') {
       try {
+        // For iOS Safari, we need to resume the audio context
         await this.audioContext.resume();
-        console.log('[AUDIO] AudioContext resumed');
+        console.log('[AUDIO] AudioContext resumed from suspended state');
+        
+        // Additional iOS Safari fix - play a silent sound to fully activate
+        const isIOSSafari = typeof navigator !== 'undefined' && 
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOSSafari) {
+          try {
+            // Create a silent buffer to unlock iOS audio
+            const buffer = this.audioContext.createBuffer(1, 1, 22050);
+            const source = this.audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.audioContext.destination);
+            source.start();
+            console.log('[AUDIO] iOS Safari audio context unlocked with silent buffer');
+          } catch (silentError) {
+            console.warn('[AUDIO] iOS Safari silent audio unlock failed:', silentError);
+          }
+        }
       } catch (error) {
         console.warn('[AUDIO] Failed to resume AudioContext:', error);
       }
