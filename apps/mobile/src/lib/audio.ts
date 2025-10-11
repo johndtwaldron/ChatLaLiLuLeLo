@@ -78,6 +78,12 @@ class CodecAudioService {
       description: 'MGS item acquisition sound'
     },
     {
+      id: 'transcript_saved',
+      name: 'Transcript Saved',
+      file: asAudio(require('../../assets/audio/metal-gear-item-drop.mp3')),
+      description: 'Transcript download completion sound'
+    },
+    {
       id: 'reflex_mode',
       name: 'Reflex Mode',
       file: asAudio(require('../../assets/audio/mgs-reflex-mode.mp3')),
@@ -388,3 +394,11 @@ export const playRationsSound = () => {
 export const getCodecAudioSettings = () => codecAudioService.getSettings();
 export const updateCodecAudioSettings = (settings: Partial<AudioSettings>) => 
   codecAudioService.updateSettings(settings);
+
+// Transcript download completion sound
+export const playTranscriptSavedSound = () => {
+  console.log('[CODEC AUDIO] Playing transcript saved sound');
+  return codecAudioService.playSound('transcript_saved', { 
+    volume: codecAudioService.getSettings().volume * 0.8 // UI feedback volume
+  });
+};

@@ -60,9 +60,21 @@ class VoiceServiceManager {
       // Initialize voice engine system
       await initializeVoice();
 
-      // Initialize audio mixer
-      this.audioMixer = new AudioMixer();
+      // Get current voice config
+      const config = getVoiceConfig();
+
+      // Initialize audio mixer with current volume settings
+      this.audioMixer = new AudioMixer({
+        ttsVolume: config.volume,
+        masterVolume: 1.0, // Keep master at full, control through ttsVolume
+        sfxVolume: 0.6,
+        enableDucking: true,
+        duckingLevel: 0.3,
+        maxQueueSize: 10
+      });
       await this.audioMixer.initialize();
+
+      console.log(`[VOICE SERVICE] AudioMixer initialized with TTS volume: ${config.volume}`);
 
       this.initialized = true;
       console.log('[VOICE SERVICE] Voice service initialized successfully');
@@ -71,6 +83,23 @@ class VoiceServiceManager {
       console.error('[VOICE SERVICE] Failed to initialize:', error);
       throw error;
     }
+  }
+
+  /**
+   * Update AudioMixer volume settings from VoiceConfig
+   */
+  updateAudioMixerVolume(): void {
+    if (!this.audioMixer) return;
+    
+    const config = getVoiceConfig();
+    const currentVolume = config.volume;
+    
+    // Update AudioMixer TTS volume
+    this.audioMixer.updateConfig({
+      ttsVolume: currentVolume
+    });
+    
+    console.log(`[VOICE SERVICE] AudioMixer volume updated to: ${currentVolume}`);
   }
 
   /**
@@ -93,6 +122,9 @@ class VoiceServiceManager {
         console.log('[VOICE SERVICE] Voice disabled by configuration');
         return null;
       }
+      
+      // Ensure AudioMixer has current volume settings
+      this.updateAudioMixerVolume();
 
       // Get voice engine
       const engine = getVoiceEngine();
@@ -339,3 +371,4 @@ export const clearVoiceQueue = () => voiceService.clearQueue();
 export const stopAllVoice = () => voiceService.stopAll();
 export const getVoiceServiceStatus = () => voiceService.getStatus();
 export const initializeVoiceService = () => voiceService.initialize();
+export const updateVoiceServiceVolume = () => voiceService.updateAudioMixerVolume();

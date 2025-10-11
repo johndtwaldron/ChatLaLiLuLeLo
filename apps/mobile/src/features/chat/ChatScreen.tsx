@@ -433,6 +433,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             <TextInput 
               onSendMessage={handleSendMessage}
               placeholder="Enter your message..."
+              messages={messages}
             />
           </View>
         </View>

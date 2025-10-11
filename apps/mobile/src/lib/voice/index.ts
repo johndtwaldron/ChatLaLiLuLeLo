@@ -20,6 +20,7 @@ export interface VoiceConfig {
   volume: number; // 0-1
   voicePreset: string;
   enableSFX: boolean; // Enable codec sound effects
+  lastVolume?: number; // Store last volume before smart toggle disable
 }
 
 /**
