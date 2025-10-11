@@ -208,6 +208,11 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
     position: 'absolute',
     left: 0,
     top: 0,
+    // Ensure Lightning QR is above other UI elements
+    ...(type === 'user' && showLightningQR && {
+      zIndex: 9999,
+      elevation: 20,
+    }),
   }));
 
   return (

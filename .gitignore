@@ -86,3 +86,8 @@ dev.vars
 # Large archive files
 *.zip
 c.ChatLaLiLuLeLo.JDW.zip
+
+# Debug and temporary development files
+debug/terminal.outputs/
+*.bat
+restart-*.bat

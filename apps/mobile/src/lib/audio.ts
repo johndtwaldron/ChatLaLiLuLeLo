@@ -119,16 +119,27 @@ class CodecAudioService {
       } else {
         // On web, prepare audio context and defer preloading until first user interaction
         console.log('[CODEC AUDIO] Web platform detected - preparing web audio context');
-        // Attempt to prepare audio context
-        try {
-          const { sound: testSound } = await Audio.Sound.createAsync(
-            this.codecSounds[0].file,
-            { shouldPlay: false, volume: 0 }
-          );
-          this.sounds.set('_test_', testSound);
-          console.log('[CODEC AUDIO] Web audio context prepared successfully');
-        } catch (webError) {
-          console.warn('[CODEC AUDIO] Web audio preparation failed (will retry on first play):', webError);
+        
+        // Check if we're on iOS Safari
+        const isIOSSafari = typeof navigator !== 'undefined' && 
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOSSafari) {
+          console.log('[CODEC AUDIO] iOS Safari detected - audio will be activated on user interaction');
+          // On iOS Safari, audio context will be suspended until first user interaction
+          // Don't attempt to create sounds yet - wait for user interaction
+        } else {
+          // On desktop web browsers, attempt to prepare audio context
+          try {
+            const { sound: testSound } = await Audio.Sound.createAsync(
+              this.codecSounds[0].file,
+              { shouldPlay: false, volume: 0 }
+            );
+            this.sounds.set('_test_', testSound);
+            console.log('[CODEC AUDIO] Web audio context prepared successfully');
+          } catch (webError) {
+            console.warn('[CODEC AUDIO] Web audio preparation failed (will retry on first play):', webError);
+          }
         }
       }
       

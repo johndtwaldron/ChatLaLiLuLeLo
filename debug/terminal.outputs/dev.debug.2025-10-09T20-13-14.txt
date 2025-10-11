@@ -1,0 +1,33 @@
+[2025-10-09T20:13:14.942Z] 🚀 ChatLaLiLuLeLo Enhanced Development Startup
+[2025-10-09T20:13:14.945Z] 📝 Debug log: debug\terminal.outputs\dev.debug.2025-10-09T20-13-14.txt
+[2025-10-09T20:13:14.946Z] 
+[2025-10-09T20:13:14.946Z] ⚡ Phase 0: System Health Check...
+[2025-10-09T20:13:15.404Z] ✅ Disk space OK: 6.01GB free
+[2025-10-09T20:13:15.408Z] ✅ Default ports available (14085, 8787)
+[2025-10-09T20:13:15.408Z] ✅ System health check completed
+[2025-10-09T20:13:15.408Z] 📋 Phase 1: Checking Project Structure...
+[2025-10-09T20:13:15.409Z] ✅ Project structure validated
+[2025-10-09T20:13:15.409Z] 🛡️ Phase 2: Running Code Linting...
+[2025-10-09T20:13:18.646Z] ✅ Code linting passed
+[2025-10-09T20:13:18.646Z] 🔍 Phase 3: Running TypeScript Validation...
+[2025-10-09T20:13:24.564Z] ✅ TypeScript validation passed
+[2025-10-09T20:13:24.564Z] 🤖 Phase 3.5: Validating AI Prompt Files...
+[2025-10-09T20:13:24.565Z] ✅ prompts/modes/btc.md validated (4.73KB)
+[2025-10-09T20:13:24.565Z] ✅ prompts/modes/gw.md validated (5.27KB)
+[2025-10-09T20:13:24.566Z] ✅ prompts/modes/jd.md validated (5.01KB)
+[2025-10-09T20:13:24.566Z] ✅ prompts/modes/mgs.md validated (7.1KB)
+[2025-10-09T20:13:24.669Z] ✅ AI prompt validation completed
+[2025-10-09T20:13:24.672Z] 
+[2025-10-09T20:13:24.672Z] 🎉 All validation checks passed!
+[2025-10-09T20:13:24.672Z] 🚀 Starting development servers...
+[2025-10-09T20:13:24.672Z] 
+[2025-10-09T20:13:24.673Z] 📡 Launching backend (Cloudflare Workers) and frontend (Expo)...
+[2025-10-09T20:13:24.673Z] 🔗 Frontend will be available at: http://localhost:14085
+[2025-10-09T20:13:24.673Z] 🔗 Backend API will be available at: http://localhost:8787
+[2025-10-09T20:13:24.673Z] 
+[2025-10-09T20:13:24.673Z] 💡 To stop servers: Ctrl+C
+[2025-10-09T20:13:24.673Z] 📝 This session logged to: debug\terminal.outputs\dev.debug.2025-10-09T20-13-14.txt
+[2025-10-09T20:13:24.674Z] 
+[2025-10-11T15:17:40.525Z] 
+[2025-10-11T15:17:40.526Z] 🛑 Received SIGINT, shutting down development servers...
+[2025-10-11T15:17:40.751Z] 🔚 Development servers exited with code 1

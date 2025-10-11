@@ -26,6 +26,9 @@ import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types
 import { playCodecClose } from '@/lib/audio';
 import { extractUserFriendlyError } from '@/lib/security';
 import { getLightningAddress } from '@/config/lightning.config';
+import { VoiceControls } from '@/components/VoiceControls';
+import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceService';
+import { AudioDebugOverlay } from '@/components/AudioDebugOverlay';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -103,6 +106,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [haywireMode] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
   const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
+  const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -111,6 +115,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [colonelPosition, setColonelPosition] = useState({ x: 0, y: 0 });
   const [userPosition, setUserPosition] = useState({ x: 0, y: 0 });
   
+  // Initialize voice service on component mount
+  useEffect(() => {
+    const initVoice = async () => {
+      try {
+        await initializeVoiceService();
+        console.log('[CHAT] Voice service initialization attempted');
+      } catch (error) {
+        console.warn('[CHAT] Voice service initialization failed:', error);
+        // Don't block the app if voice fails
+      }
+    };
+    
+    initVoice();
+  }, []);
+
   // Subscribe to theme changes
   useEffect(() => {
     const unsubscribe = subscribeToThemeChanges(() => {
@@ -149,6 +168,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     setConnectionDebugEnabled(enabled);
   };
 
+  // Handle audio debug toggle
+  const handleAudioDebugToggle = (enabled: boolean) => {
+    setAudioDebugEnabled(enabled);
+  };
+
   // Handle close button press - enter standby mode
   const handleClosePress = async () => {
     try {
@@ -167,6 +191,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const handleSendMessage = async (messageText: string) => {
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(7);
+    
+    // iOS Audio Unlock: Ensure audio is unlocked on user interaction
+    try {
+      // Play a tiny codec sound to unlock iOS audio on user gesture
+      await playCodecClose();
+      console.log('[CHAT] 🍎 iOS audio unlock attempted via user message send');
+    } catch (error) {
+      console.warn('[CHAT] 🍎 iOS audio unlock failed (non-critical):', error);
+      // Don't block message sending if audio unlock fails
+    }
     
     // Snapshot current mode/model at creation time (freeze them)
     const meta = snapshotMeta('user');
@@ -267,6 +301,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           setIsStreaming(false);
           setCurrentStreamText('');
           
+          // Process message for TTS (non-blocking)
+          processMessageForTTS(fullResponseText, 'ai').catch(error => {
+            console.warn('[CHAT] TTS processing failed:', error);
+          });
+          
           // Trigger budget refresh after successful response
           setBudgetRefreshTrigger(prev => prev + 1);
         },
@@ -303,7 +342,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN */}
+        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */}
         <View style={staticStyles.controlButtonsContainer}>
           <ModelToggle />
           
@@ -328,11 +367,29 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             refreshTrigger={budgetRefreshTrigger}
           />
           
+          <VoiceControls compact={true} />
           <CRTToggle />
           <ThemeCycleToggle />
           <ModeToggle />
           <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
           <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
+          
+          <Pressable 
+            onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
+            style={[
+              staticStyles.controlButton,
+              { 
+                borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
+                backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
+              }
+            ]}
+          >
+            <Text style={[staticStyles.controlButtonText, { 
+              color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
+            }]}>
+              🔊
+            </Text>
+          </Pressable>
         </View>
         
         <View style={themeStyles.content}>
@@ -399,6 +456,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         {connectionDebugEnabled && (
           <ConnectionDebug />
         )}
+        
+        {/* Audio Debug Panel */}
+        {audioDebugEnabled && (
+          <AudioDebugOverlay 
+            visible={audioDebugEnabled}
+            onClose={() => handleAudioDebugToggle(false)} 
+          />
+        )}
       </CodecFrame>
     </SafeAreaView>
   );
@@ -415,6 +480,8 @@ const staticStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    // Ensure this doesn't interfere with Lightning QR z-indexing
+    zIndex: 1,
   },
   
   portraitPlaceholder: {

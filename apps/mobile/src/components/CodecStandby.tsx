@@ -70,12 +70,55 @@ export const CodecStandby: React.FC<CodecStandbyProps> = ({ onReactivate, playCl
     // On web, first user interaction is the time to activate audio context
     if (typeof window !== 'undefined') {
       try {
-        // Attempt to play a silent sound to activate web audio context
+        console.log('[CODEC STANDBY] Activating audio systems on user interaction...');
+        
+        // Initialize codec audio system
         const { initializeCodecAudio } = require('@/lib/audio');
         await initializeCodecAudio();
-        console.log('[CODEC STANDBY] Web audio context activated on user interaction');
+        
+        // Initialize voice system for iOS
+        try {
+          const { voiceService } = require('@/lib/voice');
+          await voiceService.initialize();
+          
+          // Access the voice service's internal audioMixer and ensure it's activated
+          const audioMixer = voiceService.getAudioMixer();
+          if (audioMixer) {
+            await audioMixer.ensureAudioContextRunning();
+            console.log('[CODEC STANDBY] Voice system audio context activated');
+          } else {
+            console.warn('[CODEC STANDBY] Voice service audioMixer not available');
+          }
+        } catch (voiceError) {
+          console.warn('[CODEC STANDBY] Voice system activation failed (may not be enabled):', voiceError);
+        }
+        
+        // For iOS Safari - create and play a silent audio element to unlock audio
+        const silentActivation = () => {
+          const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==');
+          audio.volume = 0;
+          const playPromise = audio.play();
+          if (playPromise) {
+            playPromise.then(() => {
+              console.log('[CODEC STANDBY] iOS Safari audio unlocked with silent audio');
+              audio.pause();
+              audio.remove();
+            }).catch((e) => {
+              console.log('[CODEC STANDBY] Silent audio activation not needed:', e.message);
+            });
+          }
+        };
+        
+        // Check if we're on iOS Safari
+        const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOSSafari) {
+          silentActivation();
+          console.log('[CODEC STANDBY] Applied iOS Safari audio activation fix');
+        }
+        
+        console.log('[CODEC STANDBY] Audio context activation completed');
       } catch (error) {
-        console.warn('[CODEC STANDBY] Failed to activate web audio context:', error);
+        console.warn('[CODEC STANDBY] Failed to activate audio systems:', error);
       }
     }
     

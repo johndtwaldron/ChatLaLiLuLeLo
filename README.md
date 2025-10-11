@@ -305,6 +305,32 @@ ChatLaLiLuLeLo/
 - [ ] **Multi-Language Support** - International codec interfaces and AI personalities
 - [ ] **Community Features** - Shareable conversation exports and codec customization
 
+## 🌳 Development Branches
+
+ChatLaLiLuLeLo uses a structured branching strategy for parallel development:
+
+### Active Development Branches
+
+- **[Dev-Voice.V1](docs/branch/Dev-Voice.V1.md)** - Colonel Voice Integration (v5 track)
+  - TTS pipeline with Web Audio API
+  - Voice assets curation and mapping
+  - Latency budget: <350ms added to message roundtrip
+  - Feature flags: `EXPO_PUBLIC_VOICE_ENABLED`
+
+- **[Dev-QA](docs/branch/Dev-QA.md)** - Continuous QA Improvements
+  - Expanded Playwright coverage and visual regression testing
+  - Lighthouse CI budgets for performance/PWA/accessibility
+  - axe-core accessibility checks and Postman/Newman API testing
+
+### Branch Management
+
+- **main**: Production-ready code with full CI validation
+- **Dev-Voice.V1**: Voice feature development with audio smoke tests
+- **Dev-QA**: Testing infrastructure expansion with extended CI matrix
+- **v4-branch-complete**: Archived v4 development (Lightning Network, Security, CI/CD)
+
+See individual branch documentation for detailed scope, deliverables, and definition of done.
+
 ## 🤝 Contributing
 
 ### Current Status
@@ -471,3 +497,5 @@ Any aesthetic resemblance to existing properties is:
 - **🌌 Deployment**: Live on GitHub Pages with Cloudflare Workers backend
 
 **Status**: ✅ **Production Ready** - Comprehensive security, testing, and deployment automation
+#   W o r k f l o w   t r i g g e r   t e s t   a t   1 0 / 0 9 / 2 0 2 5   1 6 : 1 2 : 3 0  
+ 

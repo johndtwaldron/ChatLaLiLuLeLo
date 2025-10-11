@@ -1,9 +1,29 @@
-name: Deploy Web to GitHub Pages
+name: Deploy Web to GitHub Pages (Dynamic Branch)
 
 on:
   push:
-    branches: [develop-v4]
+    branches: [Dev-Voice.V1, develop-v4, main] # Support multiple branches
   workflow_dispatch: # Allow manual triggering
+    inputs:
+      target_branch:
+        description: 'Branch to deploy (overrides repository variable)'
+        required: false
+        default: ''
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  # Dynamic branch selection with fallback logic
+  TARGET_BRANCH: ${{ github.event.inputs.target_branch || vars.DEPLOY_BRANCH || github.ref_name }}
+  DEPLOY_ENVIRONMENT: ${{ github.event.inputs.environment || vars.DEPLOY_ENVIRONMENT || 'development' }}
+  WEB_TESTING_ENABLED: ${{ vars.WEB_TESTING_ENABLED || 'true' }}
 
 permissions:
   contents: read
@@ -19,8 +39,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: 🚀 Display deployment configuration
+        run: |
+          echo "🚀 ChatLaLiLuLeLo Dynamic Branch Deployment"
+          echo "====================================="
+          echo "Target Branch: ${{ env.TARGET_BRANCH }}"
+          echo "Environment: ${{ env.DEPLOY_ENVIRONMENT }}"
+          echo "Web Testing: ${{ env.WEB_TESTING_ENABLED }}"
+          echo "Triggered By: ${{ github.event_name }}"
+          echo "Source Branch: ${{ github.ref_name }}"
+          echo "====================================="
+          
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -121,6 +154,15 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
           EXPO_PUBLIC_DEBUG_MODE: "0"
+          # Voice/TTS Configuration for web deployment
+          EXPO_PUBLIC_VOICE_ENABLED: "true"
+          EXPO_PUBLIC_VOICE_ENGINE: "elevenlabs"
+          EXPO_PUBLIC_ELEVENLABS_ENABLED: "true"
+          EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          EXPO_PUBLIC_VOICE_AUTOPLAY: "true"
+          EXPO_PUBLIC_VOICE_VOLUME: "0.7"
+          EXPO_PUBLIC_VOICE_PRESET: "colonel-neutral"
+          EXPO_PUBLIC_VOICE_SFX: "true"
 
       - name: Fix asset paths for GitHub Pages
         run: |
@@ -145,6 +187,79 @@ jobs:
             echo "Warning: index.html not found"
           fi
 
+      - name: 🎨 Fix favicon deployment for GitHub Pages
+        run: |
+          cd apps/mobile/dist
+          
+          # Copy favicon files from source to dist root
+          echo "📁 Copying favicon files to deployment directory..."
+          
+          # Copy from mobile assets to dist root
+          if [ -f "../assets/favicon.ico" ]; then
+            cp ../assets/favicon.ico ./favicon.ico
+            echo "✅ Copied favicon.ico to root"
+          else
+            echo "❌ favicon.ico not found in assets"
+          fi
+          
+          if [ -f "../assets/favicon-16x16.png" ]; then
+            cp ../assets/favicon-16x16.png ./favicon-16x16.png
+            echo "✅ Copied favicon-16x16.png to root"
+          fi
+          
+          if [ -f "../assets/favicon.png" ]; then
+            cp ../assets/favicon.png ./favicon-32x32.png
+            echo "✅ Copied favicon.png as favicon-32x32.png to root"
+          fi
+          
+          if [ -f "../assets/apple-touch-icon.png" ]; then
+            cp ../assets/apple-touch-icon.png ./apple-touch-icon.png
+            echo "✅ Copied apple-touch-icon.png to root"
+          fi
+          
+          # Create assets directory if it doesn't exist and copy files there too
+          mkdir -p assets
+          if [ -f "../assets/favicon-16x16.png" ]; then
+            cp ../assets/favicon-16x16.png ./assets/favicon-16x16.png
+            echo "✅ Copied favicon-16x16.png to assets/"
+          fi
+          
+          if [ -f "../assets/favicon.png" ]; then
+            cp ../assets/favicon.png ./assets/favicon.png
+            echo "✅ Copied favicon.png to assets/"
+          fi
+          
+          if [ -f "../assets/apple-touch-icon.png" ]; then
+            cp ../assets/apple-touch-icon.png ./assets/apple-touch-icon.png
+            echo "✅ Copied apple-touch-icon.png to assets/"
+          fi
+          
+          # Fix favicon links in HTML to use relative paths for GitHub Pages
+          if [ -f "index.html" ]; then
+            echo "🔧 Fixing favicon links in index.html for GitHub Pages..."
+            
+            # Add favicon links if they don't exist, or fix existing ones
+            # First, remove any existing favicon links
+            sed -i '/<link.*favicon/d' index.html
+            sed -i '/<link.*apple-touch-icon/d' index.html
+            
+            # Add our favicon links after the <title> tag
+            sed -i '/<title>/a\    <!-- Favicon for GitHub Pages -->\n    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">\n    <link rel="icon" href="./favicon.ico" type="image/x-icon">\n    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">\n    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">\n    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">' index.html
+            
+            echo "✅ Added favicon links to index.html"
+          else
+            echo "❌ index.html not found"
+          fi
+          
+          # List what we have for debugging
+          echo "📋 Final favicon files in deployment:"
+          ls -la . | grep -E '(favicon|apple-touch)' || echo "No favicon files found"
+          ls -la assets/ | grep -E '(favicon|apple-touch)' 2>/dev/null || echo "No favicon files in assets/"
+          
+          # Show favicon links in HTML
+          echo "📋 Favicon links in index.html:"
+          grep -E '(favicon|apple-touch)' index.html || echo "No favicon links found in HTML"
+          
       - name: Create 404.html for SPA routing
         run: |
           cp apps/mobile/dist/index.html apps/mobile/dist/404.html
@@ -272,6 +387,20 @@ jobs:
               echo "✅ Main JavaScript bundle is accessible"
             else
               echo "⚠️ Warning: Could not verify JavaScript bundle accessibility"
+            fi
+            
+            # Check if favicon is accessible
+            echo "🎨 Testing favicon accessibility..."
+            if curl -f -s --max-time 10 "${PAGES_URL}favicon.ico" > deployed_favicon.ico; then
+              echo "✅ Favicon.ico is accessible ($(stat --printf="%s" deployed_favicon.ico 2>/dev/null || echo "unknown") bytes)"
+            else
+              echo "❌ Favicon.ico not accessible at ${PAGES_URL}favicon.ico"
+            fi
+            
+            if curl -f -s --max-time 10 "${PAGES_URL}favicon-16x16.png" > deployed_favicon_16.png; then
+              echo "✅ favicon-16x16.png is accessible"
+            else
+              echo "❌ favicon-16x16.png not accessible"
             fi
             
           else
