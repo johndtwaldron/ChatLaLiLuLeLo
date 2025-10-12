@@ -11,6 +11,7 @@
     "export:web": "expo export -p web --output-dir dist",
     "typecheck": "tsc -p . --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "jest",
     "test:voice": "jest --testPathPattern=voice --verbose",
     "dev:voice": "cross-env VOICE_ENABLED=true VOICE_ENGINE=openai expo start",

@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ViewStyle } from 'react-native';
+import { ViewStyle, View, Text } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Portrait } from '@/components/Portrait';
 import { LightningQR } from '@/components/LightningQR';
-import { cycleColonelPortrait, getCurrentMode, subscribeToThemeChanges } from '@/lib/theme';
-import { playRandomUserSound } from '@/lib/audio';
+import { cycleColonelPortrait, getCodecTheme, getCurrentMode, subscribeToThemeChanges } from '@/lib/theme';
+import { playRandomUserSound, subscribeToUserSfx } from '@/lib/audio';
 import { isBitcoinModeActive } from '@/lib/lightning';
 
 export interface Rect {
@@ -51,7 +51,9 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
 }) => {
   const [currentMode, setCurrentMode] = useState(getCurrentMode());
   const [showLightningQR, setShowLightningQR] = useState(false);
-  
+  // UI overlay for current SFX file name while playing
+  const [currentSfxFile, setCurrentSfxFile] = useState<string | null>(null);
+  const [sfxPlaying, setSfxPlaying] = useState(false);
 
   // Subscribe to mode/theme changes
   useEffect(() => {
@@ -73,6 +75,21 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       setShowLightningQR(isBitcoinModeActive(currentMode));
     }
   }, [type, currentMode]);
+
+  // Subscribe to user SFX events to show/hide filename overlay (user portrait only)
+  useEffect(() => {
+    if (type !== 'user') return;
+    const off = subscribeToUserSfx((e) => {
+      if (e.type === 'start') {
+        setCurrentSfxFile(e.fileName || e.name);
+        setSfxPlaying(true);
+      } else {
+        setSfxPlaying(false);
+        setCurrentSfxFile(null);
+      }
+    });
+    return () => { if (off) { off(); } };
+  }, [type]);
   // Portrait size is currently fixed by Portrait styles: 120x140
   const portraitSize = useMemo(() => ({ width: 120, height: 140 }), []);
 
@@ -302,6 +319,30 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={[animatedStyle, style]}>
+        {/* Filename overlay above the user box while SFX is playing */}
+        {type === 'user' && sfxPlaying && currentSfxFile && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: -18,
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: getCodecTheme().colors.primary,
+                fontFamily: 'monospace',
+                fontSize: 10,
+              }}
+            >
+              {currentSfxFile}
+            </Text>
+          </View>
+        )}
+
         {/* Show Lightning QR for user portrait in Bitcoin mode, otherwise show normal portrait */}
         {type === 'user' && showLightningQR ? (
           <LightningQR 
