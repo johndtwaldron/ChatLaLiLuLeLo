@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  StyleSheet,
   SafeAreaView,
+  StyleSheet,
+  View,
   Text,
   Pressable,
+  Dimensions,
 } from 'react-native';
 
 import { CodecFrame } from '@/components/CodecFrame';
 import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
+import { DraggableVoicePanel } from '@/components/DraggableVoicePanel';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
@@ -29,6 +31,8 @@ import { getLightningAddress } from '@/config/lightning.config';
 import { VoiceControls } from '@/components/VoiceControls';
 import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceService';
 import { AudioDebugOverlay } from '@/components/AudioDebugOverlay';
+import { CodecWaveform } from '@/components/CodecWaveform';
+import { useVoicePlayingState } from '@/hooks/useVoicePlayingState';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -54,6 +58,9 @@ function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  
+  // Voice playing state for waveform animation
+  const voiceState = useVoicePlayingState();
   
   // Generate stable session ID for budget tracking
   const [sessionId] = useState(() => 
@@ -115,14 +122,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [colonelPosition, setColonelPosition] = useState({ x: 0, y: 0 });
   const [userPosition, setUserPosition] = useState({ x: 0, y: 0 });
   
+  // Track calculated waveform boundary for portraits
+  const [calculatedWaveformBoundary, setCalculatedWaveformBoundary] = useState(0);
+  
   // Initialize voice service on component mount
   useEffect(() => {
     const initVoice = async () => {
       try {
         await initializeVoiceService();
-        console.log('[CHAT] Voice service initialization attempted');
       } catch (error) {
-        console.warn('[CHAT] Voice service initialization failed:', error);
         // Don't block the app if voice fails
       }
     };
@@ -138,19 +146,80 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     });
     return unsubscribe;
   }, []);
+  
+  // Handle window resize to keep portraits within bounds with debouncing
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      // Clear any existing timeout to debounce multiple rapid resize events
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      
+      // Debounce layout recalculation to prevent excessive measurements
+      resizeTimeout = setTimeout(() => {
+        if (portraitSectionRef.current && layoutReady) {
+          handlePortraitSectionLayout();
+        }
+        resizeTimeout = null;
+      }, 150); // 150ms debounce
+    });
+    
+    return () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      subscription?.remove();
+    };
+  }, [layoutReady]);
 
   // Measure portrait section layout for dragging boundaries
   const handlePortraitSectionLayout = () => {
     if (portraitSectionRef.current) {
-      portraitSectionRef.current.measure((_x, _y, width, height, _pageX, _pageY) => {
-        setPortraitSectionLayout({ x: 0, y: 0, width, height }); // relative coordinates
+      portraitSectionRef.current.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
+        // Calculate waveform boundary relative to portrait section
+        // When voice is enabled, portraits should start below the waveform
+        // Waveform container: top: 70px, height: 40px + 16px padding = 56px total
+        // So waveform bottom is at 126px from screen top
+        // Portrait section starts at pageY, so boundary is 126 - pageY
+        const waveformBottomFromScreen = voiceState.enabled ? 126 : 70; // Include waveform height when voice enabled
+        const waveformBoundaryInPortrait = Math.max(0, waveformBottomFromScreen - pageY);
         
-        // Set initial positions: Colonel on left, User on right
-        setColonelPosition({ x: 0, y: 0 });
-        setUserPosition({ 
-          x: Math.max(0, width - 120 - (currentTheme.spacing?.sm || 16)), 
-          y: 0 
-        });
+        // Store the calculated boundary for use in DraggablePortrait components
+        setCalculatedWaveformBoundary(waveformBoundaryInPortrait);
+        
+        setPortraitSectionLayout({ x: 0, y: 0, width, height }); // Use full portrait section bounds
+        
+        
+        // Set initial positions if layout not ready yet, otherwise clamp existing positions
+        // Position portraits at the same level as the waveform, not below it
+        // The waveform boundary represents the bottom of the waveform area
+        // We want portraits to be positioned at the top of the waveform area
+        const waveformTopInPortrait = Math.max(0, waveformBoundaryInPortrait - 56); // 56px is waveform height + padding
+        const initialY = Math.max(0, waveformTopInPortrait);
+        
+        if (!layoutReady) {
+          // Set initial positions: Colonel on left, User on right, at waveform level
+          const colonelPos = { x: 0, y: initialY };
+          const userPos = { 
+            x: Math.max(0, width - 120 - (currentTheme.spacing?.sm || 16)), 
+            y: initialY 
+          };
+          
+          setColonelPosition(colonelPos);
+          setUserPosition(userPos);
+        } else {
+          // Clamp existing positions to new bounds
+          setColonelPosition(prev => ({
+            x: Math.min(Math.max(0, prev.x), Math.max(0, width - 120)),
+            y: Math.min(Math.max(initialY, prev.y), Math.max(0, height - 140))
+          }));
+          setUserPosition(prev => ({
+            x: Math.min(Math.max(0, prev.x), Math.max(0, width - 120)),
+            y: Math.min(Math.max(initialY, prev.y), Math.max(0, height - 140))
+          }));
+        }
         
         setLayoutReady(true);
       });
@@ -178,9 +247,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     try {
       // Play codec close sound
       await playCodecClose();
-      console.log('[CHAT] Close sound played, entering standby mode');
     } catch (error) {
-      console.warn('[CHAT] Failed to play close sound:', error);
+      // Failed to play close sound, continue anyway
     }
     
     // Enter standby mode
@@ -211,7 +279,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
       );
       
       if (isDuplicate) {
-        console.log('Prevented duplicate user message:', userMessage.text);
         return prevMessages;
       }
       
@@ -275,8 +342,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         },
         (usage) => {
           // Handle completion
-          console.log('Stream completed:', usage);
-          
           const responseTimestamp = Date.now();
           const responseRandomSuffix = Math.random().toString(36).substring(7);
           const responseMessage: Message = {
@@ -292,8 +357,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           setCurrentStreamText('');
           
           // Process message for TTS (non-blocking)
-          processMessageForTTS(fullResponseText, 'ai').catch(error => {
-            console.warn('[CHAT] TTS processing failed:', error);
+          processMessageForTTS(fullResponseText, 'ai').catch(() => {
+            // TTS processing failed, continue without audio
           });
           
           // Trigger budget refresh after successful response
@@ -301,8 +366,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         },
         (error) => {
           // Handle errors with user-friendly messages
-          console.error('Stream error:', error);
-          
           const userFriendlyError = extractUserFriendlyError({ message: error });
           
           const errorTimestamp = Date.now();
@@ -382,6 +445,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           </Pressable>
         </View>
         
+        {/* Fixed MGS2-style Codec Waveform - positioned at top center under toggle buttons */}
+        {voiceState.enabled && (
+          <View style={staticStyles.topWaveformContainer}>
+            <CodecWaveform
+              isPlaying={voiceState.isPlaying && voiceState.enabled}
+              volume={voiceState.volume}
+              height={40}
+              variant="codec"
+            />
+          </View>
+        )}
+        
         <View style={themeStyles.content}>
           {/* Portrait Section with dual draggable portraits */}
           <View 
@@ -402,6 +477,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
                 container={portraitSectionLayout}
                 otherPortraitPosition={userPosition}
                 onPositionChange={(x, y) => setColonelPosition({ x, y })}
+                waveformHeight={voiceState.enabled ? (calculatedWaveformBoundary || 0) : 0}
               />
             )}
             
@@ -415,6 +491,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
                 otherPortraitPosition={colonelPosition}
                 onPositionChange={(x, y) => setUserPosition({ x, y })}
                 lightningAddress={getLightningAddress()}
+                waveformHeight={voiceState.enabled ? (calculatedWaveformBoundary || 0) : 0}
               />
             )}
           </View>
@@ -517,6 +594,21 @@ const staticStyles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
+  
+  topWaveformContainer: {
+    position: 'absolute',
+    top: 70, // Position under the toggle buttons
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 50, // Above content but below toggle buttons
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Subtle background for visibility
+    borderRadius: 8,
+    marginHorizontal: 16,
+  },
 });
 
 // Dynamic styles function that takes current theme
@@ -524,6 +616,7 @@ const getThemeStyles = (theme: any) => ({
   content: {
     flex: 1,
     padding: theme.spacing.sm,
+    paddingTop: theme.spacing.lg || 24, // Moderate top padding for waveform
   },
   
   portraitSection: {

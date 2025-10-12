@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
-  View,
-  StyleSheet,
   Text,
   ScrollView,
   Platform,
+  StyleSheet,
+  View,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -47,12 +47,34 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
   // const typingProgress = useSharedValue(0);
   const blinkOpacity = useSharedValue(1);
 
+  // Use refs to prevent infinite loops
+  const lastStreamTextRef = useRef<string>('');
+  const isStreamingRef = useRef<boolean>(false);
+  
   // Word-boundary streaming buffer with whitespace flush
   useEffect(() => {
-    if (isStreaming && currentStreamText) {
+    // Guard against infinite loops by checking if streaming state or text actually changed
+    if (isStreaming !== isStreamingRef.current || currentStreamText !== lastStreamTextRef.current) {
+      lastStreamTextRef.current = currentStreamText;
+      isStreamingRef.current = isStreaming;
+      
+      if (!isStreaming) {
+        // Reset state when not streaming
+        setDisplayText(currentStreamText);
+        setCharIndex(0);
+        setStreamBuffer('');
+        if (bufferTimerRef.current) {
+          clearTimeout(bufferTimerRef.current);
+          bufferTimerRef.current = null;
+        }
+        return;
+      }
+    }
+    
+    if (isStreaming && currentStreamText && charIndex < currentStreamText.length) {
       const newChar = currentStreamText[charIndex];
       
-      if (charIndex < currentStreamText.length && newChar) {
+      if (newChar) {
         // Add character to buffer
         const updatedBuffer = streamBuffer + newChar;
         setStreamBuffer(updatedBuffer);
@@ -71,28 +93,19 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
           bufferTimerRef.current = setTimeout(() => {
             setDisplayText(prev => prev + updatedBuffer);
             setStreamBuffer('');
-            setCharIndex(charIndex + 1);
+            setCharIndex(prev => prev + 1);
           }, 40); // 40ms flush delay on whitespace as specified in theme config
         } else {
           // For non-whitespace characters, continue immediately
           const timer = setTimeout(() => {
-            setCharIndex(charIndex + 1);
+            setCharIndex(prev => prev + 1);
           }, 50); // Regular character streaming speed
           
           return () => clearTimeout(timer);
         }
       }
-    } else {
-      // Reset state when not streaming
-      setDisplayText(currentStreamText);
-      setCharIndex(0);
-      setStreamBuffer('');
-      if (bufferTimerRef.current) {
-        clearTimeout(bufferTimerRef.current);
-        bufferTimerRef.current = null;
-      }
     }
-  }, [isStreaming, currentStreamText, charIndex, streamBuffer]);
+  }, [isStreaming, currentStreamText, charIndex]); // Remove streamBuffer from dependencies
 
   // Cursor blink animation
   useEffect(() => {
@@ -113,12 +126,16 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     }
   }, [isStreaming]);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  // Auto-scroll to bottom when new messages arrive - use stable callback
+  const scrollToBottom = useCallback(() => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
-  }, [messages, displayText]);
+  }, []);
+  
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length, displayText, scrollToBottom]); // Only trigger on message count change
 
   const animatedCursorStyle = useAnimatedStyle(() => {
     return {
@@ -144,8 +161,8 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     return speaker === 'colonel' ? currentTheme.colors.primary : currentTheme.colors.secondary;
   };
 
-  // Helper function to create a tag from MsgMeta
-  const createTagFromMeta = (meta: any): string => {
+  // Helper function to create a tag from MsgMeta - memoized to prevent re-renders
+  const createTagFromMeta = useCallback((meta: any): string => {
     if (!meta) return '[JD:gpt-4o-mini]'; // fallback
     
     // If it's the new MsgMeta format
@@ -159,10 +176,10 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     }
     
     return '[JD:gpt-4o-mini]'; // fallback
-  };
+  }, []);
   
-  // Guard rail function to backfill meta for older messages that lack it
-  const ensureMessageMeta = (message: Message) => {
+  // Guard rail function to backfill meta for older messages that lack it - memoized
+  const ensureMessageMeta = useCallback((message: Message) => {
     if (!message.meta) {
       // Backfill with current settings as a fallback
       const currentModeKey = getCurrentModeKey();
@@ -181,10 +198,10 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
       };
     }
     return message;
-  };
+  }, []);
 
-  // Render message with frozen meta tag (no global state lookups)
-  const renderMessageText = (message: Message): string => {
+  // Render message with frozen meta tag (no global state lookups) - memoized
+  const renderMessageText = useCallback((message: Message): string => {
     const messageWithMeta = ensureMessageMeta(message);
     
     // Skip prefix for intro banner messages (system messages with specific content)
@@ -205,10 +222,10 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
     }
     
     return message.text;
-  };
+  }, [createTagFromMeta, ensureMessageMeta]);
 
-  // For streaming text, use current mode/model (since it's being created now)
-  const renderStreamingText = (text: string): string => {
+  // For streaming text, use current mode/model (since it's being created now) - memoized
+  const renderStreamingText = useCallback((text: string): string => {
     const currentModeKey = getCurrentModeKey();
     const currentModelKey = getCurrentModelKey();
     const currentTag = makeTag(currentModeKey, currentModelKey);
@@ -218,7 +235,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
       return `${currentTag} ${text}`;
     }
     return text;
-  };
+  }, []); // No dependencies needed as this uses current values when called
 
   return (
     <View style={[styles.container, { backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }]}>

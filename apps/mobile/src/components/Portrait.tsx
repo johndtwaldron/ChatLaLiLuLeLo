@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
   StyleSheet,
   Text,
   Image,
+  View,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -118,11 +118,10 @@ export const Portrait: React.FC<PortraitProps> = ({
     const currentColonelImage = imageSet[currentPortraitIndex];
     const labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
     
-    // Debug logging for colonel image rendering
-    console.log('[PORTRAIT] Bitcoin mode:', isBitcoinMode);
-    console.log('[PORTRAIT] Current portrait index:', currentPortraitIndex);
-    console.log('[PORTRAIT] Image set:', isBitcoinMode ? 'Bitcoin' : 'Regular');
-    console.log('[PORTRAIT] Current colonel image:', currentColonelImage);
+    // Add dev log to verify portrait source
+    if (__DEV__) {
+      console.log('[PORTRAIT] colonel source =', currentColonelImage, 'mode =', currentMode);
+    }
     
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
@@ -147,18 +146,18 @@ export const Portrait: React.FC<PortraitProps> = ({
             resizeMode="cover"
           />
         
-        {/* Speaking indicator overlay */}
-        {isSpeaking && (
-          <View style={[styles.speakingIndicator, { borderColor: currentTheme.colors.primary }]} />
-        )}
+          {/* Speaking indicator overlay */}
+          {isSpeaking && (
+            <View style={[styles.speakingIndicator, { borderColor: currentTheme.colors.primary }]} />
+          )}
+        </View>
+        
+        {/* ID Label - changes based on mode */}
+        <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+          <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>{labelText}</Text>
+        </View>
       </View>
-      
-      {/* ID Label - changes based on mode */}
-      <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
-        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>{labelText}</Text>
-      </View>
-    </View>
-  );
+    );
   };
 
   const renderUserPortrait = () => (
