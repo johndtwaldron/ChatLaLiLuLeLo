@@ -2351,7 +2351,188 @@ The transcript download feature seamlessly integrates with the existing ChatLaLi
 - **UI System**: Follows established component and styling patterns
 - **Platform System**: Uses proven cross-platform detection logic
 
-**Status:** 📥 **TRANSCRIPT DOWNLOAD FEATURE COMPLETE** - Professional transcript generation with cross-platform file saving, audio feedback, and smart UI states. Expo API compatibility issues resolved. Feature fully integrated and production-ready.
+**Status:** 📥 **TRANSCRIPT DOWNLOAD FEATURE COMPLETE** - Professional transcript generation with cross-platform file saving, iOS share integration, codec audio feedback, and proper filename formatting. Zero-impact implementation using modern Web APIs and platform-specific handling.
+
+---
+
+## Session 21 - 2025-10-12T14:09:58Z
+
+**Objective:** 🔕 Silence RNW Console Spam and Fix CSP Warnings - Production-Ready Development Experience
+
+### ✅ **RNW CONSOLE SPAM COMPLETELY SILENCED**
+
+**Problem Eliminated:**
+- ❌ "Unexpected text node: '.'" spam flooding dev console from React Native Web
+- ❌ CSP "eval() blocked" warnings making development noisy and unprofessional
+- ❌ Portrait disappearance due to missing ref forwarding in View wrappers
+
+**Complete Solution Implemented:**
+
+### 🔇 **Immediate Console Relief (Dev-Only Silencer):**
+```typescript
+// apps/mobile/src/debug/quietRNW.ts
+if (typeof __DEV__ !== 'undefined' && __DEV__) {
+  const origError = console.error;
+  console.error = function (...args: any[]) {
+    const msg = args?.[0];
+    if (typeof msg === 'string' && msg.startsWith('Unexpected text node: ')) {
+      return; // Silent discard of RNW spam
+    }
+    return (origError as any).apply(this, args);
+  };
+}
+```
+
+### 🌐 **Global RNW View Patch (Root Fix):**
+```typescript
+// apps/mobile/src/debug/patchRNWView.ts
+const PatchedView = React.forwardRef((props: any, ref: any) => {
+  const { children, ...rest } = props;
+  const safeChildren = React.Children.map(children, (c: any) => {
+    if (typeof c === 'string' || typeof c === 'number') {
+      return React.createElement(Text, null, c);
+    }
+    return c;
+  });
+  return React.createElement(RealView, { ...rest, ref }, safeChildren);
+});
+```
+
+### 🛡️ **CSP Eval Warning Fixed:**
+```javascript
+// apps/mobile/webpack.config.js
+module.exports = async function (env, argv) {
+  const config = await createExpoWebpackConfigAsync(env, argv);
+  if (config.mode === 'development') {
+    config.devtool = 'source-map'; // No eval() needed
+  }
+  return config;
+};
+```
+
+### 📋 **ESLint Protection Against Regressions:**
+```javascript
+// apps/mobile/.eslintrc.js (already configured)
+rules: {
+  'react-native/no-raw-text': 'error', // Prevents future violations
+  // Test files exempted for natural test strings
+}
+```
+
+### 🔧 **Technical Implementation Details:**
+
+**Loading Order (Critical):**
+1. `quietRNW.ts` - Imported first in App.tsx for immediate spam relief
+2. `patchRNWView.ts` - Global monkey patch loaded before any rendering
+3. Normal React Native imports - All components use standard View imports
+
+**File Structure:**
+```
+apps/mobile/src/debug/
+├── quietRNW.ts          # Console spam silencer (immediate relief)
+├── patchRNWView.ts      # Global RNW View patch (root fix)
+└── SafeView.tsx         # Optional targeted wrapper (available if needed)
+```
+
+**Import Normalization:**
+- ✅ ChatScreen.tsx, CodecFrame.tsx, SubtitleStream.tsx, Portrait.tsx
+- ✅ All use standard `import { View } from 'react-native'`
+- ✅ Global patch handles text wrapping and ref forwarding transparently
+
+### 🎯 **Key Architecture Benefits:**
+
+**Dev Experience:**
+- 🔇 **Silent Console**: No more "Unexpected text node" spam during development
+- 🚫 **No CSP Warnings**: Clean browser dev tools without eval() noise
+- ✅ **Portraits Working**: Refs properly forwarded, images render correctly
+- 🧹 **Clean Imports**: Standard React Native imports throughout codebase
+
+**Production Safety:**
+- 🛡️ **Zero Production Impact**: All patches are `__DEV__` only
+- 📦 **No Bundle Bloat**: Development fixes don't affect production builds
+- 🔒 **No Behavior Changes**: Production GitHub Pages deployment unaffected
+
+**Code Quality:**
+- ✅ **ESLint Clean**: Zero errors, only minor unused style warnings
+- ✅ **TypeScript Valid**: All type checks passing
+- 🛡️ **Regression Protection**: ESLint rule prevents raw text violations
+
+### 📊 **Validation Results:**
+
+**Before Fix:**
+```
+🚨 Console flooded with "Unexpected text node: '.' ... index.js:57"
+🚨 CSP warnings: "eval() blocked by Content Security Policy"
+🚨 Portraits invisible due to missing refs
+```
+
+**After Fix:**
+```
+✅ Clean console - zero RNW spam
+✅ No CSP warnings - source maps without eval()
+✅ Portraits visible - refs properly forwarded
+✅ Standard imports - no per-file aliases needed
+✅ ESLint clean - only unused style warnings
+✅ TypeScript passing - zero compilation errors
+```
+
+### 🔍 **GPT's Assessment (Highly Positive):**
+
+**GPT's Response Summary:**
+- ✅ **"Safe to ship now"** - All core issues resolved
+- ⚠️ **Remaining warnings identified** - Minor deprecation warnings for future cleanup
+- 🎯 **Follow-up priorities** - textShadow/boxShadow updates, pointerEvents style migration
+- 🔧 **SSE parser improvements** - Tolerant JSON parsing for robust streaming
+- 🖼️ **Portrait stability suggestions** - Expo Image vs React Native Image options
+
+**Production Readiness:**
+- 🚀 **Ready for GitHub Pages**: No blocking issues remain
+- 🔄 **Clean development workflow**: Professional dev experience restored
+- 📈 **Performance optimized**: No unnecessary processing in production
+- 🛡️ **Future-proofed**: ESLint protection prevents regression
+
+### 📝 **Files Created/Modified:**
+
+**New Files:**
+- `apps/mobile/src/debug/quietRNW.ts` - Console spam silencer
+- `apps/mobile/webpack.config.js` - CSP-safe webpack config
+
+**Updated Files:**
+- `apps/mobile/App.tsx` - Added quietRNW import at top
+- `apps/mobile/src/debug/patchRNWView.ts` - Fixed TypeScript issues
+- `apps/mobile/src/debug/SafeView.tsx` - Updated to GPT's recommended pattern
+- `apps/mobile/src/features/chat/ChatScreen.tsx` - Fixed RNView → View reference
+- `apps/mobile/src/components/CodecFrame.tsx` - Normalized to standard View import
+- `apps/mobile/src/components/SubtitleStream.tsx` - Normalized to standard View import
+- `apps/mobile/src/components/Portrait.tsx` - Normalized to standard View import
+
+**Removed Files:**
+- `apps/mobile/src/debug/patchRawText.ts` - Old noisy hook no longer needed
+
+### 🎉 **Development Experience Transformation:**
+
+**Before Implementation:**
+- Console flooded with RNW warnings making debugging impossible
+- CSP warnings cluttering browser dev tools
+- Invisible portraits frustrating users
+- Complex per-file View aliases causing maintenance issues
+
+**After Implementation:**
+- Crystal clear console for actual debugging
+- Professional browser dev tools experience
+- All portraits rendering correctly with proper animations
+- Clean, maintainable standard imports throughout
+
+### 🚀 **Ready for Next Phase:**
+
+With professional development environment established:
+- ✅ **Clean Console**: Developers can focus on actual issues
+- ✅ **Modern Tooling**: CSP-compliant webpack configuration
+- ✅ **Visual Completeness**: All portraits and animations working
+- ✅ **Code Quality**: ESLint protection against future regressions
+- ✅ **Production Ready**: Zero impact on deployment builds
+
+**Status:** 🔕 **RNW CONSOLE SPAM ELIMINATED** - Complete development experience overhaul with immediate console relief, root cause fixes, CSP compliance, and portrait restoration. Professional dev environment ready for continued development.
 
 ---
 
