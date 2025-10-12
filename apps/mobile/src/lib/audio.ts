@@ -2,6 +2,7 @@ import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { asAudio } from './asset';
+import { createSafeAudioSound, guardWebAudioElement } from './audioWebGuards';
 
 // Audio settings storage keys
 const AUDIO_SETTINGS_KEY = '@codec_audio_settings';
@@ -244,9 +245,21 @@ class CodecAudioService {
           throw new Error(`Sound not found: ${soundId}`);
         }
 
-        const { sound: newSound } = await Audio.Sound.createAsync(codecSound.file);
+        // Use safe audio creation wrapper to prevent web crashes
+        const { sound: newSound } = await createSafeAudioSound(
+          codecSound.file,
+          { shouldPlay: false, volume: 0 }
+        );
         sound = newSound;
-        this.sounds.set(soundId, sound);
+        if (sound) {
+          this.sounds.set(soundId, sound);
+        } else {
+          throw new Error(`Failed to create sound: ${soundId}`);
+        }
+      }
+
+      if (!sound) {
+        throw new Error(`Sound could not be loaded: ${soundId}`);
       }
 
       // Configure playback

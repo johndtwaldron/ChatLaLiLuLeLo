@@ -24,6 +24,7 @@ interface DraggablePortraitProps {
   otherPortraitPosition?: { x: number; y: number }; // position of the other draggable portrait
   onPositionChange?: (x: number, y: number) => void; // callback when this portrait moves
   lightningAddress?: string; // Lightning address for donations (user portrait only)
+  waveformHeight?: number; // Height of waveform to avoid (creates top boundary)
   style?: ViewStyle;
 }
 
@@ -45,10 +46,12 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   otherPortraitPosition,
   onPositionChange,
   lightningAddress,
+  waveformHeight = 0,
   style,
 }) => {
   const [currentMode, setCurrentMode] = useState(getCurrentMode());
   const [showLightningQR, setShowLightningQR] = useState(false);
+  
 
   // Subscribe to mode/theme changes
   useEffect(() => {
@@ -75,13 +78,77 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
 
   const translateX = useSharedValue(initialX);
   const translateY = useSharedValue(initialY);
+  
+  // Ensure shared values are updated when initial positions change
+  useEffect(() => {
+    translateX.value = initialX;
+    translateY.value = initialY;
+  }, [initialX, initialY, translateX, translateY]);
 
-  // Clamp to container bounds
+  // Clamp to container bounds with waveform exclusion zone
   const clampToContainer = (x: number, y: number) => {
     const maxX = Math.max(0, container.width - portraitSize.width);
     const maxY = Math.max(0, container.height - portraitSize.height);
-    const clampedX = Math.min(Math.max(0, x), maxX);
-    const clampedY = Math.min(Math.max(0, y), maxY);
+    
+    // Clamp X to container bounds
+    let clampedX = Math.min(Math.max(0, x), maxX);
+    let clampedY = y;
+    
+    // Define waveform exclusion zone (if waveform is present)
+    if (waveformHeight > 0) {
+      const waveformTop = Math.max(0, waveformHeight - 56); // Top of waveform area
+      const waveformBottom = waveformHeight; // Bottom of waveform area
+      const waveformLeft = container.width * 0.25; // Left edge of waveform (center 50%)
+      const waveformRight = container.width * 0.75; // Right edge of waveform
+      
+      // Check if portrait would overlap with waveform area
+      const portraitLeft = clampedX;
+      const portraitRight = clampedX + portraitSize.width;
+      const portraitTop = y;
+      const portraitBottom = y + portraitSize.height;
+      
+      // If portrait overlaps with waveform area, push it away
+      if (portraitLeft < waveformRight && portraitRight > waveformLeft &&
+          portraitTop < waveformBottom && portraitBottom > waveformTop) {
+        
+        // Calculate distances to each edge to find closest exit
+        const distToLeft = waveformLeft - portraitRight;
+        const distToRight = portraitLeft - waveformRight;
+        const distToTop = waveformTop - portraitBottom;
+        const distToBottom = portraitTop - waveformBottom;
+        
+        // Find the minimum distance (easiest exit)
+        const minDist = Math.min(
+          Math.abs(distToLeft),
+          Math.abs(distToRight), 
+          Math.abs(distToTop),
+          Math.abs(distToBottom)
+        );
+        
+        // Push portrait to the closest non-overlapping position
+        if (minDist === Math.abs(distToLeft) && distToLeft < 0) {
+          clampedX = waveformLeft - portraitSize.width;
+        } else if (minDist === Math.abs(distToRight) && distToRight > 0) {
+          clampedX = waveformRight;
+        } else if (minDist === Math.abs(distToTop) && distToTop < 0) {
+          clampedY = waveformTop - portraitSize.height;
+        } else if (minDist === Math.abs(distToBottom) && distToBottom > 0) {
+          clampedY = waveformBottom;
+        }
+        
+        // Ensure we stay within container bounds after exclusion zone adjustment
+        clampedX = Math.min(Math.max(0, clampedX), maxX);
+        clampedY = Math.min(Math.max(0, clampedY), maxY);
+      } else {
+        // No overlap with waveform, just clamp to container bounds
+        clampedY = Math.min(Math.max(0, y), maxY);
+      }
+    } else {
+      // No waveform present, just clamp to container bounds
+      clampedY = Math.min(Math.max(0, y), maxY);
+    }
+    
+    
     return { x: clampedX, y: clampedY };
   };
 
@@ -104,12 +171,30 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       const pushUp = rect.y + rect.height - otherRect.y; // move rect up
       const pushDown = otherRect.y + otherRect.height - rect.y; // move rect down
 
-      // Choose smallest displacement axis
+      // Choose smallest displacement axis, but respect waveform boundary
+      const minWaveformY = waveformHeight > 0 ? waveformHeight : 0;
       const minPush = Math.min(pushLeft, pushRight, pushUp, pushDown);
-      if (minPush === pushLeft) rect.x = otherRect.x - rect.width;
-      else if (minPush === pushRight) rect.x = otherRect.x + otherRect.width;
-      else if (minPush === pushUp) rect.y = otherRect.y - rect.height;
-      else rect.y = otherRect.y + otherRect.height;
+      
+      if (minPush === pushLeft) {
+        rect.x = otherRect.x - rect.width;
+      } else if (minPush === pushRight) {
+        rect.x = otherRect.x + otherRect.width;
+      } else if (minPush === pushUp) {
+        const newY = otherRect.y - rect.height;
+        // Don't push above waveform boundary - prefer horizontal displacement instead
+        if (newY < minWaveformY) {
+          // Try horizontal displacement instead
+          if (pushLeft < pushRight) {
+            rect.x = otherRect.x - rect.width;
+          } else {
+            rect.x = otherRect.x + otherRect.width;
+          }
+        } else {
+          rect.y = newY;
+        }
+      } else {
+        rect.y = otherRect.y + otherRect.height;
+      }
 
       // After nudge, re-clamp to container
       const clamped = clampToContainer(rect.x, rect.y);
@@ -128,7 +213,7 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       // Otherwise, play random sound effect for user clicks
       if (!showLightningQR) {
         playRandomUserSound();
-        console.log('[DRAGGABLE PORTRAIT] User portrait clicked - playing random sound');
+        // Sound feedback only, no console logging
       }
     }
   };
@@ -136,11 +221,10 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   // Handle Lightning QR copy success
   const handleLightningCopy = (success: boolean) => {
     if (success) {
-      console.log('[DRAGGABLE PORTRAIT] Lightning address copied successfully');
+      // Success handled by LightningQR component
       // Sound is handled by LightningQR component (rations sound)
-    } else {
-      console.warn('[DRAGGABLE PORTRAIT] Failed to copy lightning address');
     }
+    // Error handling is managed by LightningQR component
   };
 
   // Track if we're dragging to prevent cycling on drag end
@@ -174,7 +258,7 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       translateX.value = adjusted.x;
       translateY.value = adjusted.y;
       
-      // Notify parent of position change
+      // Notify parent of position change (remove throttling to prevent console flood)
       if (onPositionChange) {
         runOnJS(onPositionChange)(adjusted.x, adjusted.y);
       }
