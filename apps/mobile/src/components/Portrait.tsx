@@ -18,10 +18,11 @@ import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPo
 import { asImg } from '@/lib/asset';
 
 // Import colonel portraits - unified compatibility for local and web
+// Renamed for clarity: GW mode uses haywire, JD mode uses normal
 const colonelImages = [
-  asImg(require('../../assets/images/colonel.jpeg')),
-  asImg(require('../../assets/images/colonel_1.jpg')),
-  asImg(require('../../assets/images/colonel_2.jpg')),
+  asImg(require('../../assets/images/colonel_gw_haywire.jpeg')), // 0 - GW/Haywire mode
+  asImg(require('../../assets/images/colonel_jd_normal.jpg')),    // 1 - JD mode
+  asImg(require('../../assets/images/colonel_default.jpg')),       // 2 - Default/cycling
 ];
 
 // Import Bitcoin colonel portraits - real Bitcoin images

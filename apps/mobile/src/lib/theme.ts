@@ -305,6 +305,10 @@ export const cycleMode = () => {
   const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin'];
   const currentIndex = modes.indexOf(currentMode);
   currentMode = modes[(currentIndex + 1) % modes.length];
+  
+  // Auto-select colonel portrait based on mode
+  updateColonelPortraitForMode();
+  
   notifyThemeChange(); // Theme may change based on mode
 };
 
@@ -340,6 +344,27 @@ export const getDebugState = () => debugEnabled;
 
 // Convenience function for components
 export const isDebugEnabled = () => debugEnabled;
+
+// Automatic colonel portrait selection based on mode
+const updateColonelPortraitForMode = () => {
+  if (currentMode !== 'bitcoin') {
+    // Auto-select portrait based on mode (non-Bitcoin modes)
+    switch (currentMode) {
+      case 'haywire':  // GW mode
+        currentColonelPortrait = 0; // colonel_gw_haywire.jpeg
+        break;
+      case 'jd':       // JD mode
+        currentColonelPortrait = 1; // colonel_jd_normal.jpg
+        break;
+      case 'lore':     // MGS mode - use default/cycle option
+        currentColonelPortrait = 2; // colonel_default.jpg
+        break;
+      default:
+        currentColonelPortrait = 0; // fallback to GW
+    }
+  }
+  // Bitcoin mode doesn't auto-select (uses its own image set)
+};
 
 // Colonel portrait cycling functions
 export const cycleColonelPortrait = () => {
