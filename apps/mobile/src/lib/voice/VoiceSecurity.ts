@@ -21,15 +21,38 @@ const MAX_TTS_LENGTH = 4000; // Most TTS APIs have character limits
 const MAX_TTS_LINES = 50; // Prevent abuse through excessive lines
 const MIN_TTS_LENGTH = 1; // Must have at least some content
 
-// SSML security patterns
+// SSML security patterns - Secure HTML filtering to prevent XSS
 const DANGEROUS_SSML_PATTERNS = [
-  // Script tags (allow optional whitespace before closing '>')
-  /<script\b[^<]*(?:(?!<\/script\s*>)[^<]*)*<\/script\s*>/gi,
-  /<iframe\b[^<]*(?:(?!<\/iframe\s*>)[^<]*)*<\/iframe\s*>/gi, // Iframe tags
-  /<object\b[^<]*(?:(?!<\/object\s*>)[^<]*)*<\/object\s*>/gi, // Object tags
-  /<embed\b[^<]*(?:(?!<\/embed\s*>)[^<]*)*<\/embed\s*>/gi, // Embed tags
-  /javascript:|data:|file:|vbscript:/gi, // Dangerous URL schemes
-  /about:/gi, // About URLs
+  // Script tags - comprehensive protection against all variants
+  /<script\b[^>]*>.*?<\/script\s*>/gis,
+  /<script\b[^>]*\/>/gi, // Self-closing script tags
+  /<script\b[^>]*>/gi, // Opening script tags without closing
+  // Iframe tags - all variants
+  /<iframe\b[^>]*>.*?<\/iframe\s*>/gis,
+  /<iframe\b[^>]*\/>/gi,
+  /<iframe\b[^>]*>/gi,
+  // Object tags - all variants  
+  /<object\b[^>]*>.*?<\/object\s*>/gis,
+  /<object\b[^>]*\/>/gi,
+  /<object\b[^>]*>/gi,
+  // Embed tags - all variants
+  /<embed\b[^>]*>.*?<\/embed\s*>/gis,
+  /<embed\b[^>]*\/>/gi, 
+  /<embed\b[^>]*>/gi,
+  // Other dangerous HTML elements
+  /<link\b[^>]*>/gi,
+  /<meta\b[^>]*>/gi,
+  /<style\b[^>]*>.*?<\/style\s*>/gis,
+  /<form\b[^>]*>.*?<\/form\s*>/gis,
+  // Dangerous URL schemes - comprehensive list
+  /javascript\s*:/gi,
+  /data\s*:/gi,
+  /file\s*:/gi, 
+  /vbscript\s*:/gi,
+  /about\s*:/gi,
+  /chrome\s*:/gi,
+  /chrome-extension\s*:/gi,
+  /moz-extension\s*:/gi,
 ];
 
 // Allowed SSML tags (basic subset for safety)
