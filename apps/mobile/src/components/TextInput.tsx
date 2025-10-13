@@ -11,20 +11,26 @@ import {
 
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
 import { validateMessageForSubmission } from '@/lib/security';
+import { downloadTranscript } from '@/lib/fileService';
+import { playTranscriptSavedSound } from '@/lib/audio';
+import { type Message } from '@/types/chat';
 
 interface TextInputProps {
   onSendMessage: (message: string) => void;
   placeholder?: string;
+  messages?: Message[]; // For transcript download
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
   onSendMessage,
   placeholder = "Enter message...",
+  messages = [],
 }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const [inputText, setInputText] = useState('');
   const [validationFeedback, setValidationFeedback] = useState<string>('');
   const [isValidInput, setIsValidInput] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Subscribe to theme changes
   useEffect(() => {
@@ -78,6 +84,32 @@ export const TextInput: React.FC<TextInputProps> = ({
     }
   };
 
+  const handleDownloadTranscript = async () => {
+    if (messages.length === 0) {
+      console.warn('[TRANSCRIPT] No messages to download');
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      await downloadTranscript(messages, {
+        includeTimestamps: true,
+        includeMeta: true,
+        format: 'txt'
+      });
+      
+      // Play the completion sound
+      await playTranscriptSavedSound();
+      console.log('[TRANSCRIPT] Download completed with sound effect');
+      
+    } catch (error) {
+      console.error('[TRANSCRIPT] Download failed:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -113,6 +145,29 @@ export const TextInput: React.FC<TextInputProps> = ({
           blurOnSubmit={false}
           textAlignVertical="top" // Align text to top for multiline
         />
+        
+        {/* Download Transcript Button */}
+        <TouchableOpacity
+          style={[
+            styles.downloadButton,
+            {
+              backgroundColor: messages.length > 0 ? currentTheme.colors.surface : currentTheme.colors.background,
+              borderColor: currentTheme.colors.primary,
+              opacity: isDownloading ? 0.6 : 1,
+            }
+          ]}
+          onPress={handleDownloadTranscript}
+          disabled={messages.length === 0 || isDownloading}
+        >
+          <Text style={[
+            styles.downloadButtonText,
+            {
+              color: messages.length > 0 ? currentTheme.colors.primary : currentTheme.colors.textSecondary,
+            }
+          ]}>
+            {isDownloading ? '📥' : '⬇️'}
+          </Text>
+        </TouchableOpacity>
         
         {/* Send Button */}
         <TouchableOpacity
@@ -216,6 +271,22 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+
+  downloadButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    minWidth: 40,
+    alignItems: 'center',
+    alignSelf: 'flex-end', // Keep button at bottom
+    marginBottom: 8, // Align with text input bottom padding
+  },
+
+  downloadButtonText: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   statusBar: {

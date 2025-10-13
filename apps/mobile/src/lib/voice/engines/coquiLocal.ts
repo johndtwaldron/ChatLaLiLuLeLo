@@ -187,9 +187,15 @@ export class CoquiLocalTTSEngine implements VoiceEngine {
   }
 
   private sanitizeText(text: string): string {
-    // TODO: Implement Coqui-specific text sanitization
-    return text
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
+    // Multi-pass HTML/SSML tag stripping to handle nested fragments
+    let sanitized = text;
+    let prev: string;
+    do {
+      prev = sanitized;
+      sanitized = sanitized.replace(/<[^>]*>/g, '');
+    } while (sanitized !== prev);
+
+    return sanitized
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
       .substring(0, 1000); // Local TTS might have smaller limits

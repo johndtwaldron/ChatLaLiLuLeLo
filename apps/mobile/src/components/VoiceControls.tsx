@@ -22,6 +22,7 @@ import {
   getVoicePresets,
   VoiceConfig 
 } from '@/lib/voice';
+import { updateVoiceServiceVolume } from '@/lib/voice/VoiceService';
 import type { ColonelVoicePreset } from '@/lib/voice/VoiceEngine';
 
 interface VoiceControlsProps {
@@ -62,11 +63,31 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
     updateVoiceConfig(updates);
+    
+    // Sync volume changes to VoiceService AudioMixer
+    if (updates.volume !== undefined || updates.enabled !== undefined) {
+      // Use setTimeout to allow the config update to complete first
+      setTimeout(() => {
+        updateVoiceServiceVolume();
+        console.log('[VOICE CONTROLS] Volume synced to VoiceService:', newConfig.volume);
+      }, 100);
+    }
+    
     onConfigChange?.(newConfig);
   };
 
   const handleVoiceToggle = () => {
-    handleConfigUpdate({ enabled: !config.enabled });
+    if (!config.enabled && config.lastVolume && config.lastVolume >= 0.1) {
+      // If we're re-enabling voice and have a stored last volume, restore it
+      handleConfigUpdate({ 
+        enabled: true, 
+        volume: config.lastVolume,
+        lastVolume: undefined // Clear the stored volume
+      });
+    } else {
+      // Normal toggle
+      handleConfigUpdate({ enabled: !config.enabled });
+    }
   };
 
   const handleAutoplayToggle = () => {
@@ -75,7 +96,31 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
 
   const handleVolumeChange = (delta: number) => {
     const newVolume = Math.max(0, Math.min(1, config.volume + delta));
-    handleConfigUpdate({ volume: newVolume });
+    
+    // Smart toggle: If volume goes below 10%, treat as voice disable
+    if (newVolume < 0.1) {
+      // Store last volume before disabling
+      if (config.enabled && config.volume >= 0.1) {
+        // Store the last "good" volume in a special config field
+        handleConfigUpdate({ 
+          enabled: false, 
+          volume: newVolume,
+          lastVolume: config.volume // Store previous volume
+        });
+      } else {
+        handleConfigUpdate({ volume: newVolume });
+      }
+    } else {
+      // Normal volume change - if voice was disabled, re-enable it
+      if (!config.enabled) {
+        handleConfigUpdate({ 
+          enabled: true, 
+          volume: newVolume 
+        });
+      } else {
+        handleConfigUpdate({ volume: newVolume });
+      }
+    }
   };
 
   const handlePresetSelect = (presetId: string) => {

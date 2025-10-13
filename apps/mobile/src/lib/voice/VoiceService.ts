@@ -55,22 +55,44 @@ class VoiceServiceManager {
     if (this.initialized) return;
 
     try {
-      console.log('[VOICE SERVICE] Initializing voice service...');
-
       // Initialize voice engine system
       await initializeVoice();
 
-      // Initialize audio mixer
-      this.audioMixer = new AudioMixer();
+      // Get current voice config
+      const config = getVoiceConfig();
+
+      // Initialize audio mixer with current volume settings
+      this.audioMixer = new AudioMixer({
+        ttsVolume: config.volume,
+        masterVolume: 1.0, // Keep master at full, control through ttsVolume
+        sfxVolume: 0.6,
+        enableDucking: true,
+        duckingLevel: 0.3,
+        maxQueueSize: 10
+      });
       await this.audioMixer.initialize();
 
       this.initialized = true;
-      console.log('[VOICE SERVICE] Voice service initialized successfully');
 
     } catch (error) {
       console.error('[VOICE SERVICE] Failed to initialize:', error);
       throw error;
     }
+  }
+
+  /**
+   * Update AudioMixer volume settings from VoiceConfig
+   */
+  updateAudioMixerVolume(): void {
+    if (!this.audioMixer) return;
+    
+    const config = getVoiceConfig();
+    const currentVolume = config.volume;
+    
+    // Update AudioMixer TTS volume
+    this.audioMixer.updateConfig({
+      ttsVolume: currentVolume
+    });
   }
 
   /**
@@ -84,15 +106,16 @@ class VoiceServiceManager {
       await this.initialize();
 
       if (!this.audioMixer || !isVoiceReady()) {
-        console.warn('[VOICE SERVICE] Voice system not ready');
         return null;
       }
 
       const config = getVoiceConfig();
       if (!config.enabled) {
-        console.log('[VOICE SERVICE] Voice disabled by configuration');
         return null;
       }
+      
+      // Ensure AudioMixer has current volume settings
+      this.updateAudioMixerVolume();
 
       // Get voice engine
       const engine = getVoiceEngine();
@@ -113,18 +136,12 @@ class VoiceServiceManager {
         return null;
       }
 
-      if (securityResult.warnings.length > 0) {
-        console.warn('[VOICE SERVICE] Text validation warnings:', securityResult.warnings);
-      }
-
       // Prepare synthesis options
       const voicePreset = options?.voicePreset || config.voicePreset;
       const synthesisOpts = {
         voiceId: voicePreset,
         speed: options?.speed,
       };
-
-      console.log(`[VOICE SERVICE] Synthesizing text with ${engine.name}: "${securityResult.sanitizedText.substring(0, 50)}..."`);
 
       // Collect audio chunks
       const audioChunks: VoiceChunk[] = [];
@@ -133,11 +150,8 @@ class VoiceServiceManager {
       }
 
       if (audioChunks.length === 0) {
-        console.warn('[VOICE SERVICE] No audio chunks produced');
         return null;
       }
-
-      console.log(`[VOICE SERVICE] Synthesis complete: ${audioChunks.length} chunks`);
 
       // Queue for playback if autoplay is enabled or explicitly requested
       const shouldAutoplay = options?.autoplay ?? config.autoplayReplies;
@@ -176,13 +190,11 @@ class VoiceServiceManager {
       await this.initialize();
 
       if (!this.audioMixer) {
-        console.warn('[VOICE SERVICE] Audio mixer not available for SFX');
         return;
       }
 
       const config = getVoiceConfig();
       if (!config.enableSFX) {
-        console.log('[VOICE SERVICE] SFX disabled by configuration');
         return;
       }
 
@@ -198,7 +210,6 @@ class VoiceServiceManager {
 
       const audioBuffer = sfxAudioMap[sfxType];
       if (!audioBuffer) {
-        console.warn(`[VOICE SERVICE] SFX audio not available: ${sfxType}`);
         return;
       }
 
@@ -284,12 +295,21 @@ class VoiceServiceManager {
   }
 
   /**
+   * Check if TTS audio is currently playing
+   */
+  isAudioPlaying(): boolean {
+    const mixerStatus = this.audioMixer?.getStatus();
+    return mixerStatus ? mixerStatus.isTTSPlaying : false;
+  }
+
+  /**
    * Get current voice service status
    */
   getStatus(): {
     initialized: boolean;
     voiceReady: boolean;
     voiceEnabled: boolean;
+    isPlaying: boolean;
     audioMixer: any;
     engineInfo: any;
   } {
@@ -299,6 +319,7 @@ class VoiceServiceManager {
       initialized: this.initialized,
       voiceReady: isVoiceReady(),
       voiceEnabled: config.enabled,
+      isPlaying: this.isAudioPlaying(),
       audioMixer: this.audioMixer?.getStatus() || null,
       engineInfo: {
         // Would include engine-specific status
@@ -317,8 +338,6 @@ class VoiceServiceManager {
 
     this.initialized = false;
     this.initializationPromise = null;
-    
-    console.log('[VOICE SERVICE] Voice service cleaned up');
   }
 }
 
@@ -339,3 +358,4 @@ export const clearVoiceQueue = () => voiceService.clearQueue();
 export const stopAllVoice = () => voiceService.stopAll();
 export const getVoiceServiceStatus = () => voiceService.getStatus();
 export const initializeVoiceService = () => voiceService.initialize();
+export const updateVoiceServiceVolume = () => voiceService.updateAudioMixerVolume();

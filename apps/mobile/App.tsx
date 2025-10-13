@@ -1,6 +1,18 @@
+// Dev-only: immediate console spam relief
+import './src/debug/quietRNW';
+
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
+
+// Load dev RNW View patch BEFORE anything renders (silences RNW text-node spam)
+if (__DEV__) {
+  require('./src/debug/patchRNWView');
+}
+
+// Initialize audio guards for web to prevent expo-av crashes
+import { patchExpoAudioForWeb } from './src/lib/audioWebGuards';
+patchExpoAudioForWeb();
 
 import { ChatScreen } from './src/features/chat/ChatScreen';
 import { StartupAnimation } from './src/components/StartupAnimation';

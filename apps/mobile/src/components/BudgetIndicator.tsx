@@ -210,7 +210,7 @@ export const BudgetIndicator: React.FC<BudgetIndicatorProps> = ({
         ]}>
           {compact ? 
             `${Math.round(budgetUsedPercent)}%` : 
-            warning.message.slice(0, 30) + (warning.message.length > 30 ? '...' : '')
+            (warning.message ? warning.message.slice(0, 30) + (warning.message.length > 30 ? '...' : '') : 'Warning')
           }
         </Text>
       )}

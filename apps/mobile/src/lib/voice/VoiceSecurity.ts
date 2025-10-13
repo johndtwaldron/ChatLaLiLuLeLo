@@ -21,17 +21,38 @@ const MAX_TTS_LENGTH = 4000; // Most TTS APIs have character limits
 const MAX_TTS_LINES = 50; // Prevent abuse through excessive lines
 const MIN_TTS_LENGTH = 1; // Must have at least some content
 
-// SSML security patterns
+// SSML security patterns - Secure HTML filtering to prevent XSS
 const DANGEROUS_SSML_PATTERNS = [
-  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, // Script tags
-  /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, // Iframe tags
-  /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, // Object tags
-  /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, // Embed tags
-  /javascript:/gi, // JavaScript URLs
-  /data:(?!audio|image)/gi, // Data URLs (except safe media types)
-  /vbscript:/gi, // VBScript URLs
-  /file:/gi, // File URLs
-  /about:/gi, // About URLs
+  // Script tags - comprehensive protection against all variants
+  /<script\b[^>]*>.*?<\/script\s*>/gis,
+  /<script\b[^>]*\/>/gi, // Self-closing script tags
+  /<script\b[^>]*>/gi, // Opening script tags without closing
+  // Iframe tags - all variants
+  /<iframe\b[^>]*>.*?<\/iframe\s*>/gis,
+  /<iframe\b[^>]*\/>/gi,
+  /<iframe\b[^>]*>/gi,
+  // Object tags - all variants  
+  /<object\b[^>]*>.*?<\/object\s*>/gis,
+  /<object\b[^>]*\/>/gi,
+  /<object\b[^>]*>/gi,
+  // Embed tags - all variants
+  /<embed\b[^>]*>.*?<\/embed\s*>/gis,
+  /<embed\b[^>]*\/>/gi, 
+  /<embed\b[^>]*>/gi,
+  // Other dangerous HTML elements
+  /<link\b[^>]*>/gi,
+  /<meta\b[^>]*>/gi,
+  /<style\b[^>]*>.*?<\/style\s*>/gis,
+  /<form\b[^>]*>.*?<\/form\s*>/gis,
+  // Dangerous URL schemes - comprehensive list
+  /javascript\s*:/gi,
+  /data\s*:/gi,
+  /file\s*:/gi, 
+  /vbscript\s*:/gi,
+  /about\s*:/gi,
+  /chrome\s*:/gi,
+  /chrome-extension\s*:/gi,
+  /moz-extension\s*:/gi,
 ];
 
 // Allowed SSML tags (basic subset for safety)
@@ -235,8 +256,8 @@ function sanitizeSSMLAttributes(attributes: string, allowedAttrs: string[]): str
     if (allowedAttrs.includes(attrName.toLowerCase())) {
       // Basic attribute value sanitization
       const cleanValue = attrValue
-        .replace(/[<>]/g, '') // Remove angle brackets
-        .replace(/javascript:|data:|file:/gi, '') // Remove dangerous URLs
+        .replace(/[<>"&]/g, '') // Remove angle brackets, quotes, and ampersands
+        .replace(/javascript:|data:|file:|vbscript:/gi, '') // Remove dangerous URLs
         .trim();
       
       if (cleanValue) {
@@ -249,10 +270,16 @@ function sanitizeSSMLAttributes(attributes: string, allowedAttrs: string[]): str
 }
 
 /**
- * Strip all SSML tags from text
+ * Strip all SSML tags from text (robust multi-pass)
  */
 function stripSSML(text: string): string {
-  return text.replace(/<[^>]*>/g, '').trim();
+  let sanitized = text;
+  let prev: string;
+  do {
+    prev = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  } while (sanitized !== prev);
+  return sanitized.trim();
 }
 
 /**

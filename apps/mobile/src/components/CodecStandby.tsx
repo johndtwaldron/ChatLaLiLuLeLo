@@ -82,7 +82,7 @@ export const CodecStandby: React.FC<CodecStandbyProps> = ({ onReactivate, playCl
           await voiceService.initialize();
           
           // Access the voice service's internal audioMixer and ensure it's activated
-          const audioMixer = voiceService.getAudioMixer();
+          const audioMixer = (voiceService as any).getAudioMixer?.();
           if (audioMixer) {
             await audioMixer.ensureAudioContextRunning();
             console.log('[CODEC STANDBY] Voice system audio context activated');

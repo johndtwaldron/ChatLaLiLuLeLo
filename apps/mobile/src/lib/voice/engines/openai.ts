@@ -199,9 +199,15 @@ export class OpenAITTSEngine implements VoiceEngine {
   }
 
   private sanitizeText(text: string): string {
-    // Remove HTML tags and excessive whitespace
-    return text
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
+    // Multi-pass HTML/SSML tag stripping to handle nested fragments
+    let sanitized = text;
+    let prev: string;
+    do {
+      prev = sanitized;
+      sanitized = sanitized.replace(/<[^>]*>/g, '');
+    } while (sanitized !== prev);
+
+    return sanitized
       .replace(/\s+/g, ' ') // Normalize whitespace
       .replace(/[^\w\s.,!?;:()-]/g, '') // Remove unusual characters
       .trim()

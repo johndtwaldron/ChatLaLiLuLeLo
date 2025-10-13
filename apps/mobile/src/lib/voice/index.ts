@@ -20,6 +20,7 @@ export interface VoiceConfig {
   volume: number; // 0-1
   voicePreset: string;
   enableSFX: boolean; // Enable codec sound effects
+  lastVolume?: number; // Store last volume before smart toggle disable
 }
 
 /**
@@ -72,10 +73,12 @@ class VoiceService {
       const voiceEnabled = process.env.EXPO_PUBLIC_VOICE_ENABLED === 'true';
       
       // Check if we're in a web environment with proper voice configuration
+      const h = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isGithubPages = (h === 'github.io') || h.endsWith('.github.io');
       const isWebPreview = typeof window !== 'undefined' && (
-        window.location.hostname.includes('vercel.app') ||
-        window.location.hostname.includes('netlify.app') ||
-        window.location.hostname.includes('github.io') ||
+        h.includes('vercel.app') ||
+        h.includes('netlify.app') ||
+        isGithubPages ||
         process.env.NODE_ENV === 'preview'
       );
       

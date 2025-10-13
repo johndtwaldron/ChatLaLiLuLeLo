@@ -303,20 +303,108 @@ async function runDevWithValidation() {
     }
     
     logAndSave('✅ AI prompt validation completed', 'green');
+    
+    // Phase 3.8: Backend Health Check (NEW for backend connectivity validation)
+    logAndSave('🏥 Phase 3.8: Backend Health Check...', 'yellow');
+    
+    // Function to check if backend is responding
+    async function checkBackendHealth(port, timeout = 30000) {
+      const startTime = Date.now();
+      const checkUrl = `http://localhost:${port}/health`;
+      
+      logAndSave(`🔍 Checking backend health at: ${checkUrl}`, 'gray');
+      
+      while (Date.now() - startTime < timeout) {
+        try {
+          const response = await fetch(checkUrl, { 
+            method: 'GET',
+            signal: AbortSignal.timeout(2000) // 2 second timeout per request
+          });
+          
+          if (response.ok) {
+            const healthData = await response.json();
+            logAndSave(`✅ Backend health check passed: ${healthData.status}`, 'green');
+            
+            // Log additional health info if available
+            if (healthData.environment) {
+              logAndSave(`   📊 OpenAI Key: ${healthData.environment.openai_key_present ? 'Present' : 'Missing'}`, 'gray');
+              logAndSave(`   📊 Tavily Key: ${healthData.environment.tavily_key_present ? 'Present' : 'Missing'}`, 'gray');
+              logAndSave(`   📊 Model: ${healthData.environment.model || 'Unknown'}`, 'gray');
+            }
+            
+            return true;
+          } else {
+            logAndSave(`⚠️  Backend responded with status ${response.status}`, 'yellow');
+          }
+        } catch (error) {
+          // Backend might still be starting up, continue waiting
+          logAndSave(`⏳ Waiting for backend... (${Math.round((Date.now() - startTime) / 1000)}s)`, 'gray');
+        }
+        
+        // Wait 2 seconds before next check
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      return false;
+    }
+    
+    // Start backend first and wait for it to be ready
+    logAndSave('🚀 Starting backend server...', 'blue');
+    
+    const backendProcess = spawn('npx', [
+      'wrangler', 'dev', '--local', '--env=development', `--port=${backendPort}`
+    ], {
+      cwd: path.resolve('apps/edge'),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true
+    });
+    
+    // Capture backend output
+    let backendStarted = false;
+    backendProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      if (output.includes('Ready on')) {
+        backendStarted = true;
+      }
+    });
+    
+    backendProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+      if (output.includes('Ready on')) {
+        backendStarted = true;
+      }
+    });
+    
+    // Wait for backend to be ready with health check
+    const backendReady = await checkBackendHealth(backendPort);
+    
+    if (!backendReady) {
+      logAndSave('❌ Backend health check failed - backend not responding after 30 seconds', 'red');
+      logAndSave('💡 Common issues:', 'yellow');
+      logAndSave('   - Check .dev.vars file exists in apps/edge/', 'yellow');
+      logAndSave('   - Verify OpenAI API key is valid', 'yellow');
+      logAndSave('   - Ensure port 8787 is available', 'yellow');
+      
+      // Kill the backend process
+      backendProcess.kill('SIGTERM');
+      saveLogBuffer();
+      process.exit(1);
+    }
+    
+    logAndSave('✅ Backend health check completed successfully', 'green');
 
     // Save all validation results
     saveLogBuffer();
 
-    // Phase 4: Start Development Servers
+    // Phase 4: Start Frontend Server (Backend already started)
     logAndSave('', 'reset');
     logAndSave('🎉 All validation checks passed!', 'green');
-    logAndSave('🚀 Starting development servers...', 'cyan');
+    logAndSave('🚀 Starting frontend server...', 'cyan');
     logAndSave('', 'reset');
     
-    // Start the production command (which starts both servers)
-    logAndSave('📡 Launching backend (Cloudflare Workers) and frontend (Expo)...', 'blue');
+    logAndSave('📱 Launching frontend (Expo)...', 'blue');
     logAndSave(`🔗 Frontend will be available at: http://localhost:${frontendPort}`, 'magenta');
-    logAndSave(`🔗 Backend API will be available at: http://localhost:${backendPort}`, 'magenta');
+    logAndSave(`🔗 Backend API already running at: http://localhost:${backendPort}`, 'magenta');
     logAndSave('', 'reset');
     logAndSave('💡 To stop servers: Ctrl+C', 'gray');
     logAndSave('📝 This session logged to: ' + logFile, 'gray');
@@ -325,18 +413,11 @@ async function runDevWithValidation() {
     // Final log save before starting servers
     saveLogBuffer();
 
-    // Build concurrently command with dynamic ports
-    const edgeCommand = `"cd apps/edge && npx wrangler dev --local --env=development --port=${backendPort}"`;
-    const mobileCommand = `"cd apps/mobile && npx expo start --web --port=${frontendPort}"`;
-    
-    // Start the development servers with dynamic ports
-    const devProcess = spawn('npx', [
-      'concurrently',
-      '-n', 'EDGE,MOBILE',
-      '-c', 'blue,green',
-      edgeCommand,
-      mobileCommand
+    // Start only the frontend server (backend is already running)
+    const mobileProcess = spawn('npx', [
+      'expo', 'start', '--web', `--port=${frontendPort}`
     ], {
+      cwd: path.resolve('apps/mobile'),
       stdio: 'inherit',
       shell: true
     });
@@ -352,18 +433,28 @@ async function runDevWithValidation() {
       logAndSave(`🛑 Received ${signal}, shutting down development servers...`, 'yellow');
       saveLogBuffer();
       
-      // Kill child processes more aggressively on Windows
-      if (process.platform === 'win32') {
-        try {
-          // Try to kill the entire process tree
-          require('child_process').execSync(`taskkill /pid ${devProcess.pid} /t /f`, { stdio: 'ignore' });
-        } catch (e) {
-          // Fallback to normal kill if taskkill fails
-          devProcess.kill('SIGKILL');
+      // Kill both backend and frontend processes
+      const killProcess = (proc, name) => {
+        if (!proc) return;
+        
+        if (process.platform === 'win32') {
+          try {
+            // Try to kill the entire process tree
+            require('child_process').execSync(`taskkill /pid ${proc.pid} /t /f`, { stdio: 'ignore' });
+            logAndSave(`🕰 ${name} process tree terminated`, 'gray');
+          } catch (e) {
+            // Fallback to normal kill if taskkill fails
+            proc.kill('SIGKILL');
+            logAndSave(`🕰 ${name} process killed (fallback)`, 'gray');
+          }
+        } else {
+          proc.kill(signal);
+          logAndSave(`🕰 ${name} process terminated`, 'gray');
         }
-      } else {
-        devProcess.kill(signal);
-      }
+      };
+      
+      killProcess(backendProcess, 'Backend');
+      killProcess(mobileProcess, 'Frontend');
       
       // Give processes a moment to clean up
       setTimeout(() => {
@@ -388,10 +479,19 @@ async function runDevWithValidation() {
       });
     }
 
-    devProcess.on('close', (code) => {
-      logAndSave(`🔚 Development servers exited with code ${code}`, 'gray');
-      saveLogBuffer();
-      process.exit(code);
+    // Monitor both processes for exit
+    mobileProcess.on('close', (code) => {
+      logAndSave(`📱 Frontend server exited with code ${code}`, 'gray');
+      if (!isShuttingDown) {
+        gracefulShutdown('SIGTERM'); // Shutdown backend too
+      }
+    });
+    
+    backendProcess.on('close', (code) => {
+      logAndSave(`🏥 Backend server exited with code ${code}`, 'gray');
+      if (!isShuttingDown) {
+        gracefulShutdown('SIGTERM'); // Shutdown frontend too
+      }
     });
 
   } catch (error) {

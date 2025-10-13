@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
   StyleSheet,
   Dimensions,
   StatusBar,
+  View,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -100,19 +100,24 @@ export const CodecFrame: React.FC<CodecFrameProps> = ({
         <>
           {/* Scanlines overlay */}
           <View style={styles.scanlinesContainer}>
-            {Array.from({ length: Math.ceil(Dimensions.get('window').height / currentTheme.effects.scanlineSpacing) }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.scanline,
-                  { 
-                    top: index * currentTheme.effects.scanlineSpacing,
-                    height: currentTheme.effects.scanlineHeight,
-                    backgroundColor: currentTheme.colors.scanline,
-                  },
-                ]}
-              />
-            ))}
+            {(() => {
+              const scanlineCount = Math.ceil(Dimensions.get('window').height / (currentTheme.effects.scanlineSpacing || 4));
+              if (scanlineCount <= 0) return null;
+              
+              return Array.from({ length: scanlineCount }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.scanline,
+                    { 
+                      top: index * (currentTheme.effects.scanlineSpacing || 4),
+                      height: currentTheme.effects.scanlineHeight || 1,
+                      backgroundColor: currentTheme.colors.scanline || 'rgba(0,255,0,0.1)',
+                    },
+                  ]}
+                />
+              ));
+            })()}
           </View>
 
           {/* Moving scanline effect */}
