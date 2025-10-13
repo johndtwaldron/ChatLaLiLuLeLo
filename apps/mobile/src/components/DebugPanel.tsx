@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges, getCurrentThemeName } from '@/lib/theme';
 import { CodecAudioControls } from './CodecAudioControls';
+import SimulateMobileToggle from './SimulateMobileToggle';
 
 interface DebugInfo {
   apiStatus: 'connected' | 'disconnected' | 'loading';
@@ -348,6 +349,18 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
               </View>
             </View>
           )}
+        </View>
+
+        {/* UI Controls Section */}
+        <View style={staticStyles.sectionContainer}>
+          <View style={[staticStyles.sectionHeader, dynamicStyles.sectionHeader]}>
+            <Text style={[staticStyles.sectionTitle, dynamicStyles.sectionTitle]}>
+              UI CONTROLS
+            </Text>
+          </View>
+          <View style={staticStyles.sectionContent}>
+            <SimulateMobileToggle />
+          </View>
         </View>
 
         {/* Codec Audio Controls Section */}
