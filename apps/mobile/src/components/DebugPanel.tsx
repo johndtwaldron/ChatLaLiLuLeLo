@@ -145,11 +145,6 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
       borderRadius: 4,
       marginLeft: 8,
     },
-    logText: {
-      fontSize: 10,
-      fontFamily: 'monospace',
-      paddingVertical: 2,
-    },
   });
 
   const dynamicStyles = {
@@ -178,9 +173,6 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
     },
     infoValue: {
       color: currentTheme.colors.secondary,
-    },
-    logText: {
-      color: currentTheme.colors.textSecondary,
     },
   };
 

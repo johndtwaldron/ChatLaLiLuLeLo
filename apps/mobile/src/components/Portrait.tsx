@@ -234,47 +234,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  colonelSprite: {
-    // Placeholder styling for colonel sprite
-  },
-  
   userSprite: {
     // Placeholder styling for user sprite
-  },
-  
-  face: {
-    width: 60,
-    height: 80,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: codecTheme.spacing.sm,
-  },
-  
-  eye: {
-    width: 8,
-    height: 8,
-    backgroundColor: codecTheme.colors.primary,
-    borderRadius: 4,
-    marginHorizontal: codecTheme.spacing.xs,
-  },
-  
-  mouth: {
-    width: 20,
-    height: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  mouthShape: {
-    width: 12,
-    height: 4,
-    backgroundColor: codecTheme.colors.primary,
-    borderRadius: 2,
-  },
-  
-  mouthOpen: {
-    height: 8,
-    backgroundColor: codecTheme.colors.secondary,
   },
   
   silhouette: {

@@ -22,6 +22,10 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
 import { BudgetIndicator } from '@/components/BudgetIndicator';
+import TopControlsMobile from '@/components/TopControlsMobile';
+import { FunctionsPanel, DebugPanel as MobileDebugPanel } from '@/components/mobile/MobilePanels';
+import { shouldUseMobileUI } from '@/lib/uiMode';
+import { getScreenInfo } from '@/lib/platform';
 import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getCurrentModel, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
 import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
@@ -179,11 +183,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     if (portraitSectionRef.current) {
       portraitSectionRef.current.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
         // Calculate waveform boundary relative to portrait section
-        // When voice is enabled, portraits should start below the waveform
-        // Waveform container: top: 70px, height: 40px + 16px padding = 56px total
-        // So waveform bottom is at 126px from screen top
-        // Portrait section starts at pageY, so boundary is 126 - pageY
-        const waveformBottomFromScreen = voiceState.enabled ? 126 : 70; // Include waveform height when voice enabled
+        // Mobile UI has different top layout than desktop UI
+        const topControlsHeight = useMobileUI ? 60 : 70; // Mobile controls are more compact
+        const waveformBottomFromScreen = voiceState.enabled ? (topControlsHeight + 56) : topControlsHeight; // Include waveform height when voice enabled
         const waveformBoundaryInPortrait = Math.max(0, waveformBottomFromScreen - pageY);
         
         // Store the calculated boundary for use in DraggablePortrait components
@@ -390,64 +392,93 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     }
   };
 
+  // Check if we should use mobile UI
+  const useMobileUI = shouldUseMobileUI();
+  
   const themeStyles = getThemeStyles(currentTheme);
 
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */}
-        <View style={staticStyles.controlButtonsContainer}>
-          <ModelToggle />
-          
-          <Pressable 
-            onPress={handleClosePress}
-            style={[
-              staticStyles.controlButton,
-              { 
-                borderColor: currentTheme.colors.primary,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              }
-            ]}
-          >
-            <Text style={[staticStyles.controlButtonText, { color: currentTheme.colors.primary }]}>
-              CLOSE
-            </Text>
-          </Pressable>
-          
-          <BudgetIndicator 
-            sessionId={sessionId}
-            compact={true}
-            refreshTrigger={budgetRefreshTrigger}
+        {/* Mobile UI vs Desktop UI Controls */}
+        {useMobileUI ? (
+          <TopControlsMobile 
+            onClose={handleClosePress}
+            FunctionsPanel={
+              <FunctionsPanel 
+                sessionId={sessionId}
+                budgetRefreshTrigger={budgetRefreshTrigger}
+              />
+            }
+            DebugPanel={
+              <MobileDebugPanel 
+                sessionId={sessionId}
+                budgetRefreshTrigger={budgetRefreshTrigger}
+                onToggleDebug={handleDebugToggle}
+                onToggleConnectionDebug={handleConnectionDebugToggle}
+                debugEnabled={debugEnabled}
+                connectionDebugEnabled={connectionDebugEnabled}
+              />
+            }
           />
-          
-          <VoiceControls compact={true} />
-          <CRTToggle />
-          <ThemeCycleToggle />
-          <ModeToggle />
-          <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
-          <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
-          
-          <Pressable 
-            onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
-            style={[
-              staticStyles.controlButton,
-              { 
-                borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
-                backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
-              }
-            ]}
-          >
-            <Text style={[staticStyles.controlButtonText, { 
-              color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
-            }]}>
-              🔊
-            </Text>
-          </Pressable>
-        </View>
+        ) : (
+          /* Desktop Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */
+          <View style={staticStyles.controlButtonsContainer}>
+            <ModelToggle />
+            
+            <Pressable 
+              onPress={handleClosePress}
+              style={[
+                staticStyles.controlButton,
+                { 
+                  borderColor: currentTheme.colors.primary,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                }
+              ]}
+            >
+              <Text style={[staticStyles.controlButtonText, { color: currentTheme.colors.primary }]}>
+                CLOSE
+              </Text>
+            </Pressable>
+            
+            <BudgetIndicator 
+              sessionId={sessionId}
+              compact={true}
+              refreshTrigger={budgetRefreshTrigger}
+            />
+            
+            <VoiceControls compact={true} />
+            <CRTToggle />
+            <ThemeCycleToggle />
+            <ModeToggle />
+            <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
+            <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
+            
+            <Pressable 
+              onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
+              style={[
+                staticStyles.controlButton,
+                { 
+                  borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
+                  backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
+                }
+              ]}
+            >
+              <Text style={[staticStyles.controlButtonText, { 
+                color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
+              }]}>
+                🔊
+              </Text>
+            </Pressable>
+          </View>
+        )}
         
         {/* Fixed MGS2-style Codec Waveform - positioned at top center under toggle buttons */}
         {voiceState.enabled && (
-          <View style={staticStyles.topWaveformContainer}>
+          <View style={[
+            staticStyles.topWaveformContainer,
+            useMobileUI && staticStyles.topWaveformContainerMobile
+          ]}>
             <CodecWaveform
               isPlaying={voiceState.isPlaying && voiceState.enabled}
               volume={voiceState.volume}
@@ -608,6 +639,10 @@ const staticStyles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)', // Subtle background for visibility
     borderRadius: 8,
     marginHorizontal: 16,
+  },
+  
+  topWaveformContainerMobile: {
+    top: 60, // Mobile controls are more compact
   },
 });
 

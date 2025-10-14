@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
 import { setDebugOverride, getDebugOverride, isDebugOverrideActive } from '@/lib/uiMode';
-import { PLATFORM_CONSTANTS } from '@/lib/platform';
+import { PLATFORM_CONSTANTS } from '../lib/platform';
 
 export function SimulateMobileToggle() {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
