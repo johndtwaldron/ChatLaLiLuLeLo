@@ -12,4 +12,13 @@ config.resolver.nodeModulesPaths = [
 ];
 config.watchFolders = [workspaceRoot];
 
+// Add resolver alias for @ paths to work with Metro bundler
+config.resolver.alias = {
+  '@': path.join(projectRoot, 'src'),
+  '@/components': path.join(projectRoot, 'src/components'),
+  '@/features': path.join(projectRoot, 'src/features'),
+  '@/lib': path.join(projectRoot, 'src/lib'),
+  '@/assets': path.join(projectRoot, 'src/assets'),
+};
+
 module.exports = config;
