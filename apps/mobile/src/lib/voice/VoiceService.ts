@@ -174,6 +174,13 @@ class VoiceServiceManager {
 
     } catch (error) {
       console.error('[VOICE SERVICE] Synthesis failed:', error);
+      
+      // Trigger voice error display in UI if available
+      if (typeof (globalThis as any).__voiceErrorHandler === 'function') {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        (globalThis as any).__voiceErrorHandler(errorMessage);
+      }
+      
       options?.onError?.(error instanceof Error ? error : new Error(String(error)));
       return null;
     }

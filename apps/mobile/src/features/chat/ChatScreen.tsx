@@ -10,7 +10,7 @@ import {
 
 import { CodecFrame } from '@/components/CodecFrame';
 import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
-import { DraggableVoicePanel } from '@/components/DraggableVoicePanel';
+import { VoiceBox } from '@/components/VoiceBox';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
@@ -473,17 +473,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           </View>
         )}
         
-        {/* Fixed MGS2-style Codec Waveform - positioned at top center under toggle buttons */}
+        {/* Fixed MGS2-style Voice Box - positioned at top center under toggle buttons */}
         {voiceState.enabled && (
           <View style={[
             staticStyles.topWaveformContainer,
             useMobileUI && staticStyles.topWaveformContainerMobile
           ]}>
-            <CodecWaveform
+            <VoiceBox
               isPlaying={voiceState.isPlaying && voiceState.enabled}
               volume={voiceState.volume}
               height={40}
-              variant="codec"
+              width={300}
             />
           </View>
         )}

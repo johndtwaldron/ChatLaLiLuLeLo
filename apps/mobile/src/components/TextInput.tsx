@@ -31,6 +31,11 @@ export const TextInput: React.FC<TextInputProps> = ({
   const [validationFeedback, setValidationFeedback] = useState<string>('');
   const [isValidInput, setIsValidInput] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Command history for up/down arrow navigation
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [tempInput, setTempInput] = useState(''); // Store current input when navigating history
 
   // Subscribe to theme changes
   useEffect(() => {
@@ -64,14 +69,24 @@ export const TextInput: React.FC<TextInputProps> = ({
       return;
     }
     
+    // Add to command history (avoid duplicates)
+    const trimmedInput = inputText.trim();
+    if (trimmedInput && commandHistory[commandHistory.length - 1] !== trimmedInput) {
+      setCommandHistory(prev => [...prev, trimmedInput]);
+    }
+    
     // Send the sanitized message
     onSendMessage(validation.sanitizedMessage);
     setInputText(''); // Clear input after sending
     setValidationFeedback(''); // Clear any validation feedback
+    setHistoryIndex(-1); // Reset history navigation
+    setTempInput(''); // Clear temp input
   };
 
   const handleKeyPress = (event: any) => {
-    if (event.nativeEvent.key === 'Enter') {
+    const key = event.nativeEvent.key;
+    
+    if (key === 'Enter') {
       // Check if Shift is pressed - if so, allow new line
       if (event.nativeEvent.shiftKey) {
         // Shift+Enter: Allow new line (don't send)
@@ -80,6 +95,34 @@ export const TextInput: React.FC<TextInputProps> = ({
         // Just Enter: Send message
         event.preventDefault(); // Prevent new line
         handleSend();
+      }
+    } else if (key === 'ArrowUp') {
+      // Navigate up in command history
+      event.preventDefault();
+      if (commandHistory.length === 0) return;
+      
+      if (historyIndex === -1) {
+        // First time navigating - store current input
+        setTempInput(inputText);
+        setHistoryIndex(commandHistory.length - 1);
+        setInputText(commandHistory[commandHistory.length - 1]);
+      } else if (historyIndex > 0) {
+        setHistoryIndex(historyIndex - 1);
+        setInputText(commandHistory[historyIndex - 1]);
+      }
+    } else if (key === 'ArrowDown') {
+      // Navigate down in command history
+      event.preventDefault();
+      if (historyIndex === -1) return; // Not navigating history
+      
+      if (historyIndex < commandHistory.length - 1) {
+        setHistoryIndex(historyIndex + 1);
+        setInputText(commandHistory[historyIndex + 1]);
+      } else {
+        // Back to current input
+        setHistoryIndex(-1);
+        setInputText(tempInput);
+        setTempInput('');
       }
     }
   };
@@ -215,10 +258,10 @@ export const TextInput: React.FC<TextInputProps> = ({
       {/* Status Indicator */}
       <View style={[styles.statusBar, { backgroundColor: currentTheme.colors.surface }]}>
         <Text style={[styles.statusText, { color: currentTheme.colors.textSecondary }]}>
-          [INPUT MODE: ACTIVE] [SHIFT+ENTER: NEW LINE]
+          [INPUT MODE: ACTIVE] [SHIFT+ENTER: NEW LINE] [↑↓: HISTORY]
         </Text>
         <Text style={[styles.statusText, { color: currentTheme.colors.textSecondary }]}>
-          {inputText.length}/2000 CHARS | {(inputText.match(/\n/g) || []).length + 1} LINES
+          {inputText.length}/2000 CHARS | {(inputText.match(/\n/g) || []).length + 1} LINES | CMD: {commandHistory.length}
         </Text>
       </View>
     </KeyboardAvoidingView>

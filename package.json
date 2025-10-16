@@ -25,6 +25,7 @@
     "e2e:lightning": "node scripts/test-lightning-e2e.js",
     "e2e:lightning:headed": "node scripts/test-lightning-e2e.js --headed",
     "e2e:lightning:chrome": "node scripts/test-lightning-e2e.js --browser chromium",
+    "test:voice-errors": "node scripts/test-voice-error-display.js",
     "bdd": "npx cucumber-js tests/bdd/features --require-module ts-node/register --require tests/bdd/steps/**/*.ts --format-options '{\"snippetInterface\": \"async-await\"}'",
     "build:mobile": "cd apps/mobile && npm run build",
     "build:edge": "cd edge/api && npm run build",
