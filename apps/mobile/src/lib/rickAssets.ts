@@ -1,185 +1,146 @@
 /**
  * Rick Mode Assets Loader
  * 
- * Static imports for Rick images and audio from material directories.
- * Metro bundler doesn't support require.context for paths outside the app directory,
- * so we use explicit imports with asImg helper for cross-platform compatibility.
+ * Complete collection of Rick/Bogart/Casablanca assets.
+ * All 16 images (jpg/jpeg/png/gif/avif) and all 54 audio clips.
+ * Simple module-level cycling with getNextRickImage() and getNextRickAudio().
  */
 
 import { asImg } from './asset';
 
-// Static Rick image imports - now via symlinked assets in Expo project
-// Path from apps/mobile/src/lib/ to apps/mobile/assets is ../../assets
+// ALL 16 Rick images - jpg, png, gif, avif formats
 const RICK_IMAGES = [
   asImg(require('../../assets/Rick.images/7vai8uwrs1v11.jpg')),
+  asImg(require('../../assets/Rick.images/bogart-humphrey-bogart.gif')),
+  asImg(require('../../assets/Rick.images/casablanca-fighting.gif')),
+  asImg(require('../../assets/Rick.images/casablanca-heres-looking-at-you-kid.gif')),
+  asImg(require('../../assets/Rick.images/casablanca-rick.gif')),
+  asImg(require('../../assets/Rick.images/for-a-price-rick-blaine.png')),
+  asImg(require('../../assets/Rick.images/frustrated-angry.gif')),
+  asImg(require('../../assets/Rick.images/humphrey-bogart-smoking-a-cigarette-in-casablanca.avif')),
+  asImg(require('../../assets/Rick.images/humphrey-bogart.avif')),
+  asImg(require('../../assets/Rick.images/i\'m-not-fighting-for-anything-anymore-except-myself-rick-blaine.gif')),
+  asImg(require('../../assets/Rick.images/nobody-ever-loved-me-that-much-rick-blaine.gif')),
+  asImg(require('../../assets/Rick.images/of-all-the-gin-joints-in-all-the-world-she-walks-into-mine-rick-blaine.gif')),
   asImg(require('../../assets/Rick.images/Rick.Cigarette.jpg')),
   asImg(require('../../assets/Rick.images/RickBlaine.jpg')),
+  asImg(require('../../assets/Rick.images/we-will-always-have-paris-classic.gif')),
+  asImg(require('../../assets/Rick.images/you\'d-be-doing-me-a-favor-rick-blaine.gif')),
 ];
 
-// Static Rick audio imports - symlinked from material/audio/rick.audio
+// ALL 54 Rick audio clips
 const RICK_AUDIO = [
-  require('../../assets/rick.audio/band-playing.mp3'),
-  require('../../assets/rick.audio/all-right-i-will.mp3'),
   require('../../assets/rick.audio/all-right-at-a-quarter-to-5.mp3'),
+  require('../../assets/rick.audio/all-right-i-will.mp3'),
+  require('../../assets/rick.audio/and-every-time-you-send-my-shipment-over-it\'s-always-just-a-little-bit-short.mp3'),
+  require('../../assets/rick.audio/and-got-well-paid-for-it-on-both-occasions.mp3'),
+  require('../../assets/rick.audio/and-that-ll-give-you-grounds-to-make-the-arrest.mp3'),
+  require('../../assets/rick.audio/and-the-names-are-mr-and-mrs-victor-laszlo.mp3'),
+  require('../../assets/rick.audio/band-playing.mp3'),
+  require('../../assets/rick.audio/but-i-will-if-you-take-one-more-step.mp3'),
+  require('../../assets/rick.audio/go-ahead-and-shoot-you\'ll-be-doing-me-a-favor.mp3'),
+  require('../../assets/rick.audio/have-a-drink.mp3'),
+  require('../../assets/rick.audio/he-s-succeeded-in-impressing-half-the-world.mp3'),
+  require('../../assets/rick.audio/here-here-drink-up-we\'ll-never-finish-the-other-three.mp3'),
+  require('../../assets/rick.audio/here-s-looking-at-you-kid (1).mp3'),
+  require('../../assets/rick.audio/here-s-looking-at-you-kid.mp3'),
+  require('../../assets/rick.audio/i-am-a-little-more-impressed-with-you.mp3'),
+  require('../../assets/rick.audio/i-bet-they\'re-asleep-in-new-york-i-bet-they\'re-asleep-all-over-america.mp3'),
+  require('../../assets/rick.audio/i-m-a-saloonkeeper.mp3'),
+  require('../../assets/rick.audio/i-stick-my-neck-out-for-nobody.mp3'),
+  require('../../assets/rick.audio/i-wouldn\'t-believe-you-no-matter-what-you-told-me-you\'d-say-anything-now-to-get-what-you-want.mp3'),
+  require('../../assets/rick.audio/i\'m-no-good-at-being-noble-but-it-doesn\'t-take-much-to-see-that-the-problems-of-three-little-people-don\'t-amount-to-a-hill-of-beans-in-this-crazy-world.mp3'),
+  require('../../assets/rick.audio/i\'m-not-fighting-for-anything-anymore-except-myself-i\'m-the-only-cause-i\'m-interested-in.mp3'),
+  require('../../assets/rick.audio/i\'m-not-interested-in-politics-the-problems-of-the-world-are-not-in-my-department.mp3'),
+  require('../../assets/rick.audio/i\'m-sorry-for-asking-i-forgot-we-said-no-questions.mp3'),
+  require('../../assets/rick.audio/i\'m-sorry-there-was-a-disturbance-folks-but-it\'s-all-over-now-everything\'s-all-right.mp3'),
+  require('../../assets/rick.audio/if-i-gave-you-any-thought-i-probably-would-humphrey-bogart-insult-not-worth-thinking-about.mp3'),
+  require('../../assets/rick.audio/if-she-can-stand-it-i-can-play-it.mp3'),
+  require('../../assets/rick.audio/if-that-plane-leaves-and-you\'re-not-with-him-you\'ll-regret-it-maybe-not-today-maybe-not-tomorrow-but-soon-and-for-the-rest-of-your-life.mp3'),
+  require('../../assets/rick.audio/it-s-the-new-german-77th-and-judging-by-the-sound-only-about-35-miles-away.mp3'),
+  require('../../assets/rick.audio/it\'s-funny-about-your-voice-how-it-hasn\'t-changed-i-can-still-hear-it.mp3'),
+  require('../../assets/rick.audio/just-a-moment.mp3'),
+  require('../../assets/rick.audio/just-like-any-other-man-only-more-so.mp3'),
+  require('../../assets/rick.audio/louis-i-think-this-is-the-beginning-of-a-beautiful-friendship.mp3'),
+  require('../../assets/rick.audio/nobody-ever-loved-me-that-much.mp3'),
+  require('../../assets/rick.audio/of-all-the-gin-joints-in-all-the-towns-in-all-the-world-she-walks-into-mine.mp3'),
+  require('../../assets/rick.audio/sam-i-thought-i-told-you-never-to-play.mp3'),
+  require('../../assets/rick.audio/then-release-him.mp3'),
+  require('../../assets/rick.audio/voice_preview_rick.11.v1.mp3'),
+  require('../../assets/rick.audio/we-ll-get-on-a-train-and-never-stop-don-t-rick.mp3'),
+  require('../../assets/rick.audio/well-you-can-tell-me-now-i-m-reasonably-sober.mp3'),
+  require('../../assets/rick.audio/what-i-ve-got-to-do-you-can-t-be-any-part-of.mp3'),
+  require('../../assets/rick.audio/what-makes-you-think-i-d-stick-my-neck-out-for-laszlo.mp3'),
+  require('../../assets/rick.audio/what-of-it (1).mp3'),
+  require('../../assets/rick.audio/what-of-it-i\'m-going-to-die-in-casablanca-it\'s-a-good-spot-for-it.mp3'),
+  require('../../assets/rick.audio/what-of-it-then-it-ll-be-out-of-its-misery.mp3'),
+  require('../../assets/rick.audio/what-of-it.mp3'),
+  require('../../assets/rick.audio/where-i\'m-going-you-can\'t-follow-what-i\'ve-got-to-do-you-can\'t-be-any-part-of.mp3'),
+  require('../../assets/rick.audio/where-were-you-last-night-that\'s-so-long-ago-i-don\'t-remember.mp3'),
+  require('../../assets/rick.audio/yes-i-found-that-a-very-expensive-hobby-too-but-then-i-never-was-much-of-a-businessman.mp3'),
+  require('../../assets/rick.audio/yes-i-guess-it-is-too-far-ahead.mp3'),
+  require('../../assets/rick.audio/you-seem-to-know-all-about-my-destiny.mp3'),
+  require('../../assets/rick.audio/you-want-my-advice-oh-yes-please-go-back-to-bulgaria.mp3'),
+  require('../../assets/rick.audio/you\'re-not-very-subtle-but-you-are-effective-i-get-the-point.mp3'),
+  require('../../assets/rick.audio/your-cash-is-good-at-the-bar.mp3'),
+  require('../../assets/rick.audio/your-story-had-me-a-little-confused-or-maybe-it-was-the-bourbon.mp3'),
 ];
 
-export interface RickAssets {
-  images: any[];  // Use any for image sources (can be objects or strings)
-  audio: any[];   // Use any for audio sources
+// Module-level cycling indices
+let currentImageIndex = 0;
+let currentAudioIndex = 0;
+
+/**
+ * Get next Rick image (cycles through all 16)
+ */
+export function getNextRickImage(): any {
+  if (RICK_IMAGES.length === 0) {
+    console.warn('[RICK] No images available');
+    return null;
+  }
+  const image = RICK_IMAGES[currentImageIndex];
+  currentImageIndex = (currentImageIndex + 1) % RICK_IMAGES.length;
+  console.log(`[RICK] Image ${currentImageIndex}/${RICK_IMAGES.length}`);
+  return image;
 }
 
 /**
- * Get all Rick assets (images and audio)
+ * Get next Rick audio (cycles through all 54)
  */
-export function getRickAssets(): RickAssets {
-  console.log(`[RICK] Total assets: ${RICK_IMAGES.length} images, ${RICK_AUDIO.length} audio clips`);
-  
-  return { 
-    images: RICK_IMAGES, 
-    audio: RICK_AUDIO 
+export function getNextRickAudio(): any {
+  if (RICK_AUDIO.length === 0) {
+    console.warn('[RICK] No audio available');
+    return null;
+  }
+  const audio = RICK_AUDIO[currentAudioIndex];
+  currentAudioIndex = (currentAudioIndex + 1) % RICK_AUDIO.length;
+  console.log(`[RICK] Audio ${currentAudioIndex}/${RICK_AUDIO.length}`);
+  return audio;
+}
+
+/**
+ * Get current Rick image without advancing
+ */
+export function getCurrentRickImage(): any {
+  if (RICK_IMAGES.length === 0) return null;
+  return RICK_IMAGES[currentImageIndex];
+}
+
+/**
+ * Reset cycling indices
+ */
+export function resetRickAssets(): void {
+  currentImageIndex = 0;
+  currentAudioIndex = 0;
+  console.log('[RICK] Assets reset');
+}
+
+/**
+ * Get total asset counts
+ */
+export function getRickAssetCounts(): { images: number; audio: number } {
+  return {
+    images: RICK_IMAGES.length,
+    audio: RICK_AUDIO.length,
   };
-}
-
-/**
- * Rick portrait cycling state
- */
-export class RickPortraitCycler {
-  private images: string[];
-  private audio: string[];
-  private currentImageIndex: number = 0;
-  private currentAudioIndex: number = 0;
-  private isAudioPlaying: boolean = false;
-  private audioElement: HTMLAudioElement | null = null;
-  
-  constructor(assets: RickAssets) {
-    this.images = assets.images;
-    this.audio = assets.audio;
-    
-    if (this.images.length === 0) {
-      console.warn('[RICK] No images available for cycling');
-    }
-    
-    if (this.audio.length === 0) {
-      console.warn('[RICK] No audio available for cycling');
-    }
-  }
-  
-  /**
-   * Get current portrait image
-   */
-  getCurrentImage(): any {
-    if (this.images.length === 0) {
-      console.warn('[RICK] No images available');
-      return null;
-    }
-    return this.images[this.currentImageIndex];
-  }
-  
-  /**
-   * Handle portrait click - advance image and play audio
-   * Returns true if action was taken, false if guarded
-   */
-  async handleClick(): Promise<boolean> {
-    // Guard: Don't proceed if audio is playing
-    if (this.isAudioPlaying) {
-      console.log('[RICK] Audio already playing, ignoring click');
-      return false;
-    }
-    
-    // Advance image index with wrap-around
-    if (this.images.length > 0) {
-      this.currentImageIndex = (this.currentImageIndex + 1) % this.images.length;
-      console.log(`[RICK] Advanced to image ${this.currentImageIndex + 1}/${this.images.length}`);
-    }
-    
-    // Advance audio index and play
-    if (this.audio.length > 0) {
-      this.currentAudioIndex = (this.currentAudioIndex + 1) % this.audio.length;
-      await this.playCurrentAudio();
-    }
-    
-    return true;
-  }
-  
-  /**
-   * Play current audio clip
-   */
-  private async playCurrentAudio(): Promise<void> {
-    if (this.audio.length === 0) return;
-    
-    const audioSource = this.audio[this.currentAudioIndex];
-    console.log(`[RICK] Playing audio ${this.currentAudioIndex + 1}/${this.audio.length}`);
-    
-    this.isAudioPlaying = true;
-    
-    try {
-      // Stop any existing audio
-      if (this.audioElement) {
-        this.audioElement.pause();
-        this.audioElement = null;
-      }
-      
-      // For web platform, audioSource is already a resolved URL/path
-      // Create and play new audio with the proper source
-      this.audioElement = new Audio(audioSource);
-      this.audioElement.volume = 0.8; // Set reasonable volume
-      
-      // Set up event listeners
-      this.audioElement.onended = () => {
-        this.isAudioPlaying = false;
-        this.audioElement = null;
-        console.log('[RICK] Audio playback finished');
-      };
-      
-      this.audioElement.onerror = (error) => {
-        console.error('[RICK] Audio playback error:', error);
-        this.isAudioPlaying = false;
-        this.audioElement = null;
-      };
-      
-      // Play with error handling
-      const playPromise = this.audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.error('[RICK] Play promise rejected:', error);
-          this.isAudioPlaying = false;
-          this.audioElement = null;
-        });
-      }
-      
-    } catch (error) {
-      console.error('[RICK] Failed to play audio:', error);
-      this.isAudioPlaying = false;
-      this.audioElement = null;
-    }
-  }
-  
-  /**
-   * Stop any playing audio
-   */
-  stopAudio(): void {
-    if (this.audioElement) {
-      this.audioElement.pause();
-      this.audioElement = null;
-    }
-    this.isAudioPlaying = false;
-    console.log('[RICK] Audio stopped');
-  }
-  
-  /**
-   * Check if audio is currently playing
-   */
-  isPlaying(): boolean {
-    return this.isAudioPlaying;
-  }
-  
-  /**
-   * Reset to first image and audio
-   */
-  reset(): void {
-    this.currentImageIndex = 0;
-    this.currentAudioIndex = 0;
-    this.stopAudio();
-    console.log('[RICK] Cycler reset');
-  }
 }

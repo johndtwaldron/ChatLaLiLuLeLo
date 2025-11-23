@@ -1,0 +1,110 @@
+name: Backend Auto-Deploy
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ dev-plus ]
+    paths:
+      - 'apps/edge/**'
+      - 'prompts/**'
+      - '.github/workflows/backend-deploy.yml'
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  deploy-backend:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://chatlalilulelo-backend-prod.jdw-gh.workers.dev
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          echo "📦 Installing project dependencies..."
+          npm ci --silent
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Validate backend code
+        run: |
+          echo "🔍 Running backend validation..."
+          cd apps/edge
+          
+          # TypeScript compilation check
+          echo "Checking TypeScript compilation..."
+          npx tsc --noEmit || {
+            echo "❌ TypeScript compilation failed"
+            exit 1
+          }
+          
+          echo "✅ Backend validation completed successfully"
+
+      - name: 🚀 Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        run: |
+          echo "🚀 Deploying backend to Cloudflare Workers..."
+          cd apps/edge
+          
+          # Deploy to production
+          npm run deploy:production || {
+            echo "❌ Deployment failed"
+            exit 1
+          }
+          
+          echo "✅ Backend deployed successfully"
+
+      - name: 🔍 Post-deployment health check
+        run: |
+          echo "🔍 Running health check on deployed backend..."
+          
+          # Wait for deployment to propagate
+          sleep 10
+          
+          # Health check (using curl with proper error handling)
+          HEALTH_URL="https://chatlalilulelo-backend-prod.jdw-gh.workers.dev/health"
+          
+          echo "Checking: $HEALTH_URL"
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+          
+          if [ "$response" = "200" ]; then
+            echo "✅ Health check passed (HTTP $response)"
+          else
+            echo "⚠️  Health check returned HTTP $response (deployment may still be propagating)"
+            # Don't fail the workflow - Cloudflare propagation can take time
+          fi
+
+      - name: 📋 Deployment summary
+        if: always()
+        run: |
+          echo "📋 ========================================"
+          echo "📋     Backend Deployment Summary"
+          echo "📋 ========================================"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Timestamp: $(date -u +\"%Y-%m-%dT%H:%M:%SZ\")"
+          echo ""
+          echo "🌐 Production URL:"
+          echo "   https://chatlalilulelo-backend-prod.jdw-gh.workers.dev"
+          echo ""
+          echo "📡 Endpoints:"
+          echo "   /health - Backend health check"
+          echo "   /chat   - AI chat streaming endpoint"
+          echo ""
+          echo "========================================"

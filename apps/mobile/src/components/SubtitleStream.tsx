@@ -190,7 +190,8 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
           mode: currentModeKey === 'haywire' ? 'GW' : 
                 currentModeKey === 'jd' ? 'JD' : 
                 currentModeKey === 'lore' ? 'MGS' :
-                currentModeKey === 'bitcoin' ? 'BTC' : 'JD',
+                currentModeKey === 'bitcoin' ? 'BTC' :
+                currentModeKey === 'rick' ? 'RICK' : 'JD',
           model: currentModelKey as 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'mock',
           at: Date.now(),
           kind: message.speaker === 'user' ? 'user' : 'ai'

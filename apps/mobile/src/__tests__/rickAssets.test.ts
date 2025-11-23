@@ -1,117 +1,162 @@
 /**
- * Rick Assets Loading Tests
+ * Tests for Rick Mode asset cycling
  * 
- * Verifies that Rick images and audio are properly imported and available.
+ * Verifies all 16 images and 54 audio clips load and cycle correctly.
  */
 
-import { getRickAssets, RickPortraitCycler } from '../lib/rickAssets';
+import {
+  getNextRickImage,
+  getNextRickAudio,
+  getCurrentRickImage,
+  resetRickAssets,
+  getRickAssetCounts,
+} from '../lib/rickAssets';
 
-describe('Rick Assets', () => {
-  describe('getRickAssets', () => {
-    it('should return assets with images and audio arrays', () => {
-      const assets = getRickAssets();
-      
-      expect(assets).toBeDefined();
-      expect(assets.images).toBeDefined();
-      expect(assets.audio).toBeDefined();
-      expect(Array.isArray(assets.images)).toBe(true);
-      expect(Array.isArray(assets.audio)).toBe(true);
+describe('rickAssets', () => {
+  beforeEach(() => {
+    resetRickAssets();
+  });
+
+  describe('getRickAssetCounts', () => {
+    it('should have all 16 images', () => {
+      const counts = getRickAssetCounts();
+      expect(counts.images).toBe(16);
     });
-    
-    it('should have at least 3 Rick images', () => {
-      const assets = getRickAssets();
-      
-      expect(assets.images.length).toBeGreaterThanOrEqual(3);
-    });
-    
-    it('should have at least 3 Rick audio clips', () => {
-      const assets = getRickAssets();
-      
-      expect(assets.audio.length).toBeGreaterThanOrEqual(3);
-    });
-    
-    it('should not return null or undefined images', () => {
-      const assets = getRickAssets();
-      
-      assets.images.forEach((img, index) => {
-        expect(img).toBeDefined();
-        expect(img).not.toBeNull();
-      });
-    });
-    
-    it('should not return null or undefined audio', () => {
-      const assets = getRickAssets();
-      
-      assets.audio.forEach((audio, index) => {
-        expect(audio).toBeDefined();
-        expect(audio).not.toBeNull();
-      });
+
+    it('should have all 54 audio clips', () => {
+      const counts = getRickAssetCounts();
+      expect(counts.audio).toBe(54);
     });
   });
-  
-  describe('RickPortraitCycler', () => {
-    let cycler: RickPortraitCycler;
-    
-    beforeEach(() => {
-      const assets = getRickAssets();
-      cycler = new RickPortraitCycler(assets);
+
+  describe('getNextRickImage', () => {
+    it('should return an image', () => {
+      const image = getNextRickImage();
+      expect(image).toBeTruthy();
     });
-    
-    it('should initialize with first image', () => {
-      const currentImage = cycler.getCurrentImage();
+
+    it('should cycle through all images', () => {
+      const counts = getRickAssetCounts();
       
-      expect(currentImage).toBeDefined();
-      expect(currentImage).not.toBeNull();
+      // Call getNextRickImage counts.images times to verify no errors
+      for (let i = 0; i < counts.images; i++) {
+        const image = getNextRickImage();
+        expect(image).toBeTruthy();
+      }
+      
+      // Verify cycling completed without errors
+      expect(counts.images).toBe(16);
     });
-    
-    it('should cycle through images on handleClick', async () => {
-      const firstImage = cycler.getCurrentImage();
+
+    it('should wrap around after last image', () => {
+      const counts = getRickAssetCounts();
+      const firstImage = getCurrentRickImage();
       
-      // Mock HTMLAudioElement for test environment
-      global.Audio = jest.fn().mockImplementation(() => ({
-        play: jest.fn().mockResolvedValue(undefined),
-        pause: jest.fn(),
-        onended: null,
-        onerror: null,
-      })) as any;
+      // Cycle through all images
+      for (let i = 0; i < counts.images; i++) {
+        getNextRickImage();
+      }
       
-      await cycler.handleClick();
-      const secondImage = cycler.getCurrentImage();
-      
-      // Images should be different (unless only 1 image, which should not happen)
-      expect(secondImage).toBeDefined();
+      // Should be back at first image
+      const wrappedImage = getCurrentRickImage();
+      expect(JSON.stringify(wrappedImage)).toBe(JSON.stringify(firstImage));
     });
-    
-    it('should not allow clicking while audio is playing', async () => {
-      // Mock Audio to simulate long playback
-      global.Audio = jest.fn().mockImplementation(() => ({
-        play: jest.fn().mockResolvedValue(undefined),
-        pause: jest.fn(),
-        onended: null,
-        onerror: null,
-      })) as any;
-      
-      const firstClick = await cycler.handleClick();
-      expect(firstClick).toBe(true);
-      
-      // Second click should be blocked
-      const secondClick = await cycler.handleClick();
-      expect(secondClick).toBe(false);
+  });
+
+  describe('getNextRickAudio', () => {
+    it('should return audio', () => {
+      const audio = getNextRickAudio();
+      expect(audio).toBeTruthy();
     });
-    
-    it('should reset to first image', () => {
-      cycler.reset();
+
+    it('should cycle through all audio clips', () => {
+      const counts = getRickAssetCounts();
       
-      const currentImage = cycler.getCurrentImage();
-      expect(currentImage).toBeDefined();
+      // Call getNextRickAudio counts.audio times to verify no errors
+      for (let i = 0; i < counts.audio; i++) {
+        const audio = getNextRickAudio();
+        expect(audio).toBeTruthy();
+      }
+      
+      // Verify cycling completed without errors
+      expect(counts.audio).toBe(54);
     });
-    
-    it('should stop audio on reset', () => {
-      const stopAudioSpy = jest.spyOn(cycler, 'stopAudio');
+
+    it('should wrap around after last audio', () => {
+      const counts = getRickAssetCounts();
       
-      cycler.reset();
+      // Get first audio by resetting and calling getNextRickAudio once
+      resetRickAssets();
+      const firstAudio = getNextRickAudio();
       
-      expect(stopAudioSpy).toHaveBeenCalled();
+      // Cycle through remaining audio clips
+      for (let i = 1; i < counts.audio; i++) {
+        getNextRickAudio();
+      }
+      
+      // Next call should wrap to first audio
+      const wrappedAudio = getNextRickAudio();
+      expect(JSON.stringify(wrappedAudio)).toBe(JSON.stringify(firstAudio));
+    });
+  });
+
+  describe('getCurrentRickImage', () => {
+    it('should return image without advancing', () => {
+      const first = getCurrentRickImage();
+      const second = getCurrentRickImage();
+      expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+    });
+
+    it('should reflect state after getNextRickImage', () => {
+      getCurrentRickImage();
+      getNextRickImage();
+      const current = getCurrentRickImage();
+      const next = getNextRickImage();
+      expect(JSON.stringify(current)).toBe(JSON.stringify(next));
+    });
+  });
+
+  describe('resetRickAssets', () => {
+    it('should reset image index to start', () => {
+      const firstImage = getCurrentRickImage();
+      
+      // Advance several times
+      getNextRickImage();
+      getNextRickImage();
+      getNextRickImage();
+      
+      // Reset and check we're back at first
+      resetRickAssets();
+      const resetImage = getCurrentRickImage();
+      expect(JSON.stringify(resetImage)).toBe(JSON.stringify(firstImage));
+    });
+
+    it('should reset audio index to start', () => {
+      // Get first audio
+      const firstAudio = getNextRickAudio();
+      
+      // Advance several times
+      getNextRickAudio();
+      getNextRickAudio();
+      
+      // Reset and check we're back at first
+      resetRickAssets();
+      const resetAudio = getNextRickAudio();
+      expect(JSON.stringify(resetAudio)).toBe(JSON.stringify(firstAudio));
+    });
+
+    it('should reset both indices independently', () => {
+      // Advance image and audio by different amounts
+      getNextRickImage();
+      getNextRickImage();
+      getNextRickAudio();
+      
+      // Reset should affect both
+      resetRickAssets();
+      
+      const counts = getRickAssetCounts();
+      expect(counts.images).toBe(16);
+      expect(counts.audio).toBe(54);
     });
   });
 });

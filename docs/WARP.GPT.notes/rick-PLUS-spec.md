@@ -432,3 +432,15 @@ In `wrangler.toml`:
 - [ ] On success, Cloudflare’s `chatlalilulelo-backend-prod` Worker shows a new version in the Version History tied to the same commit hash.
 - [ ] If the workflow fails, the existing production Worker remains unchanged, and the failure is visible in GitHub Actions logs.
 - [ ] Manual `workflow_dispatch` runs from Actions can redeploy the current `dev-plus` state without using the Cloudflare dashboard UI.
+
+---
+
+Full RICK Mode UI Consistency
+
+| Element | Label |
+|---------|-------|
+| Left Portrait | BOGART |
+| Right Portrait | PATRON |
+| Message Prefix | [RICK:gpt-4o] |
+| Mode Selector | RICK [Bogart] |
+| Theme | B&W NOIR (automatic) |

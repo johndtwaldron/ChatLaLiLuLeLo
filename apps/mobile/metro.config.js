@@ -19,6 +19,7 @@ config.resolver.assetExts = [
   'jpeg',
   'png',
   'gif',
+  'avif',
   'mp3',
 ];
 

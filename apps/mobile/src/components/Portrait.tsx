@@ -17,7 +17,7 @@ import Animated, {
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
-import { getRickAssets, RickPortraitCycler } from '@/lib/rickAssets';
+import { getNextRickImage, getNextRickAudio, getCurrentRickImage } from '@/lib/rickAssets';
 
 // Import colonel portraits - unified compatibility for local and web
 // Renamed for clarity: GW mode uses haywire, JD mode uses normal
@@ -36,15 +36,9 @@ const bitcoinColonelImages = [
   asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.png')), // 4 - GPT (General Bitcoin maximalist)
 ];
 
-// Initialize Rick assets and cycler (lazy loaded)
-let rickCycler: RickPortraitCycler | null = null;
-const getRickCycler = () => {
-  if (!rickCycler) {
-    const assets = getRickAssets();
-    rickCycler = new RickPortraitCycler(assets);
-  }
-  return rickCycler;
-};
+// Rick mode audio playback state (module level to prevent stacking)
+let isRickAudioPlaying = false;
+let currentRickAudio: HTMLAudioElement | null = null;
 
 interface PortraitProps {
   type: 'colonel' | 'user';
@@ -129,8 +123,7 @@ export const Portrait: React.FC<PortraitProps> = ({
     let labelText: string;
     
     if (isRickMode) {
-      const cycler = getRickCycler();
-      currentColonelImage = cycler.getCurrentImage();
+      currentColonelImage = getCurrentRickImage();
       labelText = 'BOGART';
     } else {
       // Select appropriate image set and index based on mode
@@ -149,14 +142,60 @@ export const Portrait: React.FC<PortraitProps> = ({
     
     // Handle portrait click for Rick mode
     const handlePortraitClick = async () => {
-      if (isRickMode) {
-        const cycler = getRickCycler();
-        const didCycle = await cycler.handleClick();
-        if (didCycle) {
-          // Force re-render to show new image
-          setCurrentTheme(getCodecTheme());
+      // Guard: Only active in Rick mode
+      if (!isRickMode) {
+        return;
+      }
+      
+      // Guard: Prevent audio stacking
+      if (isRickAudioPlaying) {
+        console.log('[RICK] Audio already playing, ignoring click');
+        return;
+      }
+      
+      // Cycle to next image
+      getNextRickImage();
+      
+      // Get next audio and play
+      const audioSource = getNextRickAudio();
+      if (audioSource) {
+        isRickAudioPlaying = true;
+        
+        try {
+          // Stop any existing audio
+          if (currentRickAudio) {
+            currentRickAudio.pause();
+            currentRickAudio = null;
+          }
+          
+          // Create and play new audio
+          currentRickAudio = new Audio(audioSource);
+          currentRickAudio.volume = 0.8;
+          
+          currentRickAudio.onended = () => {
+            isRickAudioPlaying = false;
+            currentRickAudio = null;
+            console.log('[RICK] Audio playback finished');
+          };
+          
+          currentRickAudio.onerror = (error) => {
+            console.error('[RICK] Audio playback error:', error);
+            isRickAudioPlaying = false;
+            currentRickAudio = null;
+          };
+          
+          await currentRickAudio.play();
+          console.log('[RICK] Playing audio');
+          
+        } catch (error) {
+          console.error('[RICK] Failed to play audio:', error);
+          isRickAudioPlaying = false;
+          currentRickAudio = null;
         }
       }
+      
+      // Force re-render to show new image
+      setCurrentTheme(getCodecTheme());
     };
     
     return (
@@ -199,21 +238,36 @@ export const Portrait: React.FC<PortraitProps> = ({
     );
   };
 
-  const renderUserPortrait = () => (
-    <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
-      {/* User silhouette */}
-      <View style={[styles.spriteContainer, styles.userSprite]}>
-        <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
-          <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
+  const renderUserPortrait = () => {
+    const currentMode = getCurrentMode();
+    
+    // User label changes based on conversation mode
+    const USER_LABEL_BY_MODE: Record<string, string> = {
+      haywire: 'SOLDIER',
+      jd: 'AGENT',
+      lore: 'SOLDIER',
+      bitcoin: 'STACKER',
+      rick: 'PATRON',
+    };
+    
+    const userLabel = USER_LABEL_BY_MODE[currentMode] || 'SOLDIER';
+    
+    return (
+      <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
+        {/* User silhouette */}
+        <View style={[styles.spriteContainer, styles.userSprite]}>
+          <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
+            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
+          </View>
+        </View>
+        
+        {/* ID Label */}
+        <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+          <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>{userLabel}</Text>
         </View>
       </View>
-      
-      {/* ID Label */}
-      <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
-        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>SOLDIER</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { margin: currentTheme.spacing.sm }]}>

@@ -88,7 +88,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
       },
       {
         id: '2', 
-        text: 'MGS2 MEME Philosophy, Bitcoin, Haywire, or MGS Lore?',
+        text: 'Choose mode: Philosophy (JD), Bitcoin (BTC), Haywire (GW), MGS Lore, or Rick (Bogart)?',
         speaker: 'colonel',
         timestamp: Date.now() - 30000,
         meta: systemMeta,
