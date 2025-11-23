@@ -27,6 +27,11 @@ RICK-PLUS.md — Persona + Assets Upgrade
 	•	history navigation behaviour (already added),
 	•	SSE parsing (already added),
 	•	Rick asset wiring + portrait click behaviour.
+	4.	UI Copy
+	•	Update the codec banner line that lists modes so it explicitly names **RICK** as the fourth option instead of "MGS Lore".
+	•	Example target copy:
+	•	`MGS2 MEME Philosophy, Bitcoin, Haywire, or RICK (Bogart)?`
+	•	The MODE label in the UI already shows `MODE: RICK`; this goal is specifically about the **text prompt line** immediately under 140.85.
 
 ⸻
 
@@ -353,3 +358,77 @@ Once Warp applies all this and you merge into dev-plus:
 ⸻
 
 You can now feed this RICK-PLUS.md to Warp and let it wire everything up. After that, we can iterate on more fine-grained stuff like mapping specific quotes to specific images, or giving Rick special one-liner “scene transitions” when you change modes.
+
+
+⸻
+
+5. Cloudflare backend auto-deploy spec
+
+Goal: stop relying on manual dashboard clicks for the Worker and have GitHub push -> Cloudflare deploy for the backend, in parallel with how GitHub Pages handles the web build.
+
+### 5.1 Scope
+
+- Worker: `chatlalilulelo-backend-prod`
+- Environment: production (same as current manual deploy)
+- Source branch: `dev-plus` (the dynamic branch that Pages already deploys from)
+- Tooling: Cloudflare Wrangler + GitHub Actions
+
+### 5.2 Workflow definition
+
+**File:** `.github/workflows/backend-deploy.yml`
+
+**Trigger:**
+- `on.push.branches` includes `dev-plus`
+- `on.workflow_dispatch` for manual re-deploys from the Actions tab
+
+**Job outline:**
+- `runs-on: ubuntu-latest`
+- Steps:
+  1. **Checkout**
+     - Use `actions/checkout@v4`.
+  2. **Setup Node**
+     - Use `actions/setup-node@v4` with Node 20 (or the repo’s standard version).
+  3. **Install dependencies**
+     - `npm ci` at repo root.
+  4. **Backend build (if needed)**
+     - If apps/edge needs a build step, run the appropriate script, e.g.:
+       - `npm run build:edge`
+       - or `npm run build` if shared.
+  5. **Cloudflare deploy**
+     - Use `cloudflare/wrangler-action@v3` (or `npx wrangler deploy`) with:
+       - `apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}`
+       - `accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`
+       - `environment: production`
+       - `workingDirectory: apps/edge` (if the Worker code lives there)
+     - Target the existing Worker name `chatlalilulelo-backend-prod` as defined in `wrangler.toml`.
+
+### 5.3 Required secrets and config
+
+In the GitHub repo settings → *Secrets and variables* → *Actions*:
+- `CLOUDFLARE_API_TOKEN`
+  - Must have permissions to deploy Workers for the account that owns `chatlalilulelo-backend-prod`.
+- `CLOUDFLARE_ACCOUNT_ID`
+  - Matches the account visible in the Cloudflare dashboard URL.
+
+In `wrangler.toml`:
+- Ensure there is an entry for the production environment that matches the currently deployed Worker:
+  - `name = "chatlalilulelo-backend-prod"`
+  - `route` / `workers_dev` / `vars` left as-is from the working manual setup.
+
+### 5.4 Behaviour & safety rules
+
+- Only pushes to `dev-plus` should auto-deploy the production backend.
+- For experimental backend changes, use feature branches and PRs into `dev-plus`; merging is the deploy gate.
+- The workflow must **fail fast** if:
+  - TypeScript build fails for apps/edge.
+  - Wrangler reports a deployment error.
+- No deploy should occur if tests fail (once backend tests are added); add a step to run:
+  - `npm test` or a more targeted `npm run test:edge`.
+
+### 5.5 Acceptance criteria
+
+- [ ] A new workflow file exists at `.github/workflows/backend-deploy.yml`.
+- [ ] Pushing a commit to `dev-plus` runs the backend deploy workflow in GitHub Actions.
+- [ ] On success, Cloudflare’s `chatlalilulelo-backend-prod` Worker shows a new version in the Version History tied to the same commit hash.
+- [ ] If the workflow fails, the existing production Worker remains unchanged, and the failure is visible in GitHub Actions logs.
+- [ ] Manual `workflow_dispatch` runs from Actions can redeploy the current `dev-plus` state without using the Cloudflare dashboard UI.
