@@ -107,7 +107,7 @@ export class RickPortraitCycler {
   private async playCurrentAudio(): Promise<void> {
     if (this.audio.length === 0) return;
     
-    const audioPath = this.audio[this.currentAudioIndex];
+    const audioSource = this.audio[this.currentAudioIndex];
     console.log(`[RICK] Playing audio ${this.currentAudioIndex + 1}/${this.audio.length}`);
     
     this.isAudioPlaying = true;
@@ -119,8 +119,10 @@ export class RickPortraitCycler {
         this.audioElement = null;
       }
       
-      // Create and play new audio
-      this.audioElement = new Audio(audioPath);
+      // For web platform, audioSource is already a resolved URL/path
+      // Create and play new audio with the proper source
+      this.audioElement = new Audio(audioSource);
+      this.audioElement.volume = 0.8; // Set reasonable volume
       
       // Set up event listeners
       this.audioElement.onended = () => {
@@ -135,7 +137,15 @@ export class RickPortraitCycler {
         this.audioElement = null;
       };
       
-      await this.audioElement.play();
+      // Play with error handling
+      const playPromise = this.audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error('[RICK] Play promise rejected:', error);
+          this.isAudioPlaying = false;
+          this.audioElement = null;
+        });
+      }
       
     } catch (error) {
       console.error('[RICK] Failed to play audio:', error);
