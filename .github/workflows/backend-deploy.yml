@@ -62,8 +62,8 @@ jobs:
           echo "🚀 Deploying backend to Cloudflare Workers..."
           cd apps/edge
           
-          # Deploy to production
-          npm run deploy:production || {
+          # Deploy using wrangler
+          npm run deploy || {
             echo "❌ Deployment failed"
             exit 1
           }

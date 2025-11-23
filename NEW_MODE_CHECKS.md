@@ -260,8 +260,28 @@ For a new mode:
   - Backend deploy to Cloudflare Worker:
     - `.github/workflows/backend-deploy.yml`:
       - Triggered on `dev-plus` pushes touching `apps/edge/**` or `prompts/**`.
-      - Runs typecheck/tests.
+      - Runs TypeScript check in `apps/edge` (tests excluded via tsconfig).
+      - Runs `npm run deploy` in `apps/edge` (wrangler deploy).
       - Deploys to `chatlalilulelo-backend-prod`.
+
+#### Backend Auto-Deploy Troubleshooting
+
+If the backend-deploy workflow fails:
+
+- **"Validate backend code" step fails**:
+  - Check TypeScript errors in `apps/edge`.
+  - Common issues:
+    - Missing type definitions (add to `apps/edge/lib/logger.ts` or relevant interfaces).
+    - Test files being type-checked (ensure `**/__tests__/**` is in tsconfig exclude).
+
+- **"Deploy to Cloudflare Workers" step fails**:
+  - Check for missing/incorrect npm scripts in `apps/edge/package.json`.
+  - Verify GitHub secrets are set: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+  - Check wrangler config in `apps/edge/wrangler.toml`.
+
+- **Manual deployment fallback**:
+  - From `apps/edge/`: run `npm run deploy`.
+  - Pause/disable the GitHub workflow temporarily if needed.
 
 ### 7.2 Secrets
 
