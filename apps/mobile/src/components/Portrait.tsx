@@ -4,6 +4,7 @@ import {
   Text,
   Image,
   View,
+  Pressable,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -16,6 +17,7 @@ import Animated, {
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
+import { getRickAssets, RickPortraitCycler } from '@/lib/rickAssets';
 
 // Import colonel portraits - unified compatibility for local and web
 // Renamed for clarity: GW mode uses haywire, JD mode uses normal
@@ -33,6 +35,16 @@ const bitcoinColonelImages = [
   asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.S3.png')), // 3 - S3 (Satoshi style)
   asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.png')), // 4 - GPT (General Bitcoin maximalist)
 ];
+
+// Initialize Rick assets and cycler (lazy loaded)
+let rickCycler: RickPortraitCycler | null = null;
+const getRickCycler = () => {
+  if (!rickCycler) {
+    const assets = getRickAssets();
+    rickCycler = new RickPortraitCycler(assets);
+  }
+  return rickCycler;
+};
 
 interface PortraitProps {
   type: 'colonel' | 'user';
@@ -110,24 +122,50 @@ export const Portrait: React.FC<PortraitProps> = ({
   const renderColonelPortrait = () => {
     const currentMode = getCurrentMode();
     const isBitcoinMode = currentMode === 'bitcoin';
+    const isRickMode = currentMode === 'rick';
     
-    // Select appropriate image set and index based on mode
-    const currentPortraitIndex = isBitcoinMode 
-      ? getCurrentBitcoinColonelPortrait() 
-      : getCurrentColonelPortrait();
-    const imageSet = isBitcoinMode ? bitcoinColonelImages : colonelImages;
-    const currentColonelImage = imageSet[currentPortraitIndex];
-    const labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
+    // Rick mode: use cycler for portrait images
+    let currentColonelImage: any;
+    let labelText: string;
+    
+    if (isRickMode) {
+      const cycler = getRickCycler();
+      currentColonelImage = cycler.getCurrentImage();
+      labelText = 'BOGART';
+    } else {
+      // Select appropriate image set and index based on mode
+      const currentPortraitIndex = isBitcoinMode 
+        ? getCurrentBitcoinColonelPortrait() 
+        : getCurrentColonelPortrait();
+      const imageSet = isBitcoinMode ? bitcoinColonelImages : colonelImages;
+      currentColonelImage = imageSet[currentPortraitIndex];
+      labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
+    }
     
     // Add dev log to verify portrait source
     if (__DEV__) {
       console.log('[PORTRAIT] colonel source =', currentColonelImage, 'mode =', currentMode);
     }
     
+    // Handle portrait click for Rick mode
+    const handlePortraitClick = async () => {
+      if (isRickMode) {
+        const cycler = getRickCycler();
+        const didCycle = await cycler.handleClick();
+        if (didCycle) {
+          // Force re-render to show new image
+          setCurrentTheme(getCodecTheme());
+        }
+      }
+    };
+    
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
         {/* Colonel portrait image */}
-        <View style={[styles.spriteContainer, styles.colonelImageContainer]}>
+        <Pressable 
+          style={[styles.spriteContainer, styles.colonelImageContainer]}
+          onPress={handlePortraitClick}
+        >
           <Image 
             source={currentColonelImage}
             style={[
@@ -151,7 +189,7 @@ export const Portrait: React.FC<PortraitProps> = ({
           {isSpeaking && (
             <View style={[styles.speakingIndicator, { borderColor: currentTheme.colors.primary }]} />
           )}
-        </View>
+        </Pressable>
         
         {/* ID Label - changes based on mode */}
         <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>

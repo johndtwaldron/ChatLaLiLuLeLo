@@ -97,12 +97,29 @@ export const themePresets = {
     scanline: '#332200',     // Orange scanlines
     glow: '#FF8C0040',       // Orange glow (with alpha)
   },
+  
+  // Rick (1940s film noir B&W theme - only available in Rick mode)
+  rick: {
+    primary: '#E0E0E0',      // Light gray (film grain highlights)
+    secondary: '#B0B0B0',    // Medium gray
+    tertiary: '#808080',     // Mid gray
+    background: '#000000',   // Pure black (noir shadows)
+    surface: '#1A1A1A',      // Very dark gray
+    text: '#FFFFFF',         // White text (high contrast)
+    textSecondary: '#D0D0D0', // Light gray (subtle contrast)
+    border: '#606060',       // Medium-dark gray borders
+    scanline: '#0A0A0A',     // Near-black scanlines
+    glow: '#E0E0E040',       // Light gray glow (subtle film grain)
+  },
 };
 
 // Current active theme - starts with cyan (default)
 let currentTheme: keyof typeof themePresets = 'cyan';
 
-// Theme cycle order (excludes orange - Bitcoin mode only)
+// Previous theme key (for restoring when leaving special modes like Rick)
+let previousThemeKey: keyof typeof themePresets | null = null;
+
+// Theme cycle order (excludes orange - Bitcoin mode only, excludes rick - Rick mode only)
 const themeOrder: Array<keyof typeof themePresets> = ['cyan', 'purple', 'gold', 'green', 'yellow', 'crimson'];
 
 // CRT effects toggle state
@@ -144,7 +161,7 @@ export const modelConfigs = {
 } as const;
 
 // Conversation mode system
-export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin';
+export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin' | 'rick';
 let currentMode: ConversationMode = 'haywire';
 
 export const conversationModes = {
@@ -152,12 +169,16 @@ export const conversationModes = {
   jd: 'JD [Colonel AI]',
   lore: 'MGS [LORE]',
   bitcoin: 'BTC [Orange Pill]',
+  rick: 'RICK [Bogart]',
 } as const;
 
-// Dynamic theme getter - handles Bitcoin mode orange override
+// Dynamic theme getter - handles Bitcoin mode orange override and Rick mode B&W override
 export const getCodecTheme = () => {
   // If in Bitcoin mode, force orange theme
-  const activeTheme = currentMode === 'bitcoin' ? 'orange' : currentTheme;
+  // If in Rick mode, force rick theme
+  const activeTheme = currentMode === 'bitcoin' ? 'orange' : 
+                      currentMode === 'rick' ? 'rick' : 
+                      currentTheme;
   
   return {
     colors: themePresets[activeTheme],
@@ -264,11 +285,11 @@ export const changeTheme = (theme: keyof typeof themePresets) => {
   notifyThemeChange();
 };
 
-// Theme cycling function - locked during Bitcoin mode
+// Theme cycling function - locked during Bitcoin mode and Rick mode
 export const cycleTheme = () => {
-  // If in Bitcoin mode, theme cycling is locked to orange
-  if (currentMode === 'bitcoin') {
-    return; // Don't cycle when in Bitcoin mode
+  // If in Bitcoin mode or Rick mode, theme cycling is locked
+  if (currentMode === 'bitcoin' || currentMode === 'rick') {
+    return; // Don't cycle when in special modes
   }
   
   const currentIndex = themeOrder.indexOf(currentTheme);
@@ -278,8 +299,10 @@ export const cycleTheme = () => {
 };
 
 export const getThemeDisplayName = (theme?: keyof typeof themePresets): string => {
-  // Show current effective theme (Bitcoin mode shows ORANGE)
-  const effectiveTheme = currentMode === 'bitcoin' ? 'orange' : (theme || currentTheme);
+  // Show current effective theme (Bitcoin mode shows ORANGE, Rick mode shows RICK)
+  const effectiveTheme = currentMode === 'bitcoin' ? 'orange' : 
+                         currentMode === 'rick' ? 'rick' : 
+                         (theme || currentTheme);
   
   const displayNames: Record<keyof typeof themePresets, string> = {
     cyan: 'CYAN',
@@ -288,7 +311,8 @@ export const getThemeDisplayName = (theme?: keyof typeof themePresets): string =
     green: 'GREEN',
     yellow: 'YELLOW',
     crimson: 'CRIMSON',
-    orange: 'ORANGE' // Bitcoin mode only
+    orange: 'ORANGE', // Bitcoin mode only
+    rick: 'B&W NOIR'  // Rick mode only
   };
   return displayNames[effectiveTheme];
 };
@@ -302,9 +326,22 @@ export const getCurrentThemeName = (): string => {
 export const getCurrentMode = () => currentMode;
 
 export const cycleMode = () => {
-  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin'];
+  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin', 'rick'];
   const currentIndex = modes.indexOf(currentMode);
+  const previousMode = currentMode;
   currentMode = modes[(currentIndex + 1) % modes.length];
+  
+  // Handle theme locking/unlocking for Rick mode
+  if (currentMode === 'rick' && previousMode !== 'rick') {
+    // Entering Rick mode - save current theme and lock to rick
+    previousThemeKey = currentTheme;
+  } else if (previousMode === 'rick' && currentMode !== 'rick') {
+    // Leaving Rick mode - restore previous theme
+    if (previousThemeKey !== null) {
+      currentTheme = previousThemeKey;
+      previousThemeKey = null;
+    }
+  }
   
   // Auto-select colonel portrait based on mode
   updateColonelPortraitForMode();
@@ -347,8 +384,8 @@ export const isDebugEnabled = () => debugEnabled;
 
 // Automatic colonel portrait selection based on mode
 const updateColonelPortraitForMode = () => {
-  if (currentMode !== 'bitcoin') {
-    // Auto-select portrait based on mode (non-Bitcoin modes)
+  if (currentMode !== 'bitcoin' && currentMode !== 'rick') {
+    // Auto-select portrait based on mode (non-Bitcoin, non-Rick modes)
     switch (currentMode) {
       case 'haywire':  // GW mode
         currentColonelPortrait = 0; // colonel_gw_haywire.jpeg
@@ -364,6 +401,7 @@ const updateColonelPortraitForMode = () => {
     }
   }
   // Bitcoin mode doesn't auto-select (uses its own image set)
+  // Rick mode doesn't auto-select (uses its own image set)
 };
 
 // Colonel portrait cycling functions
@@ -420,7 +458,7 @@ export const getModelConfig = (model: ModelType = currentModel) => {
 };
 
 // Stable tag helpers (pure functions that don't read reactive/global state)
-const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC' } as const;
+const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC', rick: 'RICK' } as const;
 export const modeToAbbr = (m: string) =>
   modeMapping[m as keyof typeof modeMapping] ?? 'JD';
 

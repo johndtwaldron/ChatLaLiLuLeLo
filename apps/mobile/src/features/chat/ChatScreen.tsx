@@ -297,7 +297,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
       'haywire': 'GW',
       'jd': 'JD', 
       'lore': 'MGS',
-      'bitcoin': 'BTC'
+      'bitcoin': 'BTC',
+      'rick': 'RICK'
     } as const;
     
     const apiMode = modeMap[currentMode] || 'JD';

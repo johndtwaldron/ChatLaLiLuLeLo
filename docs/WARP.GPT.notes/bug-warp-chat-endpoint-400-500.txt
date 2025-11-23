@@ -211,20 +211,18 @@ This will make future 500s painless to debug.
 
 ---
 
-## 7. Notes re: GPT “modes”
+Notes:
+- The 400 → 500 investigation is now updated.
+- Schema mismatch has been resolved (uppercase modes enforced).
+- RICK mode has been fully added to schema and composer configuration.
+- Remaining issue is a backend 500 error (internal) that now includes structured JSON error responses and full logging.
+- ENTRY LOGGING, VALIDATION LOGGING, STREAM LOGGING, and FULL ERROR LOGGING have been inserted into apps/edge/api/chat.ts.
+- A complete fix plan and test procedure is now documented in TESTING-500-ERROR-FIX.md.
+- test-chat-endpoint.sh added for verifying all modes (JD/BTC/GW/MGS/RICK).
 
-- Based on current behaviour, this looks like:
-  - Request shape mismatch (curl vs schema), and
-  - Unhandled exception in the /chat handler.
-- There is no clear evidence that **new GPT “modes”** are the root cause.
-- Modes probably just select:
-  - system prompt
-  - some local config
-  - maybe model name
-
-The fix is to:
-1) stabilise the /chat contract, and  
-2) harden error handling,  
-then Rick/JD/whatever modes can sit on top confidently.
-
----
+Action Items:
+- Continue validating handler stability after RICK prompt integration.
+- Capture any new CHAT ERROR - Full details blocks from wrangler/workerd terminal for follow-up debugging.
+- Ensure npm run dev is launched fresh after killing existing workerd processes.
+- Confirm model config in requests: use "model": "mock" during local dev for stable testing.
+- Validate that the UI populates uppercase modes before sending payload to backend.

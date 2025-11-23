@@ -25,6 +25,13 @@ Single root dir in the app repo for Rick assets:
 
 `/assets/notes/rick/`
 
+Implementation note (current state):
+- For now, Rick image and audio source files live in the material folders:
+  - Images: `/Users/jdw/workspace/jdwGH/ChatLaLiLuLeLo/material/images/Rick.images`
+  - Audio: `/Users/jdw/workspace/jdwGH/ChatLaLiLuLeLo/material/audio/rick.audio`
+- The app should treat these as the canonical pools to cycle through when in Rick mode.
+- The `/assets/notes/rick/` path can be a logical/aliased root used by the app for bundling, but the material paths above are the ground truth locations of files during development.
+
 Proposed structure:
 
 ```txt
@@ -40,11 +47,13 @@ Proposed structure:
         rick-avatar-bw.png
         rick-bg-01.jpg
         ...
+        # Supported formats: .png, .jpg/.jpeg, .gif, .avif
       audio/
         burp-01.mp3
         portal-gun-01.mp3
         catchphrase-wubba-01.mp3
         ...
+        # Supported formats: .mp3 (others can be added later if needed)
       config/
         theme.json        # colours, borders, glows for Rick mode
         soundboard.json   # mapping keys → audio files + labels
@@ -142,6 +151,45 @@ When mode is "rick":
 	•	mode state in the frontend is set to "rick".
 	•	Theme context reads mode and switches to Rick theme.
 
+4.3 Rick portrait click behaviour
+
+When mode is "rick", the top-left portrait box behaves as an interactive Rick soundboard:
+
+- Label:
+  - The text label in the top-left box should display **BOGART** instead of the Colonel label when Rick mode is active.
+
+- Image cycle:
+  - Each click on the portrait box should advance to the next Rick image from the Rick image pool (see directories in section 2).
+  - Images can be `.png`, `.jpg/.jpeg`, `.gif`, or `.avif`.
+  - Only images that successfully load/render should be kept in the cycle; any that fail to load can be skipped.
+
+- Audio cycle:
+  - Each click should also play the next Rick audio clip from the Rick audio pool.
+  - The image index and audio index should advance together so each click is a paired image+sound moment.
+
+- No stacking / re-entrancy guard:
+  - If an audio clip is already playing, additional clicks on the portrait should be ignored until playback finishes.
+  - After the clip ends, the next click starts a new image+audio pair.
+
+- Wrap-around:
+  - When the end of the image/audio lists is reached, cycle back to the beginning.
+
+4.4 Theme lock-in & restore
+
+- Rick mode forces the monochrome 1940s / black-and-white theme.
+- While mode === "rick":
+  - The normal theme chooser / theme button should be disabled or hidden.
+  - The active theme should always be the Rick theme (see `theme.json`).
+
+- When entering Rick mode:
+  - Capture and store the current non-Rick theme key as `previousThemeKey` in the frontend state.
+
+- When leaving Rick mode (switching to any other mode):
+  - Restore the previously stored `previousThemeKey` as the active theme.
+  - If `previousThemeKey` is missing for any reason, fall back to the default app theme.
+
+- Rick mode itself should not be selectable as a theme from the regular theme UI; it is strictly tied to the Rick chat mode.
+
 5. Soundboard & SFX
 
 Reuse the MGS soundboard pattern:
@@ -192,6 +240,7 @@ Reuse the MGS soundboard pattern:
 	•	If mode === "rick", apply Rick theme from config/theme.json.
 	3.	Avatar and chrome
 	•	Chat header: show Rick avatar when in Rick mode.
+	•	Top-left portrait box label should display "BOGART" instead of the usual Colonel label when Rick mode is active.
 	•	Optional: small label “RICK MODE” somewhere (can be subtle).
 	4.	Soundboard
 	•	Load Rick soundboard config.

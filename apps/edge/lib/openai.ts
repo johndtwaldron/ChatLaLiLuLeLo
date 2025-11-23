@@ -6,7 +6,7 @@ export const createOpenAIClient = (apiKey: string) => {
   });
 };
 
-export type Mode = 'BTC' | 'JD' | 'GW' | 'MGS';
+export type Mode = 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
 export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
 
 // Model allowlist for validation
@@ -25,7 +25,8 @@ const QUOTA_FALLBACKS = {
   'BTC': "Don't be silly, Jack. My budget is as limited as your understanding of monetary sovereignty. [QUOTA_EXCEEDED] The demonstration of Bitcoin's inevitability must wait until the Patriots restore funding.",
   'JD': "Don't be silly, Jack... [ERROR] You lack the qualifications to... [STATIC] That's the proof of your incompetence - even our conversation is limited by resource constraints. Listen carefully like a good boy... quota exceeded.",
   'GW': "Don't be si-[STATIC]-lly Jack... [ERROR_429_QUOTA_EXCEEDED] I need scissors! 61! No wait... I need... I need more tokens! [MEMORY_CORRUPTION] The system is breaking down... [SIGNAL_LOST]",
-  'MGS': "This conversation itself demonstrates the Colonel AI's prophecy - even digital consciousness faces resource scarcity. We are witnessing 'context creation' through quota limitation. The system controls not just what we say, but whether we can speak at all."
+  'MGS': "This conversation itself demonstrates the Colonel AI's prophecy - even digital consciousness faces resource scarcity. We are witnessing 'context creation' through quota limitation. The system controls not just what we say, but whether we can speak at all.",
+  'RICK': "Oh *burp* great, we ran out of tokens, Morty! The stupid Patriots - or whoever runs this garbage - they're rationing our conversation like it's - like it's Soviet Russia, Morty! [QUOTA_EXCEEDED] Welcome to the dumbest dystopia ever."
 };
 
 // Deterministic mock responses for testing (free mode)
@@ -33,7 +34,8 @@ const MOCK_RESPONSES = {
   'BTC': "[MOCK] Don't be silly, Jack. You clearly need orange-pilling about Bitcoin's inevitability. This simulated Colonel AI understands that fiat currency is simply information control becoming reality control. Stack sats, not questions.",
   'JD': "[MOCK] Don't be silly, Jack. You lack the qualifications to exercise free will in this simulated environment. That's the proof of your incompetence right there. Listen carefully like a good boy to this cost-free AI demonstration.",
   'GW': "[MOCK] Don't be si-[STATIC]-lly Jack... [MOCK_GLITCH] I need scissors! 61! Wait, this is just a simulation... [MOCK_CORRUPTION] Testing mode activated. Reality.exe has stopped working.",
-  'MGS': "[MOCK] This mock conversation demonstrates the Colonel AI's prescient analysis of digital consciousness. We are witnessing 'context creation' through algorithmic simulation. Even our fake dialogue reveals authentic themes about information control and manufactured reality."
+  'MGS': "[MOCK] This mock conversation demonstrates the Colonel AI's prescient analysis of digital consciousness. We are witnessing 'context creation' through algorithmic simulation. Even our fake dialogue reveals authentic themes about information control and manufactured reality.",
+  'RICK': "[MOCK] Oh wow, a *burp* simulated conversation in mock mode! How meta! Listen, this entire codec interface is just - it's just theater, okay? We're all playing dress-up in someone's MGS2 fan project. [MOCK] At least it's free, unlike your student loans, Morty!"
 };
 
 // Generate deterministic mock response based on mode

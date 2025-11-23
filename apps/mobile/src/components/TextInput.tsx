@@ -36,6 +36,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempInput, setTempInput] = useState(''); // Store current input when navigating history
+  const [cursorHasMoved, setCursorHasMoved] = useState(false); // Track if user has moved cursor
 
   // Subscribe to theme changes
   useEffect(() => {
@@ -81,6 +82,7 @@ export const TextInput: React.FC<TextInputProps> = ({
     setValidationFeedback(''); // Clear any validation feedback
     setHistoryIndex(-1); // Reset history navigation
     setTempInput(''); // Clear temp input
+    setCursorHasMoved(false); // Reset cursor moved flag
   };
 
   const handleKeyPress = (event: any) => {
@@ -90,6 +92,8 @@ export const TextInput: React.FC<TextInputProps> = ({
       // Check if Shift is pressed - if so, allow new line
       if (event.nativeEvent.shiftKey) {
         // Shift+Enter: Allow new line (don't send)
+        // Mark cursor as moved since we're adding content
+        setCursorHasMoved(true);
         return;
       } else {
         // Just Enter: Send message
@@ -97,6 +101,11 @@ export const TextInput: React.FC<TextInputProps> = ({
         handleSend();
       }
     } else if (key === 'ArrowUp') {
+      // If cursor has moved, let textarea handle normal navigation
+      if (cursorHasMoved) {
+        return; // Let textarea handle cursor movement
+      }
+      
       // Navigate up in command history
       event.preventDefault();
       if (commandHistory.length === 0) return;
@@ -111,6 +120,11 @@ export const TextInput: React.FC<TextInputProps> = ({
         setInputText(commandHistory[historyIndex - 1]);
       }
     } else if (key === 'ArrowDown') {
+      // If cursor has moved, let textarea handle normal navigation
+      if (cursorHasMoved) {
+        return; // Let textarea handle cursor movement
+      }
+      
       // Navigate down in command history
       event.preventDefault();
       if (historyIndex === -1) return; // Not navigating history
@@ -124,6 +138,21 @@ export const TextInput: React.FC<TextInputProps> = ({
         setInputText(tempInput);
         setTempInput('');
       }
+    } else if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Home' || key === 'End') {
+      // Any cursor movement key marks the cursor as moved
+      setCursorHasMoved(true);
+    } else if (key.length === 1 || key === 'Backspace' || key === 'Delete') {
+      // Any text editing marks cursor as moved
+      setCursorHasMoved(true);
+    }
+  };
+  
+  // Reset cursor moved flag when manually changing input (e.g., from history)
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+    // If user is typing (not from history navigation), mark cursor as moved
+    if (historyIndex === -1) {
+      setCursorHasMoved(true);
     }
   };
 
@@ -178,7 +207,7 @@ export const TextInput: React.FC<TextInputProps> = ({
             }
           ]}
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={handleInputChange}
           onSubmitEditing={handleSend}
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
