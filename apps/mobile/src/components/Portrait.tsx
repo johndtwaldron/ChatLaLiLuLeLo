@@ -40,6 +40,21 @@ const bitcoinColonelImages = [
 let isRickAudioPlaying = false;
 let currentRickAudio: HTMLAudioElement | null = null;
 
+// Event system for Rick audio (similar to user SFX)
+const rickAudioListeners = new Set<(e: { type: 'start' | 'stop'; fileName: string }) => void>();
+const emitRickAudio = (e: { type: 'start' | 'stop'; fileName: string }) => {
+  rickAudioListeners.forEach((fn) => {
+    try { fn(e); } catch (err) {
+      console.error('[RICK] Listener error:', err);
+    }
+  });
+};
+
+export const subscribeToRickAudio = (listener: (e: { type: 'start' | 'stop'; fileName: string }) => void) => {
+  rickAudioListeners.add(listener);
+  return () => rickAudioListeners.delete(listener);
+};
+
 interface PortraitProps {
   type: 'colonel' | 'user';
   isActive?: boolean;
@@ -159,7 +174,11 @@ export const Portrait: React.FC<PortraitProps> = ({
       // Get next audio and play
       const audioSource = getNextRickAudio();
       if (audioSource) {
+        // Extract filename from URL for display
+        const fileName = audioSource.split('/').pop()?.split('.')[0] || 'unknown';
+        
         isRickAudioPlaying = true;
+        emitRickAudio({ type: 'start', fileName });
         
         try {
           // Stop any existing audio
@@ -175,6 +194,7 @@ export const Portrait: React.FC<PortraitProps> = ({
           currentRickAudio.onended = () => {
             isRickAudioPlaying = false;
             currentRickAudio = null;
+            emitRickAudio({ type: 'stop', fileName });
             console.log('[RICK] Audio playback finished');
           };
           
@@ -182,15 +202,17 @@ export const Portrait: React.FC<PortraitProps> = ({
             console.error('[RICK] Audio playback error:', error);
             isRickAudioPlaying = false;
             currentRickAudio = null;
+            emitRickAudio({ type: 'stop', fileName });
           };
           
           await currentRickAudio.play();
-          console.log('[RICK] Playing audio');
+          console.log(`[RICK] Playing audio: ${fileName}`);
           
         } catch (error) {
           console.error('[RICK] Failed to play audio:', error);
           isRickAudioPlaying = false;
           currentRickAudio = null;
+          emitRickAudio({ type: 'stop', fileName });
         }
       }
       

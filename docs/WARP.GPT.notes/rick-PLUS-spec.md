@@ -444,3 +444,15 @@ Full RICK Mode UI Consistency
 | Message Prefix | [RICK:gpt-4o] |
 | Mode Selector | RICK [Bogart] |
 | Theme | B&W NOIR (automatic) |
+
+---
+
+      here-s-looking-at-you-kid    ← Filename overlay (monospace, 10px)
+    ┌─────────────────────────┐
+    │                         │
+    │   [Bogart Portrait]     │    ← Colonel box (left)
+    │                         │
+    │       BOGART            │
+    └─────────────────────────┘
+
+---
