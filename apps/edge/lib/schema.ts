@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ModeSchema = z.enum(['BTC', 'JD', 'GW', 'MGS']);
+export const ModeSchema = z.enum(['BTC', 'JD', 'GW', 'MGS', 'RICK']);
 export type Mode = z.infer<typeof ModeSchema>;
 
 export const MessageSchema = z.object({

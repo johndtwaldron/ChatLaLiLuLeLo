@@ -23,7 +23,7 @@ A **production-ready React Native web application** that recreates the iconic Me
 ## Features
 
 ### 🎨 Authentic MGS2 Codec Experience
-- **CRT Visual Effects**: Scanlines, phosphor glow, jitter animations with live toggle
+- **CRT Visual Effects**: Scanlines, phosphor glo◊w, jitter animations with live toggle
 - **MGS Typography**: TeX Gyre Heros font matching original codec interface
 - **Animated Portraits**: Colonel and user avatars with idle breathing and mouth movement
 - **Real-time Streaming**: Word-boundary text streaming with 40ms flush delays
@@ -497,5 +497,6 @@ Any aesthetic resemblance to existing properties is:
 - **🌌 Deployment**: Live on GitHub Pages with Cloudflare Workers backend
 
 **Status**: ✅ **Production Ready** - Comprehensive security, testing, and deployment automation
-#   W o r k f l o w   t r i g g e r   t e s t   a t   1 0 / 0 9 / 2 0 2 5   1 6 : 1 2 : 3 0  
+#   W o r k f l o w   t r i g g e r   t e s t   a t   1 0 / 0 9 / 2 0 2 5   1 6 : 1 2 : 3 0 
+ 
  

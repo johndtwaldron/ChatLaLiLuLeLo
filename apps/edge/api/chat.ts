@@ -5,6 +5,7 @@ import { ChatRequestSchema } from '../lib/schema';
 import { logInfo, logError, logWarning, generateRequestId, redactApiKey } from '../lib/logger';
 import { RateLimiter, createBudgetWarning, DEFAULT_CONFIG } from '../lib/rate-limiter';
 import { validateAndSanitizeInput, SAFE_ERROR_MESSAGES, logSecurityEvent } from '../lib/security';
+import { validateOpenAIKey, getKeyPreview } from '../lib/config';
 
 // Global rate limiter instance
 const rateLimiter = new RateLimiter(DEFAULT_CONFIG);
@@ -123,15 +124,37 @@ export default {
 
     try {
       // Parse and validate request
+      console.log('[CHAT] Received request at', new Date().toISOString());
+      console.log('[CHAT] Request method:', req.method);
+      console.log('[CHAT] Request URL:', req.url);
+      
       const body = await req.json();
+      console.log('[CHAT] Parsed body:', JSON.stringify(body, null, 2));
       const parseResult = ChatRequestSchema.safeParse(body);
       
       if (!parseResult.success) {
         logWarning('Invalid request format', { 
           requestId, 
-          errors: parseResult.error.errors 
+          errors: parseResult.error.errors,
+          body: JSON.stringify(body)
         });
-        return new Response('Invalid request format', { status: 400 });
+        
+        // Return structured JSON error with validation details
+        return new Response(JSON.stringify({
+          error: 'Invalid request format',
+          details: parseResult.error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message,
+            code: err.code
+          })),
+          requestId
+        }), { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
       }
 
       const { mode, messages = [], options = {}, client = {} } = parseResult.data;
@@ -257,11 +280,29 @@ export default {
         appVersion: client.appVersion
       });
 
-      // Check for required API key
+      // Validate OpenAI API key format
       const openaiKey = env.OPENAI_API_KEY;
-      if (!openaiKey) {
-        logError('Missing OpenAI API key', undefined, { requestId });
-        return new Response('Service configuration error', { status: 500 });
+      const keyValidation = validateOpenAIKey(openaiKey);
+      
+      if (!keyValidation.valid) {
+        logError('Invalid OpenAI API key', undefined, {
+          requestId,
+          error: keyValidation.error,
+          keyPreview: getKeyPreview(openaiKey)
+        });
+        
+        return new Response(JSON.stringify({
+          error: 'Service configuration error',
+          message: keyValidation.error,
+          requestId,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
       }
 
       // Initialize OpenAI client
@@ -380,10 +421,32 @@ export default {
       });
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      // Log detailed error information
+      console.error('CHAT ERROR - Full details:', {
+        requestId,
+        message: errorMessage,
+        stack: errorStack,
+        error: error,
+        timestamp: new Date().toISOString()
+      });
+      
       logError('Chat request error', error as Error, { requestId });
-      return new Response('Internal server error', { 
+      
+      // Return structured JSON error for 500s too
+      return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: errorMessage,
+        requestId,
+        timestamp: new Date().toISOString()
+      }), { 
         status: 500,
-        headers: corsHeaders
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
       });
     }
   }

@@ -8,8 +8,9 @@
     "packages/*"
   ],
   "scripts": {
+    "sync-env": "bash scripts/sync-env.sh",
     "prod": "concurrently -n EDGE,MOBILE -c blue,green \"cd apps/edge && npx wrangler dev --local --env=development --port=8787\" \"cd apps/mobile && npx expo start --web --port=14085\"",
-    "dev": "node scripts/dev-with-ci.js",
+    "dev": "npm run sync-env && node scripts/dev-with-ci.js",
     "ci-check": "node scripts/test-ci.js",
     "typecheck": "cd apps/mobile && npm run typecheck",
     "lint": "cd apps/mobile && npm run lint",

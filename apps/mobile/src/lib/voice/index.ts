@@ -9,6 +9,7 @@ import { VoiceEngine, VoiceEngineError, COLONEL_VOICE_PRESETS } from './VoiceEng
 import { OpenAITTSEngine } from './engines/openai';
 import { ElevenLabsTTSEngine } from './engines/elevenlabs';
 import { CoquiLocalTTSEngine } from './engines/coquiLocal';
+import { MockTTSEngine } from './engines/mock';
 import { debugEnvironmentVariables, checkVoiceEnvironment } from './debugEnv';
 
 export type VoiceEngineType = 'openai' | 'elevenlabs' | 'coqui' | 'disabled';
@@ -20,6 +21,7 @@ export interface VoiceConfig {
   volume: number; // 0-1
   voicePreset: string;
   enableSFX: boolean; // Enable codec sound effects
+  mock?: boolean; // Use mock engine for zero-cost development
   lastVolume?: number; // Store last volume before smart toggle disable
 }
 
@@ -64,6 +66,7 @@ class VoiceService {
       console.log('[VOICE] DEBUG: Environment variables check:');
       console.log('  EXPO_PUBLIC_VOICE_ENABLED:', process.env.EXPO_PUBLIC_VOICE_ENABLED);
       console.log('  EXPO_PUBLIC_VOICE_ENGINE:', process.env.EXPO_PUBLIC_VOICE_ENGINE);
+      console.log('  EXPO_PUBLIC_VOICE_MOCK:', process.env.EXPO_PUBLIC_VOICE_MOCK);
       console.log('  EXPO_PUBLIC_ELEVENLABS_ENABLED:', process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED);
       console.log('  EXPO_PUBLIC_ELEVENLABS_API_KEY present:', !!process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY);
       console.log('  EXPO_PUBLIC_ELEVENLABS_API_KEY length:', process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY?.length || 0);
@@ -122,19 +125,24 @@ class VoiceService {
         }
       }
 
+      // Check if mock mode is enabled (safe default for development)
+      const mockMode = process.env.EXPO_PUBLIC_VOICE_MOCK === 'true';
+      
       this.config = {
         enabled: voiceEnabled && enginePreference !== 'disabled',
         engine: enginePreference,
         autoplayReplies: process.env.EXPO_PUBLIC_VOICE_AUTOPLAY === 'true',
         volume: this.parseFloat(process.env.EXPO_PUBLIC_VOICE_VOLUME, DEFAULT_VOICE_CONFIG.volume),
         voicePreset: process.env.EXPO_PUBLIC_VOICE_PRESET || DEFAULT_VOICE_CONFIG.voicePreset,
-        enableSFX: process.env.EXPO_PUBLIC_VOICE_SFX !== 'false' // Default enabled
+        enableSFX: process.env.EXPO_PUBLIC_VOICE_SFX !== 'false', // Default enabled
+        mock: mockMode
       };
 
       console.log('[VOICE] Configuration loaded:', {
         enabled: this.config.enabled,
         engine: this.config.engine,
-        voicePreset: this.config.voicePreset
+        voicePreset: this.config.voicePreset,
+        mock: this.config.mock
       });
 
     } catch (error) {
@@ -211,6 +219,12 @@ class VoiceService {
    * Create engine instance based on type
    */
   private async createEngine(engineType: VoiceEngineType): Promise<VoiceEngine | null> {
+    // If mock mode is enabled, always return MockTTSEngine
+    if (this.config.mock) {
+      console.log('[VOICE] Mock mode enabled - using MockTTSEngine (zero API calls) 🎭');
+      return new MockTTSEngine();
+    }
+    
     switch (engineType) {
       case 'elevenlabs':
         if (process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY && process.env.EXPO_PUBLIC_ELEVENLABS_ENABLED === 'true') {

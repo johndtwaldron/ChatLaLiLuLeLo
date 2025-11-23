@@ -12,6 +12,16 @@ config.resolver.nodeModulesPaths = [
 ];
 config.watchFolders = [workspaceRoot];
 
+// Add material directory to asset extensions for Rick mode
+config.resolver.assetExts = [
+  ...config.resolver.assetExts,
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'mp3',
+];
+
 // Add resolver alias for @ paths to work with Metro bundler
 config.resolver.alias = {
   '@': path.join(projectRoot, 'src'),
@@ -19,6 +29,11 @@ config.resolver.alias = {
   '@/features': path.join(projectRoot, 'src/features'),
   '@/lib': path.join(projectRoot, 'src/lib'),
   '@/assets': path.join(projectRoot, 'src/assets'),
+};
+
+// Enable extra asset folders (material directory for Rick mode)
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
 };
 
 module.exports = config;

@@ -1,12 +1,19 @@
 # ChatLaLiLuLeLo Backend Environment Variables
 # Copy this file to .dev.vars and fill in your actual API keys
+# This is the SINGLE SOURCE OF TRUTH for all API keys
 
 OPENAI_API_KEY=sk-proj-your-openai-api-key-here
 TAVILY_API_KEY=tvly-your-tavily-api-key-here   # optional - for web search functionality
+
+# Voice / TTS Configuration
+ELEVENLABS_API_KEY=fake-elevenlabs-key-for-ui-testing-1234567890
+ELEVENLABS_MODE=mock   # 'mock' for dev (no API calls), 'live' for real audio
 
 # Instructions:
 # 1. Copy this file: cp .dev.vars.example .dev.vars
 # 2. Get your OpenAI API key from: https://platform.openai.com/api-keys
 # 3. Get your Tavily API key from: https://tavily.com/ (optional)
-# 4. Replace the placeholder values above
-# 5. Never commit .dev.vars to git (it's in .gitignore)
+# 4. Get your ElevenLabs API key from: https://elevenlabs.io (optional, for voice)
+# 5. Replace the placeholder values above
+# 6. Run `npm run sync-env` to sync keys to mobile app
+# 7. Never commit .dev.vars to git (it's in .gitignore)
