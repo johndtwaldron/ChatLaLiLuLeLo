@@ -285,10 +285,26 @@ If the backend-deploy workflow fails:
 
 ### 7.2 Secrets
 
-- For backend deploys:
-  - `CLOUDFLARE_API_TOKEN`
-  - `CLOUDFLARE_ACCOUNT_ID`
-  - Any mode-specific secrets (e.g. new TTS voice keys).
+**Required for backend deploys**:
+
+- `CLOUDFLARE_API_TOKEN`
+  - From Cloudflare dashboard → My Profile → API Tokens
+  - Create token with "Edit Cloudflare Workers" template
+  - Or custom token with Account → "Edit Workers" permission
+
+- `CLOUDFLARE_ACCOUNT_ID`
+  - Found in Cloudflare dashboard URL or Overview page
+  - Long hex string identifying your account
+
+**Optional mode-specific secrets**:
+- TTS voice keys (e.g. `ELEVENLABS_API_KEY` for voice modes)
+- Additional API keys as needed per mode
+
+**How to add secrets**:
+1. Go to repo Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Add name and value
+4. Secrets are available in workflows as `${{ secrets.SECRET_NAME }}`
 
 ---
 

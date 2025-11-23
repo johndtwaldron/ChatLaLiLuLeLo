@@ -4,13 +4,9 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches: [ dev-plus ]
-    paths:
-      - 'apps/edge/**'
-      - 'prompts/**'
-      - '.github/workflows/backend-deploy.yml'
-
+  workflow_dispatch:
+    inputs: {}
+  
 env:
   NODE_VERSION: '20.x'
 
@@ -53,14 +49,15 @@ jobs:
           echo "✅ Backend validation completed successfully"
 
       - name: 🚀 Deploy to Cloudflare Workers
+        working-directory: apps/edge
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           echo "🚀 Deploying backend to Cloudflare Workers..."
-          cd apps/edge
+          
+          # Install edge-specific dependencies
+          npm install
           
           # Deploy using wrangler
           npm run deploy || {
