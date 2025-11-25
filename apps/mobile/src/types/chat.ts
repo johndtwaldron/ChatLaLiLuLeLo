@@ -1,7 +1,7 @@
 export type Role = 'user' | 'assistant' | 'system';
 
 // New clean snapshot-based types
-export type ModeTag = 'JD' | 'BTC' | 'GW' | 'MGS';
+export type ModeTag = 'JD' | 'BTC' | 'GW' | 'MGS' | 'RICK';
 export type ModelTag = 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'mock';
 
 export type MsgMeta = {

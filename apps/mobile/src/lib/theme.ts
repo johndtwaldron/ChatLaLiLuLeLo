@@ -325,11 +325,9 @@ export const getCurrentThemeName = (): string => {
 // Mode management functions
 export const getCurrentMode = () => currentMode;
 
-export const cycleMode = () => {
-  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin', 'rick'];
-  const currentIndex = modes.indexOf(currentMode);
+export const setMode = (mode: ConversationMode) => {
   const previousMode = currentMode;
-  currentMode = modes[(currentIndex + 1) % modes.length];
+  currentMode = mode;
   
   // Handle theme locking/unlocking for Rick mode
   if (currentMode === 'rick' && previousMode !== 'rick') {
@@ -347,6 +345,13 @@ export const cycleMode = () => {
   updateColonelPortraitForMode();
   
   notifyThemeChange(); // Theme may change based on mode
+};
+
+export const cycleMode = () => {
+  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin', 'rick'];
+  const currentIndex = modes.indexOf(currentMode);
+  const nextMode = modes[(currentIndex + 1) % modes.length];
+  setMode(nextMode);
 };
 
 export const getModeDisplayName = (mode: ConversationMode = currentMode) => {

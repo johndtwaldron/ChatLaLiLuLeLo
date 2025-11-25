@@ -44,7 +44,11 @@ interface ChatScreenProps {
 
 // Snapshot meta helper functions
 const modeToTag = (m: string): ModeTag =>
-  m === 'jd' ? 'JD' : m === 'bitcoin' ? 'BTC' : m === 'haywire' ? 'GW' : 'MGS';
+  m === 'jd' ? 'JD' : 
+  m === 'bitcoin' ? 'BTC' : 
+  m === 'haywire' ? 'GW' : 
+  m === 'rick' ? 'RICK' : 
+  'MGS';
 
 const modelToTag = (m: string): ModelTag =>
   m === 'gpt-4o' ? 'gpt-4o' :
