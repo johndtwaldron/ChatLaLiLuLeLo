@@ -91,3 +91,6 @@ c.ChatLaLiLuLeLo.JDW.zip
 debug/terminal.outputs/
 *.bat
 restart-*.bat
+
+apps/mobile/public/videos/*.mp4
+material/*.mp4

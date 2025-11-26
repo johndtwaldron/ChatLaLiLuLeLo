@@ -37,6 +37,8 @@ import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceS
 import { AudioDebugOverlay } from '@/components/AudioDebugOverlay';
 import { CodecWaveform } from '@/components/CodecWaveform';
 import { useVoicePlayingState } from '@/hooks/useVoicePlayingState';
+import { handleSecretCommand } from '@/lib/secretCommands';
+import { CodecVideoPlayer } from '@/components/CodecVideoPlayer';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -122,6 +124,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
   const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
   const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
+  const [videoPlayerPath, setVideoPlayerPath] = useState('');
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -263,6 +267,75 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
 
   // Handle new message from text input
   const handleSendMessage = async (messageText: string) => {
+    // Check for secret commands BEFORE normal processing
+    const currentMode = getCurrentMode();
+    const secretResult = handleSecretCommand({
+      rawInput: messageText,
+      uiMode: currentMode,
+    });
+    
+    if (secretResult.handled) {
+      // Handle secret command action
+      if (secretResult.action === 'play_video') {
+        // Check if file exists by trying to fetch HEAD
+        const checkFileExists = async () => {
+          try {
+            const response = await fetch(secretResult.videoPath, {
+              method: 'HEAD',
+              signal: AbortSignal.timeout(2000),
+            });
+            return response.ok;
+          } catch {
+            return false;
+          }
+        };
+        
+        const fileExists = await checkFileExists();
+        
+        if (!fileExists) {
+          // Show error message instead of opening player
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(7);
+          const meta = snapshotMeta('ai');
+          
+          const errorMessage: Message = {
+            id: `colonel-error-${timestamp}-${randomSuffix}`,
+            text: `[ERROR] Video file not found: ${secretResult.videoPath.split('/').pop()}. Check that the symlink exists in /material directory.`,
+            speaker: 'colonel',
+            timestamp,
+            meta,
+          };
+          
+          setMessages(prev => [...prev, errorMessage]);
+          return; // Exit without opening player
+        }
+        
+        // File exists, open player
+        setVideoPlayerPath(secretResult.videoPath);
+        setVideoPlayerVisible(true);
+        
+        // Inject local assistant message if provided
+        if (secretResult.localAssistantText) {
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(7);
+          const meta = snapshotMeta('ai');
+          
+          const secretMessage: Message = {
+            id: `colonel-secret-${timestamp}-${randomSuffix}`,
+            text: secretResult.localAssistantText,
+            speaker: 'colonel',
+            timestamp,
+            meta,
+          };
+          
+          setMessages(prev => [...prev, secretMessage]);
+        }
+      }
+      
+      // Exit early - don't send to backend
+      return;
+    }
+    
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(7);
     
@@ -295,8 +368,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     setIsStreaming(true);
     setCurrentStreamText('');
     
-    // Convert mode mapping
-    const currentMode = getCurrentMode();
+    // Convert mode mapping (currentMode already declared above for secret commands)
     const modeMap = {
       'haywire': 'GW',
       'jd': 'JD', 
@@ -568,6 +640,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             onClose={() => handleAudioDebugToggle(false)} 
           />
         )}
+        
+        {/* Secret Command Video Player */}
+        <CodecVideoPlayer
+          visible={videoPlayerVisible}
+          videoPath={videoPlayerPath}
+          onClose={() => setVideoPlayerVisible(false)}
+        />
       </CodecFrame>
     </SafeAreaView>
   );
