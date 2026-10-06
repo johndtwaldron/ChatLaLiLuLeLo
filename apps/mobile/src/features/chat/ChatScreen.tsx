@@ -54,10 +54,7 @@ const modeToTag = (m: string): ModeTag =>
   m === 'rick' ? 'RICK' : 
   'MGS';
 
-const modelToTag = (m: string): ModelTag =>
-  m === 'gpt-4.1' ? 'gpt-4.1' :
-  m === 'gpt-4o-mini' ? 'gpt-4o-mini' :
-  m === 'mock' ? 'mock' : 'gpt-4.1-mini';
+const modelToTag = (m: string): ModelTag => m;
 
 function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
   return {

@@ -1,6 +1,8 @@
 import { streamReply } from '../api';
 import { currentChatProfile, saveGoogleProfile, disconnectGoogleProfile } from '../googleProfile';
 import { ChatRequestSchema } from '../../../../edge/lib/schema';
+import { DEFAULT_MODELS, modelCatalog } from '../../../../edge/lib/models';
+import { refreshModelCatalog, modelConfigs } from '../theme';
 import { streamChat } from '../../../../edge/lib/openai';
 jest.mock('openai', () => jest.fn(), { virtual: true });
 
@@ -40,5 +42,34 @@ describe('profile deployment compatibility', () => {
     await expect(streamReply({ mode: 'JD', profile: { firstName: 'John' } }, () => {})).rejects.toThrow('temporarily unavailable');
     expect(fetch).toHaveBeenCalledTimes(1);
     expect((fetch as jest.Mock).mock.calls[0][0]).toContain('/health');
+  });
+});
+
+
+describe('refreshable model catalogue', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => { global.fetch = originalFetch; });
+  it('accepts an explicitly configured compatible future model', () => {
+    const addition = { id: 'gpt-future-mini', name: 'Future Mini', description: 'Configured by operator', inputPrice: 1, outputPrice: 5, adapter: 'standard' };
+    expect(modelCatalog({ MODEL_CATALOG_JSON: JSON.stringify([addition]) })).toContainEqual(addition);
+    expect(() => modelCatalog({ MODEL_CATALOG_JSON: JSON.stringify([{ ...addition, adapter: 'unrecognised' }]) })).toThrow();
+  });
+  it('loads new dropdown choices without changing frontend code', async () => {
+    const extra = { id: 'gpt-future-mini', name: 'Future Mini', description: 'Test', inputPrice: 1, outputPrice: 5, adapter: 'standard' };
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ defaultModel: 'gpt-5.4-mini', models: [...DEFAULT_MODELS, extra] }) });
+    await refreshModelCatalog();
+    expect(modelConfigs[extra.id].name).toBe('Future Mini');
+    delete modelConfigs[extra.id];
+  });
+  it.each(['gpt-5.4-mini', 'gpt-5.4'])('uses compatible streaming parameters for %s', async model => {
+    const create = jest.fn().mockResolvedValue({});
+    await streamChat({ openai: { chat: { completions: { create } } } as any, systemPrompt: 'Codec', mode: 'JD', model,
+      messages: [{ role: 'user', content: 'Hello' }] });
+    const payload = create.mock.calls[0][0];
+    expect(payload.max_completion_tokens).toBe(600);
+    expect(payload.reasoning_effort).toBe('none');
+    expect(payload).not.toHaveProperty('max_tokens');
+    expect(payload).not.toHaveProperty('temperature');
+    expect(payload.store).toBe(false);
   });
 });

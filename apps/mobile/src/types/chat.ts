@@ -2,7 +2,7 @@ export type Role = 'user' | 'assistant' | 'system';
 
 // New clean snapshot-based types
 export type ModeTag = 'JD' | 'BTC' | 'GW' | 'MGS' | 'RICK';
-export type ModelTag = 'gpt-4.1' | 'gpt-4.1-mini' | 'gpt-4o-mini' | 'mock';
+export type ModelTag = string;
 
 export type MsgMeta = {
   mode: ModeTag;
@@ -21,7 +21,7 @@ export type ChatMsg = {
 // Legacy interfaces for backward compatibility
 export interface MessageMeta {
   mode: 'GW' | 'JD' | 'MGS' | 'BTC';
-  model: 'gpt-4.1' | 'gpt-4.1-mini' | 'gpt-4o-mini' | 'mock';
+  model: string;
   tag: string; // e.g. "[JD]:[gpt-4.1-mini]:"
 }
 

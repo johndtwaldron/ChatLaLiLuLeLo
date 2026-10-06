@@ -1,3 +1,4 @@
+import { getApiUrl } from './api';
 // Theme definitions for different codec styles
 export const themePresets = {
   // Cyan - Default (MGS2 authentic)
@@ -133,15 +134,17 @@ let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
 let currentBitcoinColonelPortrait = 0; // 0-4 for the five Bitcoin portraits (default to Sayloresque)
 
 // Model selection system
-export type ModelType = 'gpt-4.1-mini' | 'gpt-4.1' | 'gpt-4o-mini' | 'mock';
-let currentModel: ModelType = 'gpt-4.1-mini'; // Default to most cost-effective
+export type ModelType = string;
+let currentModel: ModelType = 'gpt-5.4-mini'; // Default to most cost-effective
 
-export const modelConfigs = {
+export const modelConfigs: Record<string, { name: string; cost: string; description: string; default?: boolean }> = {
+  'gpt-5.4-mini': { name: 'GPT-5.4 Mini', cost: '$0.75 in / $4.50 out per 1M', description: 'Recommended · conversation & photos', default: true },
+  'gpt-5.4': { name: 'GPT-5.4', cost: '$2.50 in / $15.00 out per 1M', description: 'Stronger reasoning & vision' },
   'gpt-4.1-mini': {
     name: 'GPT-4.1 Mini',
     cost: '$0.40 in / $1.60 out per 1M',
     description: 'Fast & affordable',
-    default: true
+    default: false
   },
   'gpt-4.1': {
     name: 'GPT-4.1',
@@ -158,7 +161,29 @@ export const modelConfigs = {
     cost: 'Free',
     description: 'Testing & development'
   }
-} as const;
+};
+
+export async function refreshModelCatalog(): Promise<void> {
+  const response = await fetch(`${getApiUrl()}/models`, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Model catalogue unavailable');
+  const data = await response.json();
+  if (!Array.isArray(data.models) || !data.models.length || data.models.length > 40) throw new Error('Invalid model catalogue');
+  const next: typeof modelConfigs = {};
+  for (const entry of data.models) {
+    if (typeof entry.id !== 'string' || !/^(?:gpt-[a-zA-Z0-9.-]+|mock)$/.test(entry.id) ||
+        typeof entry.name !== 'string' || typeof entry.description !== 'string' ||
+        !Number.isFinite(entry.inputPrice) || !Number.isFinite(entry.outputPrice) || entry.inputPrice < 0 || entry.outputPrice < 0) throw new Error('Invalid model catalogue');
+    next[entry.id] = { name: entry.name.slice(0, 60), description: entry.description.slice(0, 120),
+      cost: entry.id === 'mock' ? 'Free' : `$${entry.inputPrice.toFixed(2)} in / $${entry.outputPrice.toFixed(2)} out per 1M`,
+      default: entry.id === data.defaultModel };
+  }
+  if (!(data.defaultModel in next)) throw new Error('Invalid catalogue default');
+  Object.keys(modelConfigs).forEach(key => delete modelConfigs[key]);
+  Object.assign(modelConfigs, next);
+  if (!modelConfigs[currentModel]) currentModel = data.defaultModel;
+  initializeModel();
+  notifyThemeChange();
+}
 
 // Conversation mode system
 export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin' | 'rick';
@@ -448,18 +473,18 @@ export const setModel = (model: ModelType) => {
 };
 
 export const cycleModel = () => {
-  const models: ModelType[] = ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'mock'];
+  const models = Object.keys(modelConfigs);
   const currentIndex = models.indexOf(currentModel);
   currentModel = models[(currentIndex + 1) % models.length];
   notifyThemeChange();
 };
 
 export const getModelDisplayName = (model: ModelType = currentModel) => {
-  return modelConfigs[model].name;
+  return (modelConfigs[model] || modelConfigs[currentModel]).name;
 };
 
 export const getModelConfig = (model: ModelType = currentModel) => {
-  return modelConfigs[model];
+  return modelConfigs[model] || modelConfigs[currentModel];
 };
 
 // Stable tag helpers (pure functions that don't read reactive/global state)
@@ -469,7 +494,7 @@ export const modeToAbbr = (m: string) =>
 
 const modelMapping = { 'gpt-4.1': 'gpt-4.1', 'gpt-4.1-mini': 'gpt-4.1-mini', 'gpt-4o-mini': 'gpt-4o-mini', mock: 'mock' } as const;
 export const modelToAbbr = (m: string) =>
-  modelMapping[m as keyof typeof modelMapping] ?? 'gpt-4.1-mini';
+  modelMapping[m as keyof typeof modelMapping] ?? (m in modelConfigs ? m : 'gpt-5.4-mini');
 
 export const makeTag = (modeKey: string, modelKey: string) =>
   `[${modeToAbbr(modeKey)}]:[${modelToAbbr(modelKey)}]:`;

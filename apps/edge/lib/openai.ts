@@ -1,3 +1,4 @@
+import { DEFAULT_MODELS, DEFAULT_MODEL, type CatalogModel } from './models';
 import OpenAI from 'openai';
 
 export const createOpenAIClient = (apiKey: string) => {
@@ -7,19 +8,10 @@ export const createOpenAIClient = (apiKey: string) => {
 };
 
 export type Mode = 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
-export type ModelType = 'gpt-4.1-mini' | 'gpt-4.1' | 'gpt-4o-mini' | 'mock';
-
-// Model allowlist for validation
-const ALLOWED_MODELS: ModelType[] = ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'mock'];
-
-export function validateModel(model: string): ModelType {
-  if (model === 'gpt-4o') return 'gpt-4.1';
-  if (model === 'gpt-3.5-turbo') return 'gpt-4.1-mini';
-  if (ALLOWED_MODELS.includes(model as ModelType)) {
-    return model as ModelType;
-  }
-  // Default to most cost-effective model if invalid
-  return 'gpt-4.1-mini';
+export type ModelType = string;
+export function validateModel(model: string, catalog: CatalogModel[] = DEFAULT_MODELS): string {
+  const alias = model === 'gpt-4o' ? 'gpt-4.1' : model === 'gpt-3.5-turbo' ? 'gpt-4.1-mini' : model;
+  return catalog.some(entry => entry.id === alias) ? alias : DEFAULT_MODEL;
 }
 
 // Fallback responses for quota exhausted scenarios
@@ -49,12 +41,14 @@ export async function streamChat({
   openai,
   systemPrompt,
   messages,
-  model = 'gpt-4.1-mini',
+  model = DEFAULT_MODEL,
   temperature = 0.7,
   max_tokens = 600,
   mode,
-  profile
+  profile,
+  adapter
 }: {
+  adapter?: CatalogModel['adapter'];
   profile?: { firstName: string; picture?: string };
   openai: OpenAI;
   systemPrompt: string;
@@ -96,8 +90,9 @@ export async function streamChat({
     const stream = await openai.chat.completions.create({
       model,
       messages: payload,
-      temperature,
-      max_tokens,
+      ...(adapter === 'reasoning-none' || (!adapter && model.startsWith('gpt-5.4'))
+        ? { max_completion_tokens: max_tokens, reasoning_effort: 'none' as any }
+        : { temperature, max_tokens }),
       stream: true,
       store: false,
     });

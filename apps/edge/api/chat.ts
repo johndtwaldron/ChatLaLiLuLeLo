@@ -1,3 +1,4 @@
+import { modelCatalog, DEFAULT_MODEL } from '../lib/models';
 import { createOpenAIClient, streamChat, validateModel } from '../lib/openai';
 import { buildSystemPrompt } from '../lib/composer';
 import { webSearch, formatResearchContext, buildSearchQuery } from '../lib/search';
@@ -51,6 +52,14 @@ export default {
       return new Response(null, { status: 200, headers: corsHeaders });
     }
     
+    if (req.method === 'GET' && url.pathname === '/models') {
+      try {
+        return Response.json({ defaultModel: DEFAULT_MODEL, models: modelCatalog(env) }, { headers: { ...corsHeaders, 'Cache-Control': 'no-store' } });
+      } catch {
+        return Response.json({ error: 'Model catalogue unavailable' }, { status: 503, headers: corsHeaders });
+      }
+    }
+
     // Health check endpoint
     if (url.pathname === '/health') {
       const health = {
@@ -61,7 +70,7 @@ export default {
         environment: {
           openai_key_present: !!env.OPENAI_API_KEY,
           tavily_key_present: !!env.TAVILY_API_KEY,
-          model: env.OPENAI_MODEL ?? 'gpt-4.1-mini'
+          model: env.OPENAI_MODEL ?? DEFAULT_MODEL
         }
       };
       
@@ -228,15 +237,21 @@ export default {
         .find(m => m.role === 'user')?.content ?? '';
       
       // Validate and determine model to use
-      const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4.1-mini';
-      const validatedModel = validateModel(requestedModel);
+      const requestedModel = options.model || env.OPENAI_MODEL || DEFAULT_MODEL;
+      const catalog = modelCatalog(env);
+      const validatedModel = validateModel(requestedModel, catalog);
+      const selectedConfig = catalog.find(entry => entry.id === validatedModel)!;
+      if (options.model && options.model !== validatedModel && !['gpt-4o', 'gpt-3.5-turbo'].includes(options.model)) {
+        return Response.json({ error: 'Selected model is unavailable. Refresh the model catalogue.' }, { status: 400, headers: corsHeaders });
+      }
       
       // Check rate limits and budget before processing
       const rateLimitResult = rateLimiter.checkRateLimit(
         req,
         lastUserMessage,
         client.sessionId,
-        validatedModel
+        validatedModel,
+        Math.max(selectedConfig.inputPrice, selectedConfig.outputPrice) / 1_000_000
       );
       
       if (!rateLimitResult.allowed) {
@@ -347,6 +362,7 @@ export default {
         systemPrompt,
         messages: sanitizedMessages,
         profile,
+        adapter: selectedConfig.adapter,
         model: validatedModel,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.max_tokens ?? 600,
@@ -377,7 +393,8 @@ export default {
             req,
             tokenCount,
             client.sessionId,
-            validatedModel
+            validatedModel,
+            Math.max(selectedConfig.inputPrice, selectedConfig.outputPrice) / 1_000_000
           );
           
           // Get updated stats and budget warning

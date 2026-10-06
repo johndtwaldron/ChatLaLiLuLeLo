@@ -8,7 +8,7 @@ export const MessageSchema = z.object({
   content: z.string(),
 });
 
-export const ModelSchema = z.enum(['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock']);
+export const ModelSchema = z.string().regex(/^(?:gpt-[a-zA-Z0-9.-]+|mock)$/).max(100);
 export type ModelType = z.infer<typeof ModelSchema>;
 
 export const ChatRequestSchema = z.object({

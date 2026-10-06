@@ -35,6 +35,8 @@ export const DEFAULT_CONFIG: RateLimitConfig = {
 
 // Token cost estimates (approximate, based on OpenAI pricing)
 const TOKEN_COSTS = {
+  'gpt-5.4-mini': 0.0000045,
+  'gpt-5.4': 0.000015,
   'gpt-4.1-mini': 0.0000016, // Conservative output-token estimate: $1.60/M
   'gpt-4.1': 0.000008, // Conservative output-token estimate: $8/M
   'gpt-4o-mini': 0.0000006, // Conservative output-token estimate: $0.60/M
@@ -59,7 +61,8 @@ export class RateLimiter {
     request: Request, 
     messageContent: string,
     sessionId?: string,
-    model: string = 'gpt-4.1-mini'
+    model: string = 'gpt-5.4-mini',
+    costPerToken?: number
   ): RateLimitResult {
     const clientKey = this.getClientKey(request, sessionId);
     const now = Date.now();
@@ -115,7 +118,7 @@ export class RateLimiter {
     }
     
     // Check monthly budget (rough estimation)
-    const tokenCost = TOKEN_COSTS[model as keyof typeof TOKEN_COSTS] || TOKEN_COSTS['gpt-4.1-mini'];
+    const tokenCost = costPerToken ?? TOKEN_COSTS[model as keyof typeof TOKEN_COSTS] ?? TOKEN_COSTS['gpt-5.4-mini'];
     const estimatedCostUSD = (stats.tokenCount + estimatedTokens) * tokenCost;
     
     if (estimatedCostUSD > this.config.monthlyBudgetUSD) {
@@ -142,7 +145,8 @@ export class RateLimiter {
     request: Request,
     actualTokens: number,
     sessionId?: string,
-    model: string = 'gpt-4.1-mini'
+    model: string = 'gpt-5.4-mini',
+    costPerToken?: number
   ) {
     const clientKey = this.getClientKey(request, sessionId);
     const stats = this.storage.get(clientKey);
@@ -152,7 +156,7 @@ export class RateLimiter {
       stats.tokenCount = Math.max(stats.tokenCount, actualTokens);
       
       // Recalculate actual cost
-      const tokenCost = TOKEN_COSTS[model as keyof typeof TOKEN_COSTS] || TOKEN_COSTS['gpt-4.1-mini'];
+      const tokenCost = costPerToken ?? TOKEN_COSTS[model as keyof typeof TOKEN_COSTS] ?? TOKEN_COSTS['gpt-5.4-mini'];
       stats.estimatedSpendUSD = stats.tokenCount * tokenCost;
     }
   }
