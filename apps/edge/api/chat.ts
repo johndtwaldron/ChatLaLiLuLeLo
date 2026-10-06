@@ -401,7 +401,7 @@ export default {
           });
           
         } catch (error) {
-          logError('Stream processing error', error as Error, { requestId });
+          logError('Stream processing error', new Error('Stream failed'), { requestId });
           await writer.write(encoder.encode(
             `data: ${JSON.stringify({ type: 'error', message: 'Stream processing error' })}\n\n`
           ));
@@ -424,19 +424,9 @@ export default {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      // Log detailed error information
-      console.error('CHAT ERROR - Full details:', {
-        requestId,
-        message: errorMessage,
-        stack: errorStack,
-        error: error,
-        timestamp: new Date().toISOString()
-      });
-      
-      logError('Chat request error', error as Error, { requestId });
-      
+      // Provider errors can contain image URLs or echoed request data.
+      logError('Chat request error', new Error('Provider request failed'), { requestId });
+
       // Return structured JSON error for 500s too
       return new Response(JSON.stringify({
         error: 'Internal server error',
