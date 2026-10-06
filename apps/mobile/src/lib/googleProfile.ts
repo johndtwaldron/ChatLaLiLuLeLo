@@ -148,7 +148,7 @@ export function requestGoogleProfilePhoto(clientId: string): Promise<void> {
           const next = sanitizeProfile({ firstName: data.given_name, picture: data.picture });
           // A late response must not restore a disconnected or replaced profile.
           if (revision !== profileRevision) { resolve(); return; }
-          if (!next.picture) throw new Error('Google’s profile endpoint also returned no photo. Your current link is unchanged.');
+          if (!next.picture) recordSessionLog('info', '[GOOGLE PROFILE] Profile endpoint supplied name without photo');
           saveGoogleProfile(next);
           resolve();
         } catch (error) {

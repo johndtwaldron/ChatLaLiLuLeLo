@@ -1,17 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
-import { disconnectGoogleProfile, loadGoogleIdentity, profileFromCredential, requestGoogleProfilePhoto, saveGoogleProfile, useGoogleProfile } from '@/lib/googleProfile';
+import { disconnectGoogleProfile, loadGoogleIdentity, requestGoogleProfilePhoto, useGoogleProfile } from '@/lib/googleProfile';
 
-export function GoogleProfileLink() {
+interface Props { activation?: boolean; onComplete?: () => void }
+
+export function GoogleProfileLink({ activation = false, onComplete }: Props) {
   const profile = useGoogleProfile();
   const [theme, setTheme] = useState(getCodecTheme());
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(activation);
   const [error, setError] = useState<string | null>(null);
-  const [fetchingPhoto, setFetchingPhoto] = useState(false);
   const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const host = useRef<HTMLDivElement>(null);
   const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
   useEffect(() => subscribeToThemeChanges(() => setTheme(getCodecTheme())), []);
   useEffect(() => {
@@ -19,55 +20,45 @@ export function GoogleProfileLink() {
     let active = true;
     setError(null);
     setReady(false);
-    const nonce = Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
-    loadGoogleIdentity().then(identity => {
-      if (!active || !host.current) return;
-      identity.initialize({ client_id: clientId, nonce, auto_select: false, callback: response => {
-        if (!active) return;
-        try {
-          saveGoogleProfile(profileFromCredential(response.credential, clientId, nonce));
-          setOpen(false);
-        } catch (e) { setError((e as Error).message); }
-      } });
-      host.current.replaceChildren();
-      identity.renderButton(host.current, { theme: 'outline', size: 'large', text: 'signin_with' });
-      setReady(true);
-    }).catch(e => { if (active) setError(e.message); });
+    loadGoogleIdentity().then(() => { if (active) setReady(true); }).catch(e => { if (active) setError(e.message); });
     return () => { active = false; };
   }, [open, clientId, profile, attempt]);
 
   if (Platform.OS !== 'web') return null;
+  const finish = () => { setOpen(false); onComplete?.(); };
+  const dismiss = () => { if (busy) disconnectGoogleProfile(); finish(); };
+  const sync = () => {
+    if (!clientId || busy) return;
+    setError(null);
+    setBusy(true);
+    requestGoogleProfilePhoto(clientId).then(finish).catch(e => setError(e.message)).finally(() => setBusy(false));
+  };
   const textStyle = { color: theme.colors.primary, fontFamily: 'monospace' };
   const buttonStyle = [styles.button, { borderColor: theme.colors.primary, backgroundColor: theme.colors.background }];
   return <>
-    <Pressable accessibilityRole="button" onPress={() => setOpen(true)} style={buttonStyle}>
-      <Text style={[textStyle, styles.label]}>{profile ? 'GOOGLE NANOMACHINES: LINKED' : 'LINK GOOGLE NANOMACHINES'}</Text>
-    </Pressable>
-    <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+    {!activation && <Pressable accessibilityRole="button" onPress={() => setOpen(true)} style={buttonStyle}>
+      <Text style={[textStyle, styles.label]}>NANOMACHINE SYNC</Text>
+    </Pressable>}
+    <Modal visible={open} transparent animationType="fade" onRequestClose={dismiss}>
       <View style={styles.overlay}>
         <View style={[styles.panel, { backgroundColor: theme.colors.background, borderColor: theme.colors.primary }]}>
-          <Text style={[textStyle, styles.title]}>GOOGLE NANOMACHINES</Text>
-          <Text style={[textStyle, styles.description]}>{profile ? `Linked as ${profile.firstName}.` : 'Link your Google first name and profile picture to the Codec.'}</Text>
-          <Text style={[textStyle, styles.description]}>Your name and photo last only for this Codec session. They are not sent with chat messages.</Text>
-          {profile && !profile.picture && <Text style={[textStyle, styles.description]}>Google sign-in did not include your photo. Fetch it directly from your Google profile using the button below.</Text>}
-          {profile && clientId && <>
-            <Text style={[textStyle, styles.description]}>Fetch requests basic Google profile access. Choose the same account. Google may remember your consent; the Codec keeps your photo only until disconnect or this page closes.</Text>
-            <Pressable accessibilityRole="button" disabled={fetchingPhoto} style={buttonStyle} onPress={() => {
-              setError(null);
-              setFetchingPhoto(true);
-              requestGoogleProfilePhoto(clientId).then(() => setOpen(false)).catch(e => setError(e.message)).finally(() => setFetchingPhoto(false));
-            }}><Text style={textStyle}>{fetchingPhoto ? 'FETCHING GOOGLE PHOTO…' : 'FETCH GOOGLE PROFILE PHOTO'}</Text></Pressable>
-            {error && <Text accessibilityRole="alert" style={[textStyle, styles.description]}>{error}</Text>}
-          </>}
-          {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); setOpen(false); }}>
+          <Text style={[textStyle, styles.title]}>NANOMACHINE SYNC</Text>
+          <Text style={[textStyle, styles.description]}>{profile ? `Synced as ${profile.firstName}.` : 'Sync your Google name and profile photo before opening the Codec, or continue without syncing.'}</Text>
+          <Text style={[textStyle, styles.description]}>Your name and photo stay only in this page instance and clear on disconnect or page exit. Google may remember your consent.</Text>
+          {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); setError(null); }}>
             <Text style={textStyle}>DISCONNECT GOOGLE</Text>
-          </Pressable> : !clientId ? <Text style={[textStyle, styles.description]}>Google linking needs an app client ID before it can connect.</Text> : <>
-            {!ready && !error && <Text style={textStyle}>CONNECTING…</Text>}
-            {React.createElement('div', { ref: host, style: { minHeight: 44, marginBottom: 12 } })}
-            {error && <><Text accessibilityRole="alert" style={[textStyle, styles.description]}>{error}</Text>
-              <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => setAttempt(n => n + 1)}><Text style={textStyle}>TRY AGAIN</Text></Pressable></>}
+          </Pressable> : <>
+            {!clientId && <Text style={[textStyle, styles.description]}>Google syncing needs an app client ID before it can connect.</Text>}
+            {clientId && <Pressable accessibilityRole="button" disabled={!ready || busy} style={[buttonStyle, { opacity: ready && !busy ? 1 : 0.5 }]} onPress={sync}>
+              <Text style={textStyle}>{busy ? 'SYNCING…' : ready ? 'SYNC WITH GOOGLE' : 'CONNECTING…'}</Text>
+            </Pressable>}
           </>}
-          <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => setOpen(false)}><Text style={textStyle}>CLOSE</Text></Pressable>
+          {error && <><Text accessibilityRole="alert" style={[textStyle, styles.description]}>{error}</Text>
+            {!ready && <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => setAttempt(n => n + 1)}><Text style={textStyle}>TRY AGAIN</Text></Pressable>}
+          </>}
+          <Pressable accessibilityRole="button" style={buttonStyle} onPress={dismiss}>
+            <Text style={textStyle}>{activation ? 'ACTIVATE CODEC WITHOUT SYNC' : 'CLOSE'}</Text>
+          </Pressable>
         </View>
       </View>
     </Modal>

@@ -78,10 +78,10 @@ describe('explicit Google photo request', () => {
     expect(current).toBeNull();
     act(() => view!.unmount());
   });
-  it('reports a missing photo without logging the returned profile', async () => {
+  it('still syncs the name when the profile endpoint supplies no photo', async () => {
     (fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ given_name: 'Jack' }) });
     const pending = requestGoogleProfilePhoto('client');
-    const assertion = expect(pending).rejects.toThrow('also returned no photo');
+    const assertion = expect(pending).resolves.toBeUndefined();
     await options.callback({ access_token: 'temporary-access' });
     await assertion;
   });

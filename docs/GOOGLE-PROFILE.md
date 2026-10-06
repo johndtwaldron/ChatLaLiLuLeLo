@@ -1,6 +1,6 @@
 # Google profile linking
 
-The optional **Link Google nanomachines** control fills the user's Codec portrait with a Google first name and profile picture. It currently supports the web app. Text chat remains available without linking.
+The optional **Nanomachine sync** control fills the user's Codec portrait with a Google first name and profile picture. It currently supports the web app. Text chat remains available without linking.
 
 ## Configure local testing
 
@@ -13,7 +13,7 @@ The client ID is public configuration. No client secret is needed. Production bu
 
 ## Behaviour and boundaries
 
-Google's official sign-in button appears in a Codec-themed dialog. On success, the first name replaces the mode label and the Google photo replaces the silhouette. If the photo fails to load, the silhouette remains. Disconnect clears the linked profile and restores the mode label.
+The first activation opens a Codec-themed sync decision before startup and before mounting chat. **Sync with Google** requests `openid profile` and fetches both the first name and photo in one flow; **Activate Codec Without Sync** continues anonymously. Returning from standby does not repeat the decision in the same page instance. The running Codec has one **Nanomachine sync** button for disconnecting or connecting. On success, the first name replaces the mode label and the Google photo replaces the silhouette. If the photo fails to load, the silhouette remains. Disconnect clears the linked profile and restores the mode label.
 
 Only the first name and photo URL are held in memory for the current page instance. Refreshing or closing the page clears them. Previously saved local profile data is removed. ID tokens, email addresses, and account identifiers are not retained or sent to the chat backend. Photos load from Google-hosted image URLs. The stored profile is cosmetic, editable browser data: it must never authorize accounts, payments, quotas, or other backend access. Any future account system needs server-side ID token verification.
 
@@ -27,7 +27,7 @@ Unit tests cover UTF-8 names, unexpected credential claims, unsafe photo URLs, s
 
 ## Missing photo and consent branding
 
-A successful name link can have no `picture` claim. The October 6 instance log reports `photoProvided: false`; that is different from a failed image download. Show an initial and an explanation rather than repeatedly fetching a missing URL. When sign-in omits the photo, reopen the linked panel and select **Fetch Google profile photo**. This explicitly requests `openid profile` access and reads Google’s UserInfo endpoint. Select the same account; the chosen account’s first name and photo replace the current cosmetic profile. No client secret or additional API key is needed. The access token is discarded after the request; no refresh token is requested. Fetch uses `no-store`. Google may remember the consent grant, but the Codec stores no profile or token persistently. Disconnect, refresh, closing the page, or entering the back/forward cache clears the in-memory profile. Late responses cannot restore a disconnected profile. See [Google token model](https://developers.google.com/identity/oauth2/web/guides/use-token-model).
+A successful name link can have no `picture` claim. The October 6 instance log reports `photoProvided: false`; that is different from a failed image download. Show an initial and an explanation rather than repeatedly fetching a missing URL. The current single sync flow explicitly requests `openid profile` access and reads Google’s UserInfo endpoint. No client secret or additional API key is needed. The access token is discarded after the request; no refresh token is requested. Fetch uses `no-store`. Google may remember the consent grant, but the Codec stores no profile or token persistently. Disconnect, refresh, closing the page, or entering the back/forward cache clears the in-memory profile. Late responses cannot restore a disconnected profile. If Google supplies a first name without a photo, sync still succeeds and the portrait shows an initial. See [Google token model](https://developers.google.com/identity/oauth2/web/guides/use-token-model).
 
 The consent application name comes from **Google Auth Platform → Branding** in the Cloud project, not the client name in the Clients list. Two OAuth clients in the same project share that branding. If the project also powers Inner Signal, create a separate ChatLaLiLuLeLo Cloud project with its own branding/client and the same allowed origins, then supply the new public client ID. Renaming the existing project's branding also affects Inner Signal. No branding setting was changed by this repository update. See [Google setup](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
 
