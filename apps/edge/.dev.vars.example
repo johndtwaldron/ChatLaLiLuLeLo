@@ -17,3 +17,6 @@ ELEVENLABS_MODE=mock   # 'mock' for dev (no API calls), 'live' for real audio
 # 5. Replace the placeholder values above
 # 6. Run `npm run sync-env` to sync keys to mobile app
 # 7. Never commit .dev.vars to git (it's in .gitignore)
+
+# Public Google OAuth web client ID, copied to the frontend by sync-env
+GOOGLE_CLIENT_ID=

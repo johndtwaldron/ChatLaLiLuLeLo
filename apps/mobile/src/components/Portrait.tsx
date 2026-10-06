@@ -17,6 +17,7 @@ import Animated, {
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
+import { useGoogleProfile } from '@/lib/googleProfile';
 import { getNextRickImage, getNextRickAudio, getCurrentRickImage } from '@/lib/rickAssets';
 
 // Import colonel portraits - unified compatibility for local and web
@@ -69,6 +70,9 @@ export const Portrait: React.FC<PortraitProps> = ({
   // mouthFrame = 0, // Future use for mouth animation
 }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  const profile = useGoogleProfile();
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useEffect(() => { setPhotoFailed(false); }, [profile?.picture]);
   const idleAnimation = useSharedValue(0);
   const glowIntensity = useSharedValue(0);
   
@@ -272,20 +276,24 @@ export const Portrait: React.FC<PortraitProps> = ({
       rick: 'PATRON',
     };
     
-    const userLabel = USER_LABEL_BY_MODE[currentMode] || 'SOLDIER';
+    const userLabel = profile?.firstName || USER_LABEL_BY_MODE[currentMode] || 'SOLDIER';
     
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
         {/* User silhouette */}
         <View style={[styles.spriteContainer, styles.userSprite]}>
+          {profile?.picture && !photoFailed ? (
+            <Image source={{ uri: profile.picture }} style={styles.colonelImage} resizeMode="cover" accessibilityLabel={`${profile.firstName} profile picture`} onError={() => setPhotoFailed(true)} />
+          ) : (
           <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
             <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
           </View>
+          )}
         </View>
         
         {/* ID Label */}
         <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
-          <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>{userLabel}</Text>
+          <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]} numberOfLines={1} accessibilityLabel={`Codec profile: ${userLabel}`}>{userLabel}</Text>
         </View>
       </View>
     );

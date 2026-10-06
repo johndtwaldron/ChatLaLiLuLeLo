@@ -130,6 +130,15 @@ else
   echo "# EXPO_PUBLIC_ELEVENLABS_API_KEY not set (add ELEVENLABS_API_KEY to .dev.vars)" >> "$MOBILE_ENV"
 fi
 
+# Google client IDs are public; keep this optional feature through env regeneration.
+GOOGLE_LINE="$(grep '^GOOGLE_CLIENT_ID=' "$EDGE_VARS" || true)"
+GOOGLE_VALUE="${GOOGLE_LINE#GOOGLE_CLIENT_ID=}"
+GOOGLE_VALUE="${GOOGLE_VALUE%%#*}"
+GOOGLE_VALUE="$(echo "$GOOGLE_VALUE" | tr -d '\r' | xargs)"
+if [ -n "$GOOGLE_VALUE" ]; then
+  echo "EXPO_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_VALUE}" >> "$MOBILE_ENV"
+fi
+
 # Add voice settings
 cat >> "$MOBILE_ENV" <<EOF
 

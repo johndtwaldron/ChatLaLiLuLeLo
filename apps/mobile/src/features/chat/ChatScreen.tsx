@@ -1,3 +1,4 @@
+import { GoogleProfileLink } from '@/components/GoogleProfileLink';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -566,6 +567,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
         )}
         
         <View style={themeStyles.content}>
+          <View style={{ alignItems: 'flex-end', marginTop: useMobileUI ? 48 : 104, marginBottom: 8, zIndex: 101 }}><GoogleProfileLink /></View>
           {/* Portrait Section with dual draggable portraits */}
           <View 
             ref={portraitSectionRef}
