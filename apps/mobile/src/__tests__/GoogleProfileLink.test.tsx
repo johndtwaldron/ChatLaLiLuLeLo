@@ -9,7 +9,7 @@ jest.mock('react-native', () => ({
 }));
 import { TextDecoder } from 'util';
 import { GoogleProfileLink } from '../components/GoogleProfileLink';
-import { loadGoogleIdentity, saveGoogleProfile } from '../lib/googleProfile';
+import { loadGoogleIdentity, requestGoogleProfilePhoto, saveGoogleProfile } from '../lib/googleProfile';
 
 Object.assign(globalThis, { TextDecoder });
 jest.mock('../lib/theme', () => ({
@@ -19,6 +19,7 @@ jest.mock('../lib/theme', () => ({
 jest.mock('../lib/googleProfile', () => ({
   ...jest.requireActual('../lib/googleProfile'),
   loadGoogleIdentity: jest.fn(),
+  requestGoogleProfilePhoto: jest.fn(),
 }));
 
 describe('Google linking dialog', () => {
@@ -56,6 +57,15 @@ describe('Google linking dialog', () => {
     const disconnect = view.root.findAllByType(Pressable).find(p => p.props.children?.props?.children === 'DISCONNECT GOOGLE')!;
     await act(async () => { disconnect.props.onPress(); });
     expect(localStorage.getItem('codec.google-profile.v1')).toBeNull();
+  });
+  it('offers explicit photo access for a linked profile without a photo', async () => {
+    saveGoogleProfile({ firstName: 'Jack', picture: null });
+    (requestGoogleProfilePhoto as jest.Mock).mockResolvedValue(undefined);
+    await open();
+    expect(JSON.stringify(view.toJSON())).toContain('Google may remember your consent');
+    const fetchPhoto = view.root.findAllByType(Pressable).find(p => p.props.children?.props?.children === 'FETCH GOOGLE PROFILE PHOTO')!;
+    await act(async () => { fetchPhoto.props.onPress(); });
+    expect(requestGoogleProfilePhoto).toHaveBeenCalledWith('test-client');
   });
   it('shows missing configuration without loading Google', async () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
