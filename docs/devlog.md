@@ -70,6 +70,12 @@ and require the next frontend/backend deployment to appear on hosted instances.
   Before VRMF adoption, 34 profile/vision tests across three suites passed, as
   did mobile/edge typechecks, lint and web export.
 
+**Main integration PR**
+- Opened PR #16 from dev-plus to main for the accumulated development rollup.
+- Resolved the README conflict by preserving main’s repaired Markdown and hosted
+  link, adding the shared release version and current profile/model diagnostics.
+  Preserved main’s automatically merged chat portrait layout changes.
+
 **Specifications and outstanding work**
 - Added `docs/INSTANCE-PROFILE-PROVIDERS-SPEC.md` for session-only Nostr/Primal and
   X profile linking, including setup requirements. Implementation remains
@@ -77,7 +83,7 @@ and require the next frontend/backend deployment to appear on hosted instances.
 - ElevenLabs voice availability/funding remains an assessment item, not a
   completed voice integration. Avoid exposing paid provider secrets in the web
   bundle. Conversation quality and image-detail limits still need user testing.
-- Earlier requests for SSD reconciliation, README cleanup and a NARRATOR brief
+- Earlier requests for SSD reconciliation and a NARRATOR brief
   remain items to verify separately: today's tracked commits do not establish
   their completion. No SSD changes are part of this versioning work.
 
