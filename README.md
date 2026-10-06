@@ -2,7 +2,7 @@
 
 A Codec-style AI companion for philosophy, dry humour, Bitcoin discussion, and MGS nostalgia.
 
-**[Open the hosted Codec →](https://johndtwaldron.github.io/ChatLaLiLuLeLo/)**
+**Hosted page:** [https://johndtwaldron.github.io/ChatLaLiLuLeLo/](https://johndtwaldron.github.io/ChatLaLiLuLeLo/)
 
 [![CI](https://github.com/johndtwaldron/ChatLaLiLuLeLo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/johndtwaldron/ChatLaLiLuLeLo/actions/workflows/ci.yml)
 
