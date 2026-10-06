@@ -5,6 +5,7 @@ export interface CodecProfile { firstName: string; picture: string | null }
 const STORAGE_KEY = 'codec.google-profile.v1';
 let profile: CodecProfile | null = null;
 let loaded = false;
+let profileRevision = 0;
 const listeners = new Set<() => void>();
 
 export function sanitizeProfile(value: unknown): CodecProfile {
@@ -50,6 +51,7 @@ function getSnapshot(): CodecProfile | null {
 }
 
 export function saveGoogleProfile(next: CodecProfile | null): void {
+  profileRevision++;
   profile = next ? sanitizeProfile(next) : null;
   getSnapshot();
   listeners.forEach(fn => fn());
@@ -101,4 +103,62 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
 export function disconnectGoogleProfile(): void {
   (window as GoogleWindow).google?.accounts?.id?.disableAutoSelect();
   saveGoogleProfile(null);
+}
+
+
+interface GoogleOAuth {
+  initTokenClient(options: {
+    client_id: string; scope: string; include_granted_scopes: boolean;
+    callback: (response: { access_token?: string; error?: string }) => void;
+    error_callback: () => void;
+  }): { requestAccessToken(options: { prompt: string }): void };
+}
+
+// Trigger directly from a click, so Brave can open Google's consent popup.
+// Tokens stay inside this request and are never saved or logged.
+export function requestGoogleProfilePhoto(clientId: string): Promise<void> {
+  const oauth = (window as Window & { google?: { accounts?: { oauth2?: GoogleOAuth } } }).google?.accounts?.oauth2;
+  if (!oauth) return Promise.reject(new Error('Google profile access is not ready. Close and reopen the linking panel.'));
+  const revision = profileRevision;
+  return new Promise((resolve, reject) => {
+    const client = oauth.initTokenClient({
+      client_id: clientId,
+      scope: 'openid profile',
+      include_granted_scopes: false,
+      error_callback: () => reject(new Error('Google profile popup was closed or blocked. Please try again.')),
+      callback: async response => {
+        let accessToken = response.access_token;
+        if (response.error || !accessToken) {
+          reject(new Error('Google profile permission was not granted.'));
+          return;
+        }
+        try {
+          const result = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!result.ok) throw new Error('Google profile request failed. Please try again.');
+          const data = await result.json();
+          const next = sanitizeProfile({ firstName: data.given_name, picture: data.picture });
+          // A late response must not restore a disconnected or replaced profile.
+          if (revision !== profileRevision) { resolve(); return; }
+          if (!next.picture) throw new Error('Google’s profile endpoint also returned no photo. Your current link is unchanged.');
+          saveGoogleProfile(next);
+          resolve();
+        } catch (error) {
+          reject(error instanceof Error ? error : new Error('Could not fetch your Google profile photo.'));
+        } finally {
+          accessToken = undefined;
+          response.access_token = undefined;
+        }
+      },
+    });
+    client.requestAccessToken({ prompt: 'consent' });
+  });
+}
+
+// Also clear profiles when a page enters the browser's back/forward cache.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => saveGoogleProfile(null));
 }

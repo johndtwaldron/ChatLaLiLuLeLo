@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
-import { disconnectGoogleProfile, loadGoogleIdentity, profileFromCredential, saveGoogleProfile, useGoogleProfile } from '@/lib/googleProfile';
+import { disconnectGoogleProfile, loadGoogleIdentity, profileFromCredential, requestGoogleProfilePhoto, saveGoogleProfile, useGoogleProfile } from '@/lib/googleProfile';
 
 export function GoogleProfileLink() {
   const profile = useGoogleProfile();
   const [theme, setTheme] = useState(getCodecTheme());
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchingPhoto, setFetchingPhoto] = useState(false);
   const [ready, setReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const host = useRef<HTMLDivElement>(null);
@@ -48,7 +49,16 @@ export function GoogleProfileLink() {
           <Text style={[textStyle, styles.title]}>GOOGLE NANOMACHINES</Text>
           <Text style={[textStyle, styles.description]}>{profile ? `Linked as ${profile.firstName}.` : 'Link your Google first name and profile picture to the Codec.'}</Text>
           <Text style={[textStyle, styles.description]}>Your name and photo last only for this Codec session. They are not sent with chat messages.</Text>
-          {profile && !profile.picture && <Text style={[textStyle, styles.description]}>Google did not supply a profile photo. Add a photo to that Google account, then disconnect and link again.</Text>}
+          {profile && !profile.picture && <Text style={[textStyle, styles.description]}>Google sign-in did not include your photo. Fetch it directly from your Google profile using the button below.</Text>}
+          {profile && clientId && <>
+            <Text style={[textStyle, styles.description]}>Fetch requests basic Google profile access. Choose the same account. Google may remember your consent; the Codec keeps your photo only until disconnect or this page closes.</Text>
+            <Pressable accessibilityRole="button" disabled={fetchingPhoto} style={buttonStyle} onPress={() => {
+              setError(null);
+              setFetchingPhoto(true);
+              requestGoogleProfilePhoto(clientId).then(() => setOpen(false)).catch(e => setError(e.message)).finally(() => setFetchingPhoto(false));
+            }}><Text style={textStyle}>{fetchingPhoto ? 'FETCHING GOOGLE PHOTO…' : 'FETCH GOOGLE PROFILE PHOTO'}</Text></Pressable>
+            {error && <Text accessibilityRole="alert" style={[textStyle, styles.description]}>{error}</Text>}
+          </>}
           {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); setOpen(false); }}>
             <Text style={textStyle}>DISCONNECT GOOGLE</Text>
           </Pressable> : !clientId ? <Text style={[textStyle, styles.description]}>Google linking needs an app client ID before it can connect.</Text> : <>
