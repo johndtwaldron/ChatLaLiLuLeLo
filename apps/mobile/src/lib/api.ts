@@ -1,3 +1,4 @@
+import { recordSessionLog } from './sessionLogs';
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -25,6 +26,7 @@ export interface ChatRequest {
 
 export interface StreamEvent {
   type: 'delta' | 'done' | 'error';
+  profileContext?: { nameProvided: boolean; imageAttached: boolean; model: string };
   token?: string;
   message?: string;
   usage?: {
@@ -67,6 +69,7 @@ export async function streamReply(
   onError?: (error: string) => void
 ): Promise<void> {
   const apiUrl = getApiUrl();
+  recordSessionLog('info', '[CHAT PROFILE] Request', { nameProvided: !!request.profile, imageAttached: !!request.profile?.picture, model: request.options?.model, apiUrl });
   
   // Do not disclose profile data to older deployments that logged full bodies.
   if (request.profile) {
@@ -144,6 +147,7 @@ export async function streamReply(
               }
               break;
             case 'done':
+              recordSessionLog('info', '[CHAT PROFILE] Backend acknowledgement', event.profileContext ?? { diagnosticsUnavailable: true });
               onDone?.(event.usage);
               return;
             case 'error':
@@ -181,6 +185,7 @@ export async function streamReply(
         try {
           const event = JSON.parse(jsonText) as StreamEvent;
           if (event.type === 'done') {
+            recordSessionLog('info', '[CHAT PROFILE] Backend acknowledgement', event.profileContext ?? { diagnosticsUnavailable: true });
             onDone?.(event.usage);
           } else if (event.type === 'error') {
             onError?.(event.message || 'Unknown error');

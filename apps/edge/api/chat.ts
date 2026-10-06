@@ -388,6 +388,7 @@ export default {
           await writer.write(encoder.encode(
             `data: ${JSON.stringify({ 
               type: 'done', 
+              profileContext: { nameProvided: !!profile, imageAttached: !!profile?.picture && validatedModel !== 'mock', model: validatedModel },
               usage: { completion_tokens: tokenCount },
               budgetWarning,
               stats: updatedStats
