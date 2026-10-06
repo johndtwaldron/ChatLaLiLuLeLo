@@ -61,7 +61,7 @@ export default {
         environment: {
           openai_key_present: !!env.OPENAI_API_KEY,
           tavily_key_present: !!env.TAVILY_API_KEY,
-          model: env.OPENAI_MODEL ?? 'gpt-4o-mini'
+          model: env.OPENAI_MODEL ?? 'gpt-4.1-mini'
         }
       };
       
@@ -228,8 +228,8 @@ export default {
         .find(m => m.role === 'user')?.content ?? '';
       
       // Validate and determine model to use
-      const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4o-mini';
-      const validatedModel = profile?.picture && requestedModel === 'gpt-3.5-turbo' ? 'gpt-4o-mini' : validateModel(requestedModel);
+      const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4.1-mini';
+      const validatedModel = validateModel(requestedModel);
       
       // Check rate limits and budget before processing
       const rateLimitResult = rateLimiter.checkRateLimit(

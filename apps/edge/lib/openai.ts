@@ -7,17 +7,19 @@ export const createOpenAIClient = (apiKey: string) => {
 };
 
 export type Mode = 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
-export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
+export type ModelType = 'gpt-4.1-mini' | 'gpt-4.1' | 'gpt-4o-mini' | 'mock';
 
 // Model allowlist for validation
-const ALLOWED_MODELS: ModelType[] = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
+const ALLOWED_MODELS: ModelType[] = ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'mock'];
 
 export function validateModel(model: string): ModelType {
+  if (model === 'gpt-4o') return 'gpt-4.1';
+  if (model === 'gpt-3.5-turbo') return 'gpt-4.1-mini';
   if (ALLOWED_MODELS.includes(model as ModelType)) {
     return model as ModelType;
   }
   // Default to most cost-effective model if invalid
-  return 'gpt-4o-mini';
+  return 'gpt-4.1-mini';
 }
 
 // Fallback responses for quota exhausted scenarios
@@ -47,7 +49,7 @@ export async function streamChat({
   openai,
   systemPrompt,
   messages,
-  model = 'gpt-4o-mini',
+  model = 'gpt-4.1-mini',
   temperature = 0.7,
   max_tokens = 600,
   mode,
@@ -85,7 +87,7 @@ export async function streamChat({
         for (let i = payload.length - 1; i >= 0; i--) {
           const message = payload[i];
           if (message.role === 'user' && typeof message.content === 'string') {
-            message.content = [{ type: 'text', text: message.content }, { type: 'image_url', image_url: { url: profile.picture, detail: 'low' } }];
+            message.content = [{ type: 'text', text: message.content }, { type: 'image_url', image_url: { url: profile.picture, detail: 'auto' } }];
             break;
           }
         }

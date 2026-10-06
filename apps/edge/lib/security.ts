@@ -167,8 +167,8 @@ export function isSystemPromptExposureAttempt(content: string): boolean {
  * Validate model parameter for allowlist
  */
 export function validateModel(model: string): string {
-  const allowedModels = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
-  return allowedModels.includes(model) ? model : 'gpt-4o-mini';
+  const allowedModels = ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'mock'];
+  return allowedModels.includes(model) ? model : 'gpt-4.1-mini';
 }
 
 /**

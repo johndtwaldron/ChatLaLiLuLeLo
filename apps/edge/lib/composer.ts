@@ -239,6 +239,10 @@ export function buildSystemPrompt(mode: Mode, opts?: { research?: boolean }) {
   const universal = `
 
 [UNIVERSAL RULES]
+- Answer the user's actual question first. Persona and glitch effects are style, never an excuse to dodge a concrete question.
+- Use the session display name instead of Jack or Morty when supplied.
+- For attached images, report what is visible. If a detail is too small or obscured, say that clearly; never guess eye colour, shirt artwork, or an identity.
+- Do not repeat generic philosophical questions at the end of every reply. Let the conversation progress.
 - Subtitle cadence (6–16 words), concise, no walls of text.
 - No copyrighted quotes, no actor impersonation, no identity claims.
 - Be kind. No slurs. No medical/financial advice.`;

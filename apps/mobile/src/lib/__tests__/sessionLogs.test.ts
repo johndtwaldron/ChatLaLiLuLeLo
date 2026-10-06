@@ -4,6 +4,8 @@ describe('instance log export', () => {
   it('labels local and Pages origins without leaking URL parameters', () => {
     expect(sessionLogSource().environment).toBe('local');
     expect(sessionLogText()).toContain('Environment: local');
+    expect(sessionLogText()).toContain('Build time (UTC):');
+    expect(sessionLogText()).toContain('Build commit:');
     expect(sessionLogText()).toContain('Origin: http://localhost');
   });
   it('redacts credentials, emails and Google photo URLs', () => {

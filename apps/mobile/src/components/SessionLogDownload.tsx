@@ -1,3 +1,4 @@
+import { buildInfo } from '@/lib/buildInfo';
 import React, { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { downloadSessionLogs, sessionLogSource } from '@/lib/sessionLogs';
@@ -8,6 +9,7 @@ export function SessionLogDownload() {
   if (Platform.OS !== 'web') return null;
   const theme = getCodecTheme();
   return <View style={{ marginVertical: 8, gap: 6 }}>
+    <Text style={{ color: theme.colors.textSecondary, fontSize: 11, fontFamily: 'monospace' }}>BUILD (UTC): {buildInfo.timestamp}{'\n'}COMMIT: {buildInfo.commit.slice(0, 12)} · {buildInfo.kind}</Text>
     <Pressable accessibilityRole="button" onPress={() => { try { downloadSessionLogs(); setError(false); } catch { setError(true); } }} style={{ borderWidth: 1, borderColor: theme.colors.primary, padding: 10 }}>
       <Text style={{ color: theme.colors.primary, fontFamily: 'monospace' }}>DOWNLOAD {sessionLogSource().environment.toUpperCase()} LOGS (.TXT)</Text>
     </Pressable>

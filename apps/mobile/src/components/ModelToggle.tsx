@@ -199,7 +199,7 @@ const staticStyles = StyleSheet.create({
     marginTop: 4,
     borderRadius: 4,
     borderWidth: 1,
-    maxHeight: 300,
+    maxHeight: 380,
   },
 
   dropdownItem: {
@@ -231,7 +231,7 @@ const staticStyles = StyleSheet.create({
 
   dropdownItemCost: {
     alignItems: 'flex-end',
-    minWidth: 80,
+    width: 125,
   },
 
   dropdownItemCostText: {

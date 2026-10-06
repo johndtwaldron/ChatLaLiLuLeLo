@@ -133,25 +133,25 @@ let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
 let currentBitcoinColonelPortrait = 0; // 0-4 for the five Bitcoin portraits (default to Sayloresque)
 
 // Model selection system
-export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
-let currentModel: ModelType = 'gpt-4o-mini'; // Default to most cost-effective
+export type ModelType = 'gpt-4.1-mini' | 'gpt-4.1' | 'gpt-4o-mini' | 'mock';
+let currentModel: ModelType = 'gpt-4.1-mini'; // Default to most cost-effective
 
 export const modelConfigs = {
-  'gpt-4o-mini': {
-    name: 'GPT-4o Mini',
-    cost: '$0.15/M tokens',
+  'gpt-4.1-mini': {
+    name: 'GPT-4.1 Mini',
+    cost: '$0.40 in / $1.60 out per 1M',
     description: 'Fast & affordable',
     default: true
   },
-  'gpt-4o': {
-    name: 'GPT-4o',
-    cost: '$5.00/M tokens', 
-    description: 'Most capable'
+  'gpt-4.1': {
+    name: 'GPT-4.1',
+    cost: '$2.00 in / $8.00 out per 1M',
+    description: 'Stronger conversation & vision'
   },
-  'gpt-3.5-turbo': {
-    name: 'GPT-3.5 Turbo',
-    cost: '$0.50/M tokens',
-    description: 'Balanced option'
+  'gpt-4o-mini': {
+    name: 'GPT-4o Mini',
+    cost: '$0.15 in / $0.60 out per 1M',
+    description: 'Budget option'
   },
   'mock': {
     name: 'Mock Mode',
@@ -448,7 +448,7 @@ export const setModel = (model: ModelType) => {
 };
 
 export const cycleModel = () => {
-  const models: ModelType[] = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
+  const models: ModelType[] = ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'mock'];
   const currentIndex = models.indexOf(currentModel);
   currentModel = models[(currentIndex + 1) % models.length];
   notifyThemeChange();
@@ -467,9 +467,9 @@ const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC', rick
 export const modeToAbbr = (m: string) =>
   modeMapping[m as keyof typeof modeMapping] ?? 'JD';
 
-const modelMapping = { 'gpt-4o': 'gpt-4o', 'gpt-4o-mini': 'gpt-4o-mini', 'gpt-3.5-turbo': 'gpt-3.5-turbo', mock: 'mock' } as const;
+const modelMapping = { 'gpt-4.1': 'gpt-4.1', 'gpt-4.1-mini': 'gpt-4.1-mini', 'gpt-4o-mini': 'gpt-4o-mini', mock: 'mock' } as const;
 export const modelToAbbr = (m: string) =>
-  modelMapping[m as keyof typeof modelMapping] ?? 'gpt-4o-mini';
+  modelMapping[m as keyof typeof modelMapping] ?? 'gpt-4.1-mini';
 
 export const makeTag = (modeKey: string, modelKey: string) =>
   `[${modeToAbbr(modeKey)}]:[${modelToAbbr(modelKey)}]:`;
@@ -485,6 +485,7 @@ export const initializeModel = () => {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const savedModel = window.localStorage.getItem('codecModelSelection');
+      if (savedModel === 'gpt-4o') currentModel = 'gpt-4.1';
       if (savedModel && savedModel in modelConfigs) {
         currentModel = savedModel as ModelType;
       }

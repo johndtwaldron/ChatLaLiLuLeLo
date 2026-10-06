@@ -1,3 +1,4 @@
+import { buildInfoText } from './buildInfo';
 import { documentDirectory, writeAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -33,6 +34,7 @@ export class FileService {
       '='.repeat(80),
       'ChatLaLiLuLeLo - Codec Conversation Transcript',
       `Generated: ${new Date().toISOString()}`,
+      buildInfoText(),
       `Messages: ${messages.length}`,
       '='.repeat(80),
       ''

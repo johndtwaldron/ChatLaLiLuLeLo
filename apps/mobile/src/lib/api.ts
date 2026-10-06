@@ -8,7 +8,7 @@ export interface ChatOptions {
   research?: boolean;
   max_tokens?: number;
   temperature?: number;
-  model?: 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
+  model?: 'gpt-4.1-mini' | 'gpt-4.1' | 'gpt-4o-mini' | 'mock';
 }
 
 export interface ChatClient {

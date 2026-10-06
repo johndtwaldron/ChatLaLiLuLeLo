@@ -55,9 +55,9 @@ const modeToTag = (m: string): ModeTag =>
   'MGS';
 
 const modelToTag = (m: string): ModelTag =>
-  m === 'gpt-4o' ? 'gpt-4o' :
-  m === 'gpt-3.5-turbo' ? 'gpt-3.5-turbo' :
-  m === 'mock' ? 'mock' : 'gpt-4o-mini';
+  m === 'gpt-4.1' ? 'gpt-4.1' :
+  m === 'gpt-4o-mini' ? 'gpt-4o-mini' :
+  m === 'mock' ? 'mock' : 'gpt-4.1-mini';
 
 function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
   return {

@@ -25,7 +25,7 @@ describe('session profile for chat', () => {
     const payload = create.mock.calls[0][0];
     expect(payload.store).toBe(false);
     expect(payload.messages[1].content).toBe('hello');
-    expect(payload.messages[3].content).toEqual([{ type: 'text', text: 'my pfp?' }, { type: 'image_url', image_url: { url: 'https://lh3.googleusercontent.com/photo', detail: 'low' } }]);
+    expect(payload.messages[3].content).toEqual([{ type: 'text', text: 'my pfp?' }, { type: 'image_url', image_url: { url: 'https://lh3.googleusercontent.com/photo', detail: 'auto' } }]);
     expect(JSON.stringify(payload.messages[4])).toContain('John');
     expect(payload.messages[5].content).toContain('not a live camera feed');
   });

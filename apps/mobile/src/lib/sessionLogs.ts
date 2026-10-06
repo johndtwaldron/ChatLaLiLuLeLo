@@ -1,3 +1,4 @@
+import { buildInfoText } from './buildInfo';
 // Bounded, in-memory diagnostics for this page instance. Never stores credentials.
 const startedAt = new Date().toISOString();
 const instanceId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -53,7 +54,7 @@ export function sessionLogSource(): { environment: string; origin: string; path:
 
 export function sessionLogText(): string {
   const source = sessionLogSource();
-  return `ChatLaLiLuLeLo instance diagnostics\nEnvironment: ${source.environment}\nOrigin: ${source.origin}\nPath: ${source.path}\nInstance: ${instanceId}\nStarted: ${startedAt}\nExported: ${new Date().toISOString()}\nRetained: ${entries.length}; dropped older entries: ${dropped}\nConsole logs can contain conversation text. Review before sharing.\n\n${entries.join('\n')}\n`;
+  return `ChatLaLiLuLeLo instance diagnostics\n${buildInfoText()}\nEnvironment: ${source.environment}\nOrigin: ${source.origin}\nPath: ${source.path}\nInstance: ${instanceId}\nStarted: ${startedAt}\nExported: ${new Date().toISOString()}\nRetained: ${entries.length}; dropped older entries: ${dropped}\nConsole logs can contain conversation text. Review before sharing.\n\n${entries.join('\n')}\n`;
 }
 
 export function downloadSessionLogs(): void {

@@ -163,7 +163,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
 
   // Helper function to create a tag from MsgMeta - memoized to prevent re-renders
   const createTagFromMeta = useCallback((meta: any): string => {
-    if (!meta) return '[JD:gpt-4o-mini]'; // fallback
+    if (!meta) return '[JD:gpt-4.1-mini]'; // fallback
     
     // If it's the new MsgMeta format
     if ('mode' in meta && 'model' in meta && !('tag' in meta)) {
@@ -175,7 +175,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
       return meta.tag;
     }
     
-    return '[JD:gpt-4o-mini]'; // fallback
+    return '[JD:gpt-4.1-mini]'; // fallback
   }, []);
   
   // Guard rail function to backfill meta for older messages that lack it - memoized
@@ -192,7 +192,7 @@ export const SubtitleStream: React.FC<SubtitleStreamProps> = ({
                 currentModeKey === 'lore' ? 'MGS' :
                 currentModeKey === 'bitcoin' ? 'BTC' :
                 currentModeKey === 'rick' ? 'RICK' : 'JD',
-          model: currentModelKey as 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'mock',
+          model: currentModelKey as 'gpt-4.1' | 'gpt-4.1-mini' | 'gpt-4o-mini' | 'mock',
           at: Date.now(),
           kind: message.speaker === 'user' ? 'user' : 'ai'
         }
