@@ -167,3 +167,10 @@ export function requestGoogleProfilePhoto(clientId: string): Promise<void> {
 if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', () => saveGoogleProfile(null));
 }
+
+
+export function currentChatProfile(message: string): { firstName: string; picture?: string } | undefined {
+  if (!profile) return undefined;
+  const mentionsPhoto = /\b(?:my|the)\s+(?:(?:google|profile)\s+)?(?:pfp|profile\s+(?:pic(?:ture)?|photo|image)|pic(?:ture)?|photo|avatar)\b|\bpfp\b/i.test(message);
+  return { firstName: profile.firstName, ...(mentionsPhoto && profile.picture ? { picture: profile.picture } : {}) };
+}

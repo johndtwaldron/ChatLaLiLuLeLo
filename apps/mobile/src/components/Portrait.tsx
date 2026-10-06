@@ -290,7 +290,7 @@ export const Portrait: React.FC<PortraitProps> = ({
             Platform.OS === 'web' ? React.createElement('img', { src: profile.picture, referrerPolicy: 'no-referrer', alt: `${profile.firstName} profile picture`, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }, onLoad: photoLoaded, onError: photoError }) : <Image source={{ uri: profile.picture }} style={styles.colonelImage} resizeMode="cover" accessibilityLabel={`${profile.firstName} profile picture`} onLoad={photoLoaded} onError={photoError} />
           ) : (
           <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
-            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>{profile && !profile.picture ? profile.firstName.slice(0, 1).toUpperCase() : 'USER'}</Text>
+            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>{profile?.firstName || 'USER'}</Text>
             {photoFailed && <Pressable accessibilityRole="button" accessibilityLabel="Retry Google profile photo" onPress={() => setPhotoFailed(false)}><Text style={{ color: currentTheme.colors.primary, fontSize: 10 }}>RETRY PHOTO</Text></Pressable>}
           </View>
           )}

@@ -55,6 +55,7 @@ export default {
     if (url.pathname === '/health') {
       const health = {
         status: 'ok',
+        capabilities: { sessionProfile: true, profileVision: true },
         timestamp: Date.now(),
         version: '1.0.0',
         environment: {
@@ -129,14 +130,14 @@ export default {
       console.log('[CHAT] Request URL:', req.url);
       
       const body = await req.json();
-      console.log('[CHAT] Parsed body:', JSON.stringify(body, null, 2));
+      // Never log request bodies: they may contain private conversation/profile data.
       const parseResult = ChatRequestSchema.safeParse(body);
       
       if (!parseResult.success) {
         logWarning('Invalid request format', { 
           requestId, 
           errors: parseResult.error.errors,
-          body: JSON.stringify(body)
+          invalidRequest: true
         });
         
         // Return structured JSON error with validation details
@@ -157,7 +158,7 @@ export default {
         });
       }
 
-      const { mode, messages = [], options = {}, client = {} } = parseResult.data;
+      const { mode, messages = [], options = {}, client = {}, profile } = parseResult.data;
       
       // Get client IP for security logging
       const clientIP = req.headers.get('CF-Connecting-IP') || 
@@ -228,7 +229,7 @@ export default {
       
       // Validate and determine model to use
       const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4o-mini';
-      const validatedModel = validateModel(requestedModel);
+      const validatedModel = profile?.picture && requestedModel === 'gpt-3.5-turbo' ? 'gpt-4o-mini' : validateModel(requestedModel);
       
       // Check rate limits and budget before processing
       const rateLimitResult = rateLimiter.checkRateLimit(
@@ -345,6 +346,7 @@ export default {
         openai,
         systemPrompt,
         messages: sanitizedMessages,
+        profile,
         model: validatedModel,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.max_tokens ?? 600,

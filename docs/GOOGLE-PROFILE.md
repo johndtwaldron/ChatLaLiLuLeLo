@@ -15,7 +15,7 @@ The client ID is public configuration. No client secret is needed. Production bu
 
 The first activation opens a Codec-themed sync decision before startup and before mounting chat. **Sync with Google** requests `openid profile` and fetches both the first name and photo in one flow; **Activate Codec Without Sync** continues anonymously. Returning from standby does not repeat the decision in the same page instance. The running Codec has one **Nanomachine sync** button for disconnecting or connecting. On success, the first name replaces the mode label and the Google photo replaces the silhouette. If the photo fails to load, the silhouette remains. Disconnect clears the linked profile and restores the mode label.
 
-Only the first name and photo URL are held in memory for the current page instance. Refreshing or closing the page clears them. Previously saved local profile data is removed. ID tokens, email addresses, and account identifiers are not retained or sent to the chat backend. Photos load from Google-hosted image URLs. The stored profile is cosmetic, editable browser data: it must never authorize accounts, payments, quotas, or other backend access. Any future account system needs server-side ID token verification.
+Only the first name and photo URL are held in memory for the current page instance. Refreshing or closing the page clears them. Previously saved local profile data is removed. ID tokens, email addresses, and account identifiers are not retained or sent to the chat backend. The first name is supplied as current-session chat context. The Google photo URL is attached only when the current message refers to a PFP, photo, picture, or avatar. The edge backend validates Google-hosted HTTPS URLs, attaches the image to the latest user turn for vision, and does not log request bodies. Image requests using the old text-only GPT-3.5 selection use GPT-4o mini instead. Mock mode cannot inspect images. Profile context is removed from future requests after disconnect; already-written conversation text stays in the current chat until refresh. Photos load from Google-hosted image URLs. The stored profile is cosmetic, editable browser data: it must never authorize accounts, payments, quotas, or other backend access. Any future account system needs server-side ID token verification.
 
 The Pages content security policy permits the Google sign-in frame at `https://accounts.google.com`. Other frame sources remain blocked.
 
@@ -44,3 +44,12 @@ For the current client `35467599270-90t3b8dc2r5c68lcvpbevjnr3rjrioet.apps.google
 - `https://johndtwaldron.github.io`
 
 Save, allow Google configuration changes to propagate, then refresh and retry. The Pages origin must not contain `/ChatLaLiLuLeLo/` or a trailing slash. Adding origins to the old Inner Signal project/client does not authorize this new client. The popup-based flow does not require a redirect URI or client secret. GitHub Pages supports this Google flow; `origin_mismatch` is a client configuration rejection, not a hosting limitation.
+
+
+## OpenAI retention
+
+Chat history and profile state are held in browser memory; this app creates no OpenAI conversation/thread or saved profile record. Requests explicitly use `store: false`. This does not guarantee zero provider retention: OpenAI's default abuse-monitoring logs may retain customer content for up to 30 days, subject to its documented exceptions and approved retention controls. See [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
+
+## Disconnect audio
+
+An explicit Nanomachine Sync disconnect plays `mgs4-flashback.mp3`, supplied as **MGS4 Flashback Sound Effect - SilentManJoe.mp3**. It is also included in the random user sound pool. Automatic page-exit cleanup stays silent.

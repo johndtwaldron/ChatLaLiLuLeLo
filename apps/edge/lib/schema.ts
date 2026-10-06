@@ -13,6 +13,13 @@ export type ModelType = z.infer<typeof ModelSchema>;
 
 export const ChatRequestSchema = z.object({
   mode: ModeSchema,
+  profile: z.object({
+    firstName: z.string().trim().min(1).max(40),
+    picture: z.string().url().max(2048).refine(value => {
+      const url = new URL(value);
+      return url.protocol === 'https:' && (url.hostname === 'googleusercontent.com' || url.hostname.endsWith('.googleusercontent.com')) && !url.username && !url.password;
+    }, 'Only Google-hosted profile photos are supported').optional(),
+  }).optional(),
   messages: z.array(MessageSchema).optional(),
   options: z.object({
     research: z.boolean().optional(),

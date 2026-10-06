@@ -72,6 +72,13 @@ class CodecAudioService {
 
   // User interaction sounds (non-codec related)
   private readonly userSounds: CodecSound[] = [
+    {
+      id: 'nanomachine_disconnect',
+      name: 'MGS4 Flashback',
+      file: asAudio(require('../../assets/audio/mgs4-flashback.mp3')),
+      fileName: 'mgs4-flashback.mp3',
+      description: 'Nanomachine disconnect / MGS4 flashback sound'
+    },
     // Existing
     {
       id: 'rations',
@@ -649,3 +656,5 @@ export const playTranscriptSavedSound = () => {
     volume: codecAudioService.getSettings().volume * 0.8 // UI feedback volume
   });
 };
+
+export const playNanomachineDisconnect = () => codecAudioService.playSound('nanomachine_disconnect', { volume: codecAudioService.getSettings().volume });

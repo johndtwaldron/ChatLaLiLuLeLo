@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { playNanomachineDisconnect } from '@/lib/audio';
 import { getCodecTheme, subscribeToThemeChanges } from '@/lib/theme';
 import { disconnectGoogleProfile, loadGoogleIdentity, requestGoogleProfilePhoto, useGoogleProfile } from '@/lib/googleProfile';
 
@@ -44,8 +45,8 @@ export function GoogleProfileLink({ activation = false, onComplete }: Props) {
         <View style={[styles.panel, { backgroundColor: theme.colors.background, borderColor: theme.colors.primary }]}>
           <Text style={[textStyle, styles.title]}>NANOMACHINE SYNC</Text>
           <Text style={[textStyle, styles.description]}>{profile ? `Synced as ${profile.firstName}.` : 'Sync your Google name and profile photo before opening the Codec, or continue without syncing.'}</Text>
-          <Text style={[textStyle, styles.description]}>Your name and photo stay only in this page instance and clear on disconnect or page exit. Google may remember your consent.</Text>
-          {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); setError(null); }}>
+          <Text style={[textStyle, styles.description]}>Your name and photo stay only in this page instance and clear on disconnect or page exit. Your first name is shared with the chat AI. When you ask about your profile photo, that image is sent to the AI too. Google may remember your consent.</Text>
+          {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); void playNanomachineDisconnect(); setError(null); }}>
             <Text style={textStyle}>DISCONNECT GOOGLE</Text>
           </Pressable> : <>
             {!clientId && <Text style={[textStyle, styles.description]}>Google syncing needs an app client ID before it can connect.</Text>}

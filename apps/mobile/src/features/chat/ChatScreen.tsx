@@ -1,3 +1,4 @@
+import { currentChatProfile, useGoogleProfile } from '@/lib/googleProfile';
 import { GoogleProfileLink } from '@/components/GoogleProfileLink';
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -68,6 +69,7 @@ function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
+  const profile = useGoogleProfile();
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   
   // Voice playing state for waveform animation
@@ -345,7 +347,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     
     const userMessage: Message = {
       id: `user-${timestamp}-${randomSuffix}`,
-      text: `USER: ${messageText}`,
+      text: `${profile?.firstName || 'USER'}: ${messageText}`,
       speaker: 'user',
       timestamp,
       meta, // stamp meta!
@@ -383,7 +385,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     // Build conversation history for API
     const conversationHistory: ChatMessage[] = messages.map(msg => ({
       role: msg.speaker === 'user' ? 'user' : 'assistant',
-      content: msg.text.replace(/^USER: /, ''), // Remove USER: prefix for API
+      content: msg.speaker === 'user' ? msg.text.replace(/^[^:]{1,40}: /, '') : msg.text, // Remove USER: prefix for API
     }));
     
     // Add the current user message
@@ -397,6 +399,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     
     const chatRequest: ChatRequest = {
       mode: apiMode,
+      profile: currentChatProfile(messageText),
       messages: conversationHistory,
       options: {
         research: false, // TODO: Make this configurable

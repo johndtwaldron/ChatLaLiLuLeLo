@@ -2,11 +2,13 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Pressable } from 'react-native';
 
+jest.mock('../lib/audio', () => ({ playNanomachineDisconnect: jest.fn() }));
 jest.mock('react-native', () => ({
   Platform: { OS: 'web' },
   Pressable: 'Pressable', Text: 'Text', View: 'View', Modal: 'Modal',
   StyleSheet: { create: (styles: unknown) => styles },
 }));
+import { playNanomachineDisconnect } from '../lib/audio';
 import { GoogleProfileLink } from '../components/GoogleProfileLink';
 import { loadGoogleIdentity, requestGoogleProfilePhoto, saveGoogleProfile } from '../lib/googleProfile';
 jest.mock('../lib/theme', () => ({
@@ -52,6 +54,7 @@ describe('single Google sync flow', () => {
     await render();
     await press('NANOMACHINE SYNC');
     await press('DISCONNECT GOOGLE');
+    expect(playNanomachineDisconnect).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(view.toJSON())).toContain('SYNC WITH GOOGLE');
     expect(JSON.stringify(view.toJSON())).not.toContain('Synced as Jack');
   });

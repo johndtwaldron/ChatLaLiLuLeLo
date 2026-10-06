@@ -16,6 +16,7 @@ export interface ChatClient {
 }
 
 export interface ChatRequest {
+  profile?: { firstName: string; picture?: string };
   mode: 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
   messages?: ChatMessage[];
   options?: ChatOptions;
@@ -59,7 +60,7 @@ export function getApiUrl(): string {
   return 'http://localhost:8787';
 }
 
-export function streamReply(
+export async function streamReply(
   request: ChatRequest, 
   onToken: (token: string) => void,
   onDone?: (usage?: any) => void,
@@ -67,6 +68,14 @@ export function streamReply(
 ): Promise<void> {
   const apiUrl = getApiUrl();
   
+  // Do not disclose profile data to older deployments that logged full bodies.
+  if (request.profile) {
+    const health = await fetch(`${apiUrl}/health`, { cache: 'no-store' });
+    const capabilities = health.ok ? (await health.json()).capabilities : null;
+    if (!capabilities?.sessionProfile || (request.profile.picture && !capabilities?.profileVision)) {
+      throw new Error('Profile-aware chat is temporarily unavailable. Disconnect Nanomachine Sync to continue chatting.');
+    }
+  }
   return fetch(`${apiUrl}/chat`, {
     method: 'POST',
     headers: {
