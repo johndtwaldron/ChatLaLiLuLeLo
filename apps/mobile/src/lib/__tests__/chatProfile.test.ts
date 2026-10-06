@@ -6,14 +6,13 @@ jest.mock('openai', () => jest.fn(), { virtual: true });
 
 describe('session profile for chat', () => {
   afterEach(() => disconnectGoogleProfile());
-  it('shares name, but attaches photo only for a photo reference', () => {
+  it('supplies photo context independently of message wording and clears it on disconnect', () => {
     saveGoogleProfile({ firstName: 'John', picture: 'https://lh3.googleusercontent.com/photo' });
-    expect(currentChatProfile('Hello')).toEqual({ firstName: 'John' });
-    expect(currentChatProfile('What do you see in my profile picture?')?.picture).toBeTruthy();
-    expect(currentChatProfile('and can you see me? on the other end of this codec call?')?.picture).toBeTruthy();
-    expect(currentChatProfile('What do I look like?')?.picture).toBeTruthy();
+    expect(currentChatProfile()).toEqual({ firstName: 'John', picture: 'https://lh3.googleusercontent.com/photo' });
     disconnectGoogleProfile();
-    expect(currentChatProfile('my pfp')).toBeUndefined();
+    expect(currentChatProfile()).toBeUndefined();
+    saveGoogleProfile({ firstName: 'John', picture: null });
+    expect(currentChatProfile()).toEqual({ firstName: 'John' });
   });
   it.each(['http://lh3.googleusercontent.com/photo', 'https://localhost/photo', 'https://googleusercontent.com.attacker.test/photo'])('rejects unsafe backend image URL: %s', picture => {
     expect(ChatRequestSchema.safeParse({ mode: 'JD', profile: { firstName: 'John', picture } }).success).toBe(false);

@@ -399,7 +399,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     
     const chatRequest: ChatRequest = {
       mode: apiMode,
-      profile: currentChatProfile(messageText),
+      profile: currentChatProfile(),
       messages: conversationHistory,
       options: {
         research: false, // TODO: Make this configurable
