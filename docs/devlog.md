@@ -1,5 +1,89 @@
 # ChatLaLiLuLeLo Development Log
 
+## 2026-10-06 — project return, session profiles, vision and model refresh
+
+**Product version:** VRMF baseline **1.0.0.0**. Root/mobile previously used 0.1.0;
+backend health reported 1.0.0. `version.json` now supplies the product version to
+Expo build metadata, debug diagnostics, log/transcript downloads and backend
+health. `VERSIONING.md` defines V/R release boundaries, M for implemented specs
+and F for defect iterations. The bump command resets subordinate components.
+This is a baseline, not a reconstruction of historical feature/fix counts.
+Following the user’s baseline decision, the shared product version is 1.0.0.0;
+all packaging manifests align at 1.0.0. Added a small VERSION label on standby,
+startup/loading and the main Codec page.
+VRMF validation passed: mobile and edge typechecks, lint, web export, all four
+bump/reset cases and Expo version injection. These versioning changes are local
+and require the next frontend/backend deployment to appear on hosted instances.
+
+**Google nanomachine sync and activation**
+- Added optional Google first-name/profile-picture linking without an app account
+  or client secret. Updated the public client ID to the dedicated Google project
+  and synchronised local configuration and the Pages build variable.
+- Replaced duplicate controls with one activation-time sync/skip decision and a
+  continuing Nanomachine Sync control for connect/disconnect. First name appears
+  in the user portrait and is supplied as untrusted session context to the AI.
+- Added explicit photo retrieval, image fallback, memory-only profile lifecycle,
+  cancellation and revision guards. Disconnect/page exit clears application
+  references and cancels outstanding photo work; this does not purge third-party
+  caches or Google's own account data.
+- Documented exact localhost and GitHub Pages OAuth origins; diagnosed hosted
+  `origin_mismatch` and the earlier Inner Signal consent branding/configuration.
+
+**Audio, diagnostics and build reliability**
+- Added the supplied MGS4 flashback sound to disconnect feedback and the random
+  sound pool; corrected web audio compatibility.
+- Added bounded, downloadable per-instance text logs and separate local/Pages
+  filenames and environment headers. Added build UTC timestamp, source commit
+  and build kind to the debug panel and logs/transcripts; VRMF is now included.
+- Redacted personal/token material from logs; removed raw provider-error details
+  and added private-data-free frontend/backend profile vision diagnostics.
+- Declared the SVG dependency needed for clean web builds and resolved build
+  issues discovered during the local/Pages rollup.
+
+**AI profile vision and image quality**
+- Added session first-name and image context to the chat request/backend. Replaced
+  a limited phrase detector with attaching the linked photo on every request so
+  the model can infer references to appearance from the conversation.
+- Requested provider non-storage with `store: false`; no persistent OpenAI
+  conversation/thread memory was introduced. Provider retention policies still
+  apply independently of application session cleanup.
+- Kept the original portrait thumbnail and probed a larger Google photo variant
+  for AI input. Measured real dimensions through a validated, transient Worker
+  image proxy; checked Google hosts on every redirect, response type/size and
+  timeout, and used no-store responses. Failed larger-image requests fall back
+  to the thumbnail. All application photo state clears on disconnect.
+- Live proxy verification obtained 96×64 and 512×341 from a public Google image.
+  This verifies retrieval, not extra detail in this user's source photo. Model
+  prompts caution against inventing fine details from enlarged low-quality images.
+
+**Model catalogue and deployments**
+- Replaced stale conversation choices, added GPT-5.4 mini and GPT-5.4 alongside
+  GPT-4.1/4.1 mini, GPT-4o mini and Mock. Added a scrollable model picker and
+  refreshable backend catalogue with validated administrator configuration;
+  unsupported models fail explicitly. `MODEL_CATALOG.md` documents maintenance.
+- Adjusted reasoning-model request parameters and displayed input/output pricing.
+  Verified real production streamed replies from the new GPT-5.4 variants.
+- Completed official Cloudflare agent setup, installed the Cloudflare skills,
+  authenticated tools/Wrangler, and deployed the profile-aware Worker.
+- Today's implementation spans 752ad0e through c2e1b58. The latest completed
+  production Worker deployment and GitHub Pages run 37541659793 both succeeded.
+  Before VRMF adoption, 34 profile/vision tests across three suites passed, as
+  did mobile/edge typechecks, lint and web export.
+
+**Specifications and outstanding work**
+- Added `docs/INSTANCE-PROFILE-PROVIDERS-SPEC.md` for session-only Nostr/Primal and
+  X profile linking, including setup requirements. Implementation remains
+  deferred; delivering it will be an M increment.
+- ElevenLabs voice availability/funding remains an assessment item, not a
+  completed voice integration. Avoid exposing paid provider secrets in the web
+  bundle. Conversation quality and image-detail limits still need user testing.
+- Earlier requests for SSD reconciliation, README cleanup and a NARRATOR brief
+  remain items to verify separately: today's tracked commits do not establish
+  their completion. No SSD changes are part of this versioning work.
+
+---
+
+
 ## Session 1 - 2025-09-30T11:34:18Z
 
 **Objective:** Initial project setup and basic UI components

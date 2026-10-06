@@ -1,3 +1,4 @@
+import { version } from '../../../version.json';
 import { modelCatalog, DEFAULT_MODEL } from '../lib/models';
 import { createOpenAIClient, streamChat, validateModel } from '../lib/openai';
 import { buildSystemPrompt } from '../lib/composer';
@@ -102,7 +103,7 @@ export default {
         status: 'ok',
         capabilities: { sessionProfile: true, profileVision: true },
         timestamp: Date.now(),
-        version: '1.0.0',
+        version,
         environment: {
           openai_key_present: !!env.OPENAI_API_KEY,
           tavily_key_present: !!env.TAVILY_API_KEY,

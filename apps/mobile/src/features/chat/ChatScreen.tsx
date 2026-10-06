@@ -1,3 +1,4 @@
+import { VersionLabel } from '@/components/VersionLabel';
 import { currentChatProfile, useGoogleProfile } from '@/lib/googleProfile';
 import { GoogleProfileLink } from '@/components/GoogleProfileLink';
 import React, { useState, useRef, useEffect } from 'react';
@@ -650,6 +651,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
           onClose={() => setVideoPlayerVisible(false)}
         />
       </CodecFrame>
+      <VersionLabel />
     </SafeAreaView>
   );
 };

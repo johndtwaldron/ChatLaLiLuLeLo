@@ -1,3 +1,4 @@
+import { VersionLabel } from '@/components/VersionLabel';
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
@@ -212,6 +213,8 @@ export const StartupAnimation: React.FC<StartupAnimationProps> = ({
           </Text>
           <View style={[styles.headerBar, { backgroundColor: theme.colors.primary }]} />
         </View>
+
+        <VersionLabel />
 
         <View style={styles.content}>
           {terminalLines.slice(0, currentLineIndex + 1).map((line, index) => (
