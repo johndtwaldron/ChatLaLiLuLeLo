@@ -94,3 +94,7 @@ restart-*.bat
 
 apps/mobile/public/videos/*.mp4
 material/*.mp4
+
+# Private local instance diagnostics and Finder aliases
+debug/logs/
+ChatL5 via Downloads/

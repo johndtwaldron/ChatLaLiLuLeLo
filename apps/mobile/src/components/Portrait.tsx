@@ -5,6 +5,7 @@ import {
   Image,
   View,
   Pressable,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -17,6 +18,7 @@ import Animated, {
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
+import { recordSessionLog } from '@/lib/sessionLogs';
 import { useGoogleProfile } from '@/lib/googleProfile';
 import { getNextRickImage, getNextRickAudio, getCurrentRickImage } from '@/lib/rickAssets';
 
@@ -73,6 +75,8 @@ export const Portrait: React.FC<PortraitProps> = ({
   const profile = useGoogleProfile();
   const [photoFailed, setPhotoFailed] = useState(false);
   useEffect(() => { setPhotoFailed(false); }, [profile?.picture]);
+  const photoError = () => { recordSessionLog('warn', '[GOOGLE PROFILE] Photo failed to load; silhouette fallback'); setPhotoFailed(true); };
+  const photoLoaded = () => recordSessionLog('info', '[GOOGLE PROFILE] Photo loaded');
   const idleAnimation = useSharedValue(0);
   const glowIntensity = useSharedValue(0);
   
@@ -283,10 +287,11 @@ export const Portrait: React.FC<PortraitProps> = ({
         {/* User silhouette */}
         <View style={[styles.spriteContainer, styles.userSprite]}>
           {profile?.picture && !photoFailed ? (
-            <Image source={{ uri: profile.picture }} style={styles.colonelImage} resizeMode="cover" accessibilityLabel={`${profile.firstName} profile picture`} onError={() => setPhotoFailed(true)} />
+            Platform.OS === 'web' ? React.createElement('img', { src: profile.picture, referrerPolicy: 'no-referrer', alt: `${profile.firstName} profile picture`, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }, onLoad: photoLoaded, onError: photoError }) : <Image source={{ uri: profile.picture }} style={styles.colonelImage} resizeMode="cover" accessibilityLabel={`${profile.firstName} profile picture`} onLoad={photoLoaded} onError={photoError} />
           ) : (
           <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
-            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
+            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>{profile && !profile.picture ? profile.firstName.slice(0, 1).toUpperCase() : 'USER'}</Text>
+            {photoFailed && <Pressable accessibilityRole="button" accessibilityLabel="Retry Google profile photo" onPress={() => setPhotoFailed(false)}><Text style={{ color: currentTheme.colors.primary, fontSize: 10 }}>RETRY PHOTO</Text></Pressable>}
           </View>
           )}
         </View>

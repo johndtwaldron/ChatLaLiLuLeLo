@@ -1,3 +1,4 @@
+import './src/lib/sessionLogs';
 // Dev-only: immediate console spam relief
 import './src/debug/quietRNW';
 

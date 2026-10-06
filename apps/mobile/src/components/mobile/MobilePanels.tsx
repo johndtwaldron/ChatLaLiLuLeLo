@@ -21,6 +21,7 @@ import { CRTToggle } from '../CRTToggle';
 import { ModeToggle } from '../ModeToggle';
 import { ModelToggle } from '../ModelToggle';
 import { VoiceControls } from '../VoiceControls';
+import { SessionLogDownload } from '../SessionLogDownload';
 import { DebugToggle } from '../DebugToggle';
 import { ConnectionDebugToggle } from '../ConnectionDebugToggle';
 import { BudgetIndicator } from '../BudgetIndicator';
@@ -216,6 +217,7 @@ export function DebugPanel({
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.panelContainer}
     >
+      <SessionLogDownload />
       {/* Debug Controls */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>DEBUG CONTROLS</Text>
@@ -309,6 +311,7 @@ export function CompactFunctionsPanel({ sessionId }: { sessionId?: string }) {
 export function CompactDebugPanel({ sessionId }: { sessionId?: string }) {
   return (
     <View style={{ gap: 8 }}>
+      <SessionLogDownload />
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <DebugToggle onToggle={() => {}} enabled={false} />
         <ConnectionDebugToggle onToggle={() => {}} enabled={false} />

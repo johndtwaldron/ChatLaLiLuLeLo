@@ -24,3 +24,13 @@ Missing configuration and script-loading failures leave chat usable. OAuth popup
 ## Validation
 
 Unit tests cover UTF-8 names, unexpected credential claims, unsafe photo URLs, session-only display data, and disconnect. Real Google sign-in must be manually verified with a registered client ID; mocked tests do not establish OAuth configuration validity.
+
+## Missing photo and consent branding
+
+A successful name link can have no `picture` claim. The October 6 instance log reports `photoProvided: false`; that is different from a failed image download. Show an initial and an explanation rather than repeatedly fetching a missing URL. Add a photo to the selected Google account, then disconnect and link again; profile changes can take time to propagate.
+
+The consent application name comes from **Google Auth Platform → Branding** in the Cloud project, not the client name in the Clients list. Two OAuth clients in the same project share that branding. If the project also powers Inner Signal, create a separate ChatLaLiLuLeLo Cloud project with its own branding/client and the same allowed origins, then supply the new public client ID. Renaming the existing project's branding also affects Inner Signal. No branding setting was changed by this repository update. See [Google setup](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
+
+## Instance diagnostics
+
+Desktop and mobile web debug panels offer **Download instance logs (.txt)**. The bounded in-memory buffer contains the latest 1,000 console/error entries for the current page. Refresh resets it. Common credentials are redacted, but logs can include conversation text; review before sharing. Photo diagnostics report only whether a photo was supplied/accepted and whether loading succeeded.

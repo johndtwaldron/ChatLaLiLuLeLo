@@ -48,6 +48,7 @@ export function GoogleProfileLink() {
           <Text style={[textStyle, styles.title]}>GOOGLE NANOMACHINES</Text>
           <Text style={[textStyle, styles.description]}>{profile ? `Linked as ${profile.firstName}.` : 'Link your Google first name and profile picture to the Codec.'}</Text>
           <Text style={[textStyle, styles.description]}>Your name and photo last only for this Codec session. They are not sent with chat messages.</Text>
+          {profile && !profile.picture && <Text style={[textStyle, styles.description]}>Google did not supply a profile photo. Add a photo to that Google account, then disconnect and link again.</Text>}
           {profile ? <Pressable accessibilityRole="button" style={buttonStyle} onPress={() => { disconnectGoogleProfile(); setOpen(false); }}>
             <Text style={textStyle}>DISCONNECT GOOGLE</Text>
           </Pressable> : !clientId ? <Text style={[textStyle, styles.description]}>Google linking needs an app client ID before it can connect.</Text> : <>

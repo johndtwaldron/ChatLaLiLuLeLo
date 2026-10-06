@@ -1,3 +1,4 @@
+import { recordSessionLog } from './sessionLogs';
 import { useSyncExternalStore } from 'react';
 
 export interface CodecProfile { firstName: string; picture: string | null }
@@ -18,6 +19,7 @@ export function sanitizeProfile(value: unknown): CodecProfile {
       if (url.protocol === 'https:' && (url.hostname === 'googleusercontent.com' || url.hostname.endsWith('.googleusercontent.com'))) picture = url.href;
     } catch { /* A missing or invalid photo uses the silhouette. */ }
   }
+  recordSessionLog('info', '[GOOGLE PROFILE]', { photoProvided: typeof data.picture === 'string', photoAccepted: !!picture });
   return { firstName: data.firstName.trim().slice(0, 40), picture };
 }
 

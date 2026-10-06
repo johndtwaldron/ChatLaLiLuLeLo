@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { getCodecTheme, subscribeToThemeChanges, getCurrentThemeName } from '@/lib/theme';
 import { CodecAudioControls } from './CodecAudioControls';
+import { SessionLogDownload } from './SessionLogDownload';
 import SimulateMobileToggle from './SimulateMobileToggle';
 
 interface DebugInfo {
@@ -212,6 +213,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ debugInfo, onClose }) =>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
+        <SessionLogDownload />
         {/* API Status Section */}
         <View style={staticStyles.sectionContainer}>
           <TouchableOpacity

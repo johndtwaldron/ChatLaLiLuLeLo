@@ -12,6 +12,9 @@ describe('cosmetic Google profile', () => {
   it('reads a Unicode first name and photo without retaining the credential', () => {
     expect(profileFromCredential(token(), 'test-client', 'test-nonce')).toEqual({ firstName: 'Éadaoin', picture: 'https://lh3.googleusercontent.com/photo' });
   });
+  it('keeps the name when Google supplies no photo', () => {
+    expect(profileFromCredential(token({ picture: undefined }), 'test-client', 'test-nonce')).toEqual({ firstName: 'Éadaoin', picture: null });
+  });
   it.each([{ aud: 'other-client' }, { nonce: 'other-request' }, { exp: 0 }, { iss: 'https://attacker.example' }, { given_name: '' }])('rejects an unexpected credential: %o', claims => {
     expect(() => profileFromCredential(token(claims), 'test-client', 'test-nonce')).toThrow();
   });
