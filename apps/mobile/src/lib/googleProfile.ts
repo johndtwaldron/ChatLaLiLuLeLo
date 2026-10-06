@@ -119,16 +119,21 @@ interface GoogleOAuth {
 export function requestGoogleProfilePhoto(clientId: string): Promise<void> {
   const oauth = (window as Window & { google?: { accounts?: { oauth2?: GoogleOAuth } } }).google?.accounts?.oauth2;
   if (!oauth) return Promise.reject(new Error('Google profile access is not ready. Close and reopen the linking panel.'));
+  recordSessionLog('info', '[GOOGLE PHOTO REQUEST]', { origin: window.location.origin });
   const revision = profileRevision;
   return new Promise((resolve, reject) => {
     const client = oauth.initTokenClient({
       client_id: clientId,
       scope: 'openid profile',
       include_granted_scopes: false,
-      error_callback: () => reject(new Error('Google profile popup was closed or blocked. Please try again.')),
+      error_callback: () => {
+        recordSessionLog('warn', '[GOOGLE PHOTO REQUEST] Popup closed or blocked');
+        reject(new Error('Google profile popup was closed or blocked. Please try again.'));
+      },
       callback: async response => {
         let accessToken = response.access_token;
         if (response.error || !accessToken) {
+          recordSessionLog('warn', '[GOOGLE PHOTO REQUEST] Permission not granted');
           reject(new Error('Google profile permission was not granted.'));
           return;
         }

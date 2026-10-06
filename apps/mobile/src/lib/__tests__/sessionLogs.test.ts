@@ -1,6 +1,11 @@
-import { recordSessionLog, redactLog, sessionLogText, downloadSessionLogs } from '../sessionLogs';
+import { recordSessionLog, redactLog, sessionLogText, downloadSessionLogs, sessionLogSource } from '../sessionLogs';
 
 describe('instance log export', () => {
+  it('labels local and Pages origins without leaking URL parameters', () => {
+    expect(sessionLogSource().environment).toBe('local');
+    expect(sessionLogText()).toContain('Environment: local');
+    expect(sessionLogText()).toContain('Origin: http://localhost');
+  });
   it('redacts credentials, emails and Google photo URLs', () => {
     const text = redactLog('Bearer abc123 api_key=secret-value\neyJheader.eyJclaims.signature sk-proj-12345 john@example.com https://lh3.googleusercontent.com/private-photo');
     for (const secret of ['abc123', 'secret-value', 'eyJheader', 'sk-proj-12345', 'john@example.com', 'private-photo']) expect(text).not.toContain(secret);
@@ -27,7 +32,7 @@ describe('instance log export', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: jest.fn() });
     jest.useFakeTimers();
     const click = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
-      expect(this.download).toMatch(/^codec-logs-.+\.txt$/);
+      expect(this.download).toMatch(/^codec-logs-local-.+\.txt$/);
       expect(this.href).toBe('blob:test');
     });
     downloadSessionLogs();

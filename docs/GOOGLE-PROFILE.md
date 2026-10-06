@@ -33,4 +33,14 @@ The consent application name comes from **Google Auth Platform → Branding** in
 
 ## Instance diagnostics
 
-Desktop and mobile web debug panels offer **Download instance logs (.txt)**. The bounded in-memory buffer contains the latest 1,000 console/error entries for the current page. Refresh resets it. Common credentials are redacted, but logs can include conversation text; review before sharing. Photo diagnostics report only whether a photo was supplied/accepted and whether loading succeeded.
+Desktop and mobile web debug panels label downloads **LOCAL**, **GITHUB-PAGES**, or **HOSTED**. Filenames include that source (for example `codec-logs-local-<instance>.txt` and `codec-logs-github-pages-<instance>.txt`). The header includes the environment, origin, and page path, excluding query strings and fragments. The bounded in-memory buffer contains the latest 1,000 console/error entries for the current page. Refresh resets it. Common credentials are redacted, but logs can include conversation text; review before sharing. Photo diagnostics report only whether a photo was supplied/accepted and whether loading succeeded.
+
+
+## Error 400: origin_mismatch
+
+For the current client `35467599270-90t3b8dc2r5c68lcvpbevjnr3rjrioet.apps.googleusercontent.com`, open **Google Auth Platform → Clients → the Web application client → Authorized JavaScript origins** in the **chatlalilulelo** Cloud project. Add both:
+
+- `http://localhost:14085`
+- `https://johndtwaldron.github.io`
+
+Save, allow Google configuration changes to propagate, then refresh and retry. The Pages origin must not contain `/ChatLaLiLuLeLo/` or a trailing slash. Adding origins to the old Inner Signal project/client does not authorize this new client. The popup-based flow does not require a redirect URI or client secret. GitHub Pages supports this Google flow; `origin_mismatch` is a client configuration rejection, not a hosting limitation.

@@ -42,15 +42,25 @@ export function installSessionLogs(): void {
   recordSessionLog('info', 'Codec page instance started');
 }
 
+export function sessionLogSource(): { environment: string; origin: string; path: string } {
+  if (typeof window === 'undefined') return { environment: 'native', origin: 'unavailable', path: '' };
+  const { hostname, origin, pathname } = window.location;
+  const environment = ['localhost', '127.0.0.1', '[::1]'].includes(hostname) ? 'local'
+    : hostname === 'johndtwaldron.github.io' ? 'github-pages' : 'hosted';
+  // Exclude query strings and fragments, which can contain credentials.
+  return { environment, origin, path: pathname };
+}
+
 export function sessionLogText(): string {
-  return `ChatLaLiLuLeLo instance diagnostics\nInstance: ${instanceId}\nStarted: ${startedAt}\nExported: ${new Date().toISOString()}\nRetained: ${entries.length}; dropped older entries: ${dropped}\nConsole logs can contain conversation text. Review before sharing.\n\n${entries.join('\n')}\n`;
+  const source = sessionLogSource();
+  return `ChatLaLiLuLeLo instance diagnostics\nEnvironment: ${source.environment}\nOrigin: ${source.origin}\nPath: ${source.path}\nInstance: ${instanceId}\nStarted: ${startedAt}\nExported: ${new Date().toISOString()}\nRetained: ${entries.length}; dropped older entries: ${dropped}\nConsole logs can contain conversation text. Review before sharing.\n\n${entries.join('\n')}\n`;
 }
 
 export function downloadSessionLogs(): void {
   const url = URL.createObjectURL(new Blob([sessionLogText()], { type: 'text/plain;charset=utf-8' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = `codec-logs-${instanceId}.txt`;
+  link.download = `codec-logs-${sessionLogSource().environment}-${instanceId}.txt`;
   document.body.appendChild(link);
   link.click();
   link.remove();
