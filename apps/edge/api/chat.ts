@@ -52,6 +52,42 @@ export default {
       return new Response(null, { status: 200, headers: corsHeaders });
     }
     
+    // Ephemeral image probe: private URL stays in the POST body, never in access-log URLs.
+    if (req.method === 'POST' && url.pathname === '/profile-photo') {
+      const headers = { ...corsHeaders, 'Cache-Control': 'no-store, private' };
+      let stage = 'parse';
+      let upstreamStatus: number | undefined;
+      try {
+        const body = await req.json() as { picture?: unknown };
+        const parsed = ChatRequestSchema.safeParse({ mode: 'JD', profile: { firstName: 'photo', picture: body.picture } });
+        if (!parsed.success || !parsed.data.profile?.picture) return Response.json({ error: 'Invalid Google photo' }, { status: 400, headers });
+        stage = 'fetch';
+        let photoUrl = parsed.data.profile.picture;
+        let photo: Response | undefined;
+        const signal = AbortSignal.timeout(8000);
+        for (let attempt = 0; attempt < 3; attempt++) {
+          photo = await fetch(photoUrl, { redirect: 'manual', headers: { 'Cache-Control': 'no-store' }, signal });
+          if (![301, 302, 303, 307, 308].includes(photo.status)) break;
+          const location = photo.headers.get('Location');
+          if (!location) throw new Error('Invalid photo redirect');
+          photoUrl = new URL(location, photoUrl).href;
+          const redirectCheck = ChatRequestSchema.safeParse({ mode: 'JD', profile: { firstName: 'photo', picture: photoUrl } });
+          if (!redirectCheck.success) throw new Error('Invalid photo redirect');
+        }
+        if (!photo) throw new Error('Photo unavailable');
+        upstreamStatus = photo.status;
+        stage = 'validate';
+        const type = photo.headers.get('Content-Type')?.split(';')[0] || '';
+        if (!photo.ok || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(type)) throw new Error('Photo unavailable');
+        if (Number(photo.headers.get('Content-Length')) > 8 * 1024 * 1024) throw new Error('Photo too large');
+        const blob = await photo.blob();
+        if (blob.size > 8 * 1024 * 1024) throw new Error('Photo too large');
+        return new Response(blob, { headers: { ...headers, 'Content-Type': type, 'X-Content-Type-Options': 'nosniff' } });
+      } catch (error) {
+        return Response.json({ error: 'Google photo unavailable', stage, upstreamStatus, errorKind: error instanceof Error ? error.name : 'unknown' }, { status: 502, headers });
+      }
+    }
+
     if (req.method === 'GET' && url.pathname === '/models') {
       try {
         return Response.json({ defaultModel: DEFAULT_MODEL, models: modelCatalog(env) }, { headers: { ...corsHeaders, 'Cache-Control': 'no-store' } });

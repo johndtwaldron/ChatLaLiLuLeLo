@@ -17,7 +17,7 @@ export interface ChatClient {
 }
 
 export interface ChatRequest {
-  profile?: { firstName: string; picture?: string };
+  profile?: { firstName: string; picture?: string; photoDimensions?: { width: number; height: number } };
   mode: 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
   messages?: ChatMessage[];
   options?: ChatOptions;

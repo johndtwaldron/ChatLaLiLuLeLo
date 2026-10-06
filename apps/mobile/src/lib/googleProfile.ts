@@ -1,11 +1,13 @@
+import { largerGooglePhoto, measureGooglePhoto } from './googlePhoto';
 import { recordSessionLog } from './sessionLogs';
 import { useSyncExternalStore } from 'react';
 
-export interface CodecProfile { firstName: string; picture: string | null }
+export interface CodecProfile { firstName: string; picture: string | null; largePicture?: string; photoDimensions?: { thumbnail?: { width: number; height: number }; large?: { width: number; height: number } } }
 const STORAGE_KEY = 'codec.google-profile.v1';
 let profile: CodecProfile | null = null;
 let loaded = false;
 let profileRevision = 0;
+let photoProbe: AbortController | null = null;
 const listeners = new Set<() => void>();
 
 export function sanitizeProfile(value: unknown): CodecProfile {
@@ -51,10 +53,42 @@ function getSnapshot(): CodecProfile | null {
 }
 
 export function saveGoogleProfile(next: CodecProfile | null): void {
+  photoProbe?.abort();
+  photoProbe = null;
   profileRevision++;
   profile = next ? sanitizeProfile(next) : null;
   getSnapshot();
   listeners.forEach(fn => fn());
+  if (profile?.picture && typeof window !== 'undefined') void upgradeGooglePhoto(profile, profileRevision);
+}
+
+async function upgradeGooglePhoto(current: CodecProfile, revision: number): Promise<void> {
+  const controller = new AbortController();
+  photoProbe = controller;
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const larger = largerGooglePhoto(current.picture!);
+    const measurements = await Promise.allSettled([
+      measureGooglePhoto(current.picture!, controller.signal),
+      measureGooglePhoto(larger, controller.signal),
+    ]);
+    if (controller.signal.aborted || revision !== profileRevision || !profile) return;
+    const thumbnail = measurements[0].status === 'fulfilled' ? measurements[0].value : undefined;
+    const large = measurements[1].status === 'fulfilled' ? measurements[1].value : undefined;
+    if (!thumbnail && !large) {
+      recordSessionLog('info', '[GOOGLE PHOTO SIZES] Could not measure photos; using thumbnail');
+      return;
+    }
+    const improved = !!large && (!thumbnail || large.width * large.height > thumbnail.width * thumbnail.height);
+    profile = { ...current, ...(improved ? { largePicture: larger } : {}), photoDimensions: { thumbnail, large } };
+    recordSessionLog('info', '[GOOGLE PHOTO SIZES]', { thumbnail, large, aiSource: improved ? 'large' : 'thumbnail' });
+    listeners.forEach(fn => fn());
+  } catch {
+    if (!controller.signal.aborted && revision === profileRevision) recordSessionLog('info', '[GOOGLE PHOTO SIZES] Larger photo unavailable; using thumbnail');
+  } finally {
+    clearTimeout(timeout);
+    if (photoProbe === controller) photoProbe = null;
+  }
 }
 
 export function useGoogleProfile(): CodecProfile | null {
@@ -170,7 +204,7 @@ if (typeof window !== 'undefined') {
 
 
 // Supply the linked photo as ephemeral context; the model decides when it is relevant.
-export function currentChatProfile(): { firstName: string; picture?: string } | undefined {
+export function currentChatProfile(): { firstName: string; picture?: string; photoDimensions?: { width: number; height: number } } | undefined {
   if (!profile) return undefined;
-  return { firstName: profile.firstName, ...(profile.picture ? { picture: profile.picture } : {}) };
+  return { firstName: profile.firstName, ...(profile.picture ? { picture: profile.largePicture || profile.picture } : {}), ...(profile.photoDimensions ? { photoDimensions: profile.largePicture ? profile.photoDimensions.large : profile.photoDimensions.thumbnail } : {}) };
 }

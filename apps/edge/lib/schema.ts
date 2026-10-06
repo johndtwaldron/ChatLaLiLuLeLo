@@ -15,6 +15,7 @@ export const ChatRequestSchema = z.object({
   mode: ModeSchema,
   profile: z.object({
     firstName: z.string().trim().min(1).max(40),
+    photoDimensions: z.object({ width: z.number().int().positive().max(10000), height: z.number().int().positive().max(10000) }).optional(),
     picture: z.string().url().max(2048).refine(value => {
       const url = new URL(value);
       return url.protocol === 'https:' && (url.hostname === 'googleusercontent.com' || url.hostname.endsWith('.googleusercontent.com')) && !url.username && !url.password;
