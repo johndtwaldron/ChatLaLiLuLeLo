@@ -2,6 +2,8 @@
 
 A Codec-style AI companion for philosophy, dry humour, Bitcoin discussion, and MGS nostalgia.
 
+<sub>VERSION 1.0.0.0 · [VRMF policy](VERSIONING.md)</sub>
+
 **Hosted page:** [https://johndtwaldron.github.io/ChatLaLiLuLeLo/](https://johndtwaldron.github.io/ChatLaLiLuLeLo/)
 
 [![CI](https://github.com/johndtwaldron/ChatLaLiLuLeLo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/johndtwaldron/ChatLaLiLuLeLo/actions/workflows/ci.yml)
@@ -15,6 +17,9 @@ Two portraits, a frequency display, streaming subtitles, and a phosphor-green in
 - **Streaming chat** through a Cloudflare Worker and OpenAI.
 - **Codec atmosphere** with scanlines, portrait animation, sound effects, and waveform feedback.
 - **Voice controls** with configurable TTS, playback volume, and error feedback.
+- **Optional Google nanomachine sync** for a session-only first name and profile photo, with a larger photo supplied to profile-aware chat when available. See [Google setup](docs/GOOGLE-PROFILE.md).
+- **Refreshable model selection** including GPT-5.4 and GPT-5.4 mini. See [model catalogue](MODEL_CATALOG.md).
+- **Instance diagnostics** with downloadable logs, environment, build timestamp, commit and product version.
 - **Transcript export** for saving conversations.
 - **Bitcoin mode** with a Lightning donation QR code.
 - **Web and mobile layouts** built with Expo and React Native. Native release plans are separate from the hosted web app.
@@ -29,9 +34,9 @@ The hosted interface may be available even when an AI or voice provider is unava
 | **BTC — Orange Pill** | Bitcoin, monetary sovereignty, and self-custody themes. |
 | **GW — Haywire** | Glitchy, surreal conversation with the Colonel's underlying voice. |
 | **MGS — Lore** | MGS themes, media theory, and digital culture. |
-| **RICK — Bogart** | Restrained noir advice, a monochrome theme, and rotating portraits and quotes. Available on `dev-plus`. |
+| **RICK — Bogart** | Restrained noir advice, a monochrome theme, and rotating portraits and quotes. Included in this release. |
 
-`main` is the default repository branch. `dev-plus` contains the newer Rick implementation and briefs for additional modes. A mode brief describes an idea; it does not mean the mode is implemented.
+`main` is the default repository branch; `dev-plus` is the development integration branch. This release includes Rick and briefs for additional modes. A mode brief describes an idea; it does not mean the mode is implemented.
 
 ## Run locally
 
@@ -41,7 +46,7 @@ Use Node.js 18+ and npm 8+; the GitHub Actions workflows use Node.js 20.
 git clone https://github.com/johndtwaldron/ChatLaLiLuLeLo.git
 cd ChatLaLiLuLeLo
 
-# Use the latest development version, including Rick.
+# Optional: use the development integration branch.
 git switch dev-plus
 npm ci
 

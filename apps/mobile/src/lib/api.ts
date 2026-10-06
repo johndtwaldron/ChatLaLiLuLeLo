@@ -1,3 +1,4 @@
+import { recordSessionLog } from './sessionLogs';
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -7,7 +8,7 @@ export interface ChatOptions {
   research?: boolean;
   max_tokens?: number;
   temperature?: number;
-  model?: 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
+  model?: string;
 }
 
 export interface ChatClient {
@@ -16,7 +17,8 @@ export interface ChatClient {
 }
 
 export interface ChatRequest {
-  mode: 'BTC' | 'JD' | 'GW' | 'MGS';
+  profile?: { firstName: string; picture?: string; photoDimensions?: { width: number; height: number } };
+  mode: 'BTC' | 'JD' | 'GW' | 'MGS' | 'RICK';
   messages?: ChatMessage[];
   options?: ChatOptions;
   client?: ChatClient;
@@ -24,6 +26,7 @@ export interface ChatRequest {
 
 export interface StreamEvent {
   type: 'delta' | 'done' | 'error';
+  profileContext?: { nameProvided: boolean; imageAttached: boolean; model: string };
   token?: string;
   message?: string;
   usage?: {
@@ -59,14 +62,23 @@ export function getApiUrl(): string {
   return 'http://localhost:8787';
 }
 
-export function streamReply(
+export async function streamReply(
   request: ChatRequest, 
   onToken: (token: string) => void,
   onDone?: (usage?: any) => void,
   onError?: (error: string) => void
 ): Promise<void> {
   const apiUrl = getApiUrl();
+  recordSessionLog('info', '[CHAT PROFILE] Request', { nameProvided: !!request.profile, imageAttached: !!request.profile?.picture, model: request.options?.model, apiUrl });
   
+  // Do not disclose profile data to older deployments that logged full bodies.
+  if (request.profile) {
+    const health = await fetch(`${apiUrl}/health`, { cache: 'no-store' });
+    const capabilities = health.ok ? (await health.json()).capabilities : null;
+    if (!capabilities?.sessionProfile || (request.profile.picture && !capabilities?.profileVision)) {
+      throw new Error('Profile-aware chat is temporarily unavailable. Disconnect Nanomachine Sync to continue chatting.');
+    }
+  }
   return fetch(`${apiUrl}/chat`, {
     method: 'POST',
     headers: {
@@ -90,21 +102,43 @@ export function streamReply(
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
+    
+    // Buffer for handling incomplete SSE events across chunks
+    let buffer = '';
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const text = decoder.decode(value);
-      const lines = text.split('\n\n');
+      // Append new chunk to buffer
+      buffer += decoder.decode(value, { stream: true });
       
-      for (const line of lines) {
-        if (!line.trim() || !line.startsWith('data: ')) continue;
+      // Split on double newline (SSE event separator)
+      const events = buffer.split('\n\n');
+      
+      // Keep the last (potentially incomplete) event in buffer
+      buffer = events.pop() || '';
+      
+      // Process complete events
+      for (const rawEvent of events) {
+        if (!rawEvent.trim()) continue;
+        
+        // Find the data line(s) in this event
+        const lines = rawEvent.split('\n');
+        const dataLines = lines.filter(line => line.startsWith('data:'));
+        
+        if (dataLines.length === 0) continue;
+        
+        // Concatenate multiple data lines (SSE spec allows this)
+        const jsonText = dataLines
+          .map(line => line.slice(5).trim()) // Remove 'data:' prefix
+          .join('');
+        
+        if (!jsonText) continue;
         
         try {
-          const eventData = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
-          const event = eventData as StreamEvent;
+          const event = JSON.parse(jsonText) as StreamEvent;
           
           switch (event.type) {
             case 'delta':
@@ -113,14 +147,53 @@ export function streamReply(
               }
               break;
             case 'done':
+              recordSessionLog('info', '[CHAT PROFILE] Backend acknowledgement', event.profileContext ?? { diagnosticsUnavailable: true });
               onDone?.(event.usage);
               return;
             case 'error':
               onError?.(event.message || 'Unknown error');
               return;
           }
-        } catch (e) {
-          console.warn('Failed to parse SSE event:', line);
+        } catch (parseError) {
+          // Log parsing errors but don't crash the stream
+          console.warn('[API] Failed to parse SSE event payload:', {
+            jsonText: jsonText.slice(0, 100),
+            error: parseError instanceof Error ? parseError.message : String(parseError)
+          });
+          // Continue processing other events
+        }
+      }
+    }
+    
+    // Process any remaining buffered content
+    // Use the same splitting logic as the main loop to handle multiple events
+    if (buffer.trim()) {
+      const events = buffer.split('\n\n').filter(e => e.trim());
+      
+      for (const rawEvent of events) {
+        const lines = rawEvent.split('\n');
+        const dataLines = lines.filter(line => line.startsWith('data:'));
+        
+        if (dataLines.length === 0) continue;
+        
+        const jsonText = dataLines
+          .map(line => line.slice(5).trim())
+          .join('');
+        
+        if (!jsonText) continue;
+        
+        try {
+          const event = JSON.parse(jsonText) as StreamEvent;
+          if (event.type === 'done') {
+            recordSessionLog('info', '[CHAT PROFILE] Backend acknowledgement', event.profileContext ?? { diagnosticsUnavailable: true });
+            onDone?.(event.usage);
+          } else if (event.type === 'error') {
+            onError?.(event.message || 'Unknown error');
+          }
+          // Silently ignore other event types in final buffer (e.g. trailing deltas)
+        } catch (parseError) {
+          // Silently ignore malformed trailing fragments
+          // This is normal when stream closes mid-event
         }
       }
     }

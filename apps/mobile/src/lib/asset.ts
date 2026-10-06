@@ -82,8 +82,12 @@ export function asAudio(file: any) {
     if (typeof file === 'string' && file.startsWith('/')) {
       assetPath = '.' + file;
     }
+    // Also handle rick.audio paths
+    if (typeof file === 'string' && file.includes('/assets/rick.audio/')) {
+      console.log('[ASSET] Web production - detected rick.audio path:', file);
+    }
     console.log('[ASSET] Web production - using wrapped format with relative path for audio:', assetPath);
-    return { uri: assetPath };
+    return assetPath; // Return string directly for Audio API
   }
   
   // Native platforms

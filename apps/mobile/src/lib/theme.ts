@@ -1,3 +1,4 @@
+import { getApiUrl } from './api';
 // Theme definitions for different codec styles
 export const themePresets = {
   // Cyan - Default (MGS2 authentic)
@@ -97,12 +98,29 @@ export const themePresets = {
     scanline: '#332200',     // Orange scanlines
     glow: '#FF8C0040',       // Orange glow (with alpha)
   },
+  
+  // Rick (1940s film noir B&W theme - only available in Rick mode)
+  rick: {
+    primary: '#E0E0E0',      // Light gray (film grain highlights)
+    secondary: '#B0B0B0',    // Medium gray
+    tertiary: '#808080',     // Mid gray
+    background: '#000000',   // Pure black (noir shadows)
+    surface: '#1A1A1A',      // Very dark gray
+    text: '#FFFFFF',         // White text (high contrast)
+    textSecondary: '#D0D0D0', // Light gray (subtle contrast)
+    border: '#606060',       // Medium-dark gray borders
+    scanline: '#0A0A0A',     // Near-black scanlines
+    glow: '#E0E0E040',       // Light gray glow (subtle film grain)
+  },
 };
 
 // Current active theme - starts with cyan (default)
 let currentTheme: keyof typeof themePresets = 'cyan';
 
-// Theme cycle order (excludes orange - Bitcoin mode only)
+// Previous theme key (for restoring when leaving special modes like Rick)
+let previousThemeKey: keyof typeof themePresets | null = null;
+
+// Theme cycle order (excludes orange - Bitcoin mode only, excludes rick - Rick mode only)
 const themeOrder: Array<keyof typeof themePresets> = ['cyan', 'purple', 'gold', 'green', 'yellow', 'crimson'];
 
 // CRT effects toggle state
@@ -116,35 +134,59 @@ let currentColonelPortrait = 0; // 0, 1, 2 for the three portraits
 let currentBitcoinColonelPortrait = 0; // 0-4 for the five Bitcoin portraits (default to Sayloresque)
 
 // Model selection system
-export type ModelType = 'gpt-4o-mini' | 'gpt-4o' | 'gpt-3.5-turbo' | 'mock';
-let currentModel: ModelType = 'gpt-4o-mini'; // Default to most cost-effective
+export type ModelType = string;
+let currentModel: ModelType = 'gpt-5.4-mini'; // Default to most cost-effective
 
-export const modelConfigs = {
+export const modelConfigs: Record<string, { name: string; cost: string; description: string; default?: boolean }> = {
+  'gpt-5.4-mini': { name: 'GPT-5.4 Mini', cost: '$0.75 in / $4.50 out per 1M', description: 'Recommended · conversation & photos', default: true },
+  'gpt-5.4': { name: 'GPT-5.4', cost: '$2.50 in / $15.00 out per 1M', description: 'Stronger reasoning & vision' },
+  'gpt-4.1-mini': {
+    name: 'GPT-4.1 Mini',
+    cost: '$0.40 in / $1.60 out per 1M',
+    description: 'Fast & affordable',
+    default: false
+  },
+  'gpt-4.1': {
+    name: 'GPT-4.1',
+    cost: '$2.00 in / $8.00 out per 1M',
+    description: 'Stronger conversation & vision'
+  },
   'gpt-4o-mini': {
     name: 'GPT-4o Mini',
-    cost: '$0.15/M tokens',
-    description: 'Fast & affordable',
-    default: true
-  },
-  'gpt-4o': {
-    name: 'GPT-4o',
-    cost: '$5.00/M tokens', 
-    description: 'Most capable'
-  },
-  'gpt-3.5-turbo': {
-    name: 'GPT-3.5 Turbo',
-    cost: '$0.50/M tokens',
-    description: 'Balanced option'
+    cost: '$0.15 in / $0.60 out per 1M',
+    description: 'Budget option'
   },
   'mock': {
     name: 'Mock Mode',
     cost: 'Free',
     description: 'Testing & development'
   }
-} as const;
+};
+
+export async function refreshModelCatalog(): Promise<void> {
+  const response = await fetch(`${getApiUrl()}/models`, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Model catalogue unavailable');
+  const data = await response.json();
+  if (!Array.isArray(data.models) || !data.models.length || data.models.length > 40) throw new Error('Invalid model catalogue');
+  const next: typeof modelConfigs = {};
+  for (const entry of data.models) {
+    if (typeof entry.id !== 'string' || !/^(?:gpt-[a-zA-Z0-9.-]+|mock)$/.test(entry.id) ||
+        typeof entry.name !== 'string' || typeof entry.description !== 'string' ||
+        !Number.isFinite(entry.inputPrice) || !Number.isFinite(entry.outputPrice) || entry.inputPrice < 0 || entry.outputPrice < 0) throw new Error('Invalid model catalogue');
+    next[entry.id] = { name: entry.name.slice(0, 60), description: entry.description.slice(0, 120),
+      cost: entry.id === 'mock' ? 'Free' : `$${entry.inputPrice.toFixed(2)} in / $${entry.outputPrice.toFixed(2)} out per 1M`,
+      default: entry.id === data.defaultModel };
+  }
+  if (!(data.defaultModel in next)) throw new Error('Invalid catalogue default');
+  Object.keys(modelConfigs).forEach(key => delete modelConfigs[key]);
+  Object.assign(modelConfigs, next);
+  if (!modelConfigs[currentModel]) currentModel = data.defaultModel;
+  initializeModel();
+  notifyThemeChange();
+}
 
 // Conversation mode system
-export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin';
+export type ConversationMode = 'haywire' | 'jd' | 'lore' | 'bitcoin' | 'rick';
 let currentMode: ConversationMode = 'haywire';
 
 export const conversationModes = {
@@ -152,12 +194,16 @@ export const conversationModes = {
   jd: 'JD [Colonel AI]',
   lore: 'MGS [LORE]',
   bitcoin: 'BTC [Orange Pill]',
+  rick: 'RICK [Bogart]',
 } as const;
 
-// Dynamic theme getter - handles Bitcoin mode orange override
+// Dynamic theme getter - handles Bitcoin mode orange override and Rick mode B&W override
 export const getCodecTheme = () => {
   // If in Bitcoin mode, force orange theme
-  const activeTheme = currentMode === 'bitcoin' ? 'orange' : currentTheme;
+  // If in Rick mode, force rick theme
+  const activeTheme = currentMode === 'bitcoin' ? 'orange' : 
+                      currentMode === 'rick' ? 'rick' : 
+                      currentTheme;
   
   return {
     colors: themePresets[activeTheme],
@@ -264,11 +310,11 @@ export const changeTheme = (theme: keyof typeof themePresets) => {
   notifyThemeChange();
 };
 
-// Theme cycling function - locked during Bitcoin mode
+// Theme cycling function - locked during Bitcoin mode and Rick mode
 export const cycleTheme = () => {
-  // If in Bitcoin mode, theme cycling is locked to orange
-  if (currentMode === 'bitcoin') {
-    return; // Don't cycle when in Bitcoin mode
+  // If in Bitcoin mode or Rick mode, theme cycling is locked
+  if (currentMode === 'bitcoin' || currentMode === 'rick') {
+    return; // Don't cycle when in special modes
   }
   
   const currentIndex = themeOrder.indexOf(currentTheme);
@@ -278,8 +324,10 @@ export const cycleTheme = () => {
 };
 
 export const getThemeDisplayName = (theme?: keyof typeof themePresets): string => {
-  // Show current effective theme (Bitcoin mode shows ORANGE)
-  const effectiveTheme = currentMode === 'bitcoin' ? 'orange' : (theme || currentTheme);
+  // Show current effective theme (Bitcoin mode shows ORANGE, Rick mode shows RICK)
+  const effectiveTheme = currentMode === 'bitcoin' ? 'orange' : 
+                         currentMode === 'rick' ? 'rick' : 
+                         (theme || currentTheme);
   
   const displayNames: Record<keyof typeof themePresets, string> = {
     cyan: 'CYAN',
@@ -288,7 +336,8 @@ export const getThemeDisplayName = (theme?: keyof typeof themePresets): string =
     green: 'GREEN',
     yellow: 'YELLOW',
     crimson: 'CRIMSON',
-    orange: 'ORANGE' // Bitcoin mode only
+    orange: 'ORANGE', // Bitcoin mode only
+    rick: 'B&W NOIR'  // Rick mode only
   };
   return displayNames[effectiveTheme];
 };
@@ -301,15 +350,33 @@ export const getCurrentThemeName = (): string => {
 // Mode management functions
 export const getCurrentMode = () => currentMode;
 
-export const cycleMode = () => {
-  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin'];
-  const currentIndex = modes.indexOf(currentMode);
-  currentMode = modes[(currentIndex + 1) % modes.length];
+export const setMode = (mode: ConversationMode) => {
+  const previousMode = currentMode;
+  currentMode = mode;
+  
+  // Handle theme locking/unlocking for Rick mode
+  if (currentMode === 'rick' && previousMode !== 'rick') {
+    // Entering Rick mode - save current theme and lock to rick
+    previousThemeKey = currentTheme;
+  } else if (previousMode === 'rick' && currentMode !== 'rick') {
+    // Leaving Rick mode - restore previous theme
+    if (previousThemeKey !== null) {
+      currentTheme = previousThemeKey;
+      previousThemeKey = null;
+    }
+  }
   
   // Auto-select colonel portrait based on mode
   updateColonelPortraitForMode();
   
   notifyThemeChange(); // Theme may change based on mode
+};
+
+export const cycleMode = () => {
+  const modes: ConversationMode[] = ['haywire', 'jd', 'lore', 'bitcoin', 'rick'];
+  const currentIndex = modes.indexOf(currentMode);
+  const nextMode = modes[(currentIndex + 1) % modes.length];
+  setMode(nextMode);
 };
 
 export const getModeDisplayName = (mode: ConversationMode = currentMode) => {
@@ -347,8 +414,8 @@ export const isDebugEnabled = () => debugEnabled;
 
 // Automatic colonel portrait selection based on mode
 const updateColonelPortraitForMode = () => {
-  if (currentMode !== 'bitcoin') {
-    // Auto-select portrait based on mode (non-Bitcoin modes)
+  if (currentMode !== 'bitcoin' && currentMode !== 'rick') {
+    // Auto-select portrait based on mode (non-Bitcoin, non-Rick modes)
     switch (currentMode) {
       case 'haywire':  // GW mode
         currentColonelPortrait = 0; // colonel_gw_haywire.jpeg
@@ -364,6 +431,7 @@ const updateColonelPortraitForMode = () => {
     }
   }
   // Bitcoin mode doesn't auto-select (uses its own image set)
+  // Rick mode doesn't auto-select (uses its own image set)
 };
 
 // Colonel portrait cycling functions
@@ -405,28 +473,28 @@ export const setModel = (model: ModelType) => {
 };
 
 export const cycleModel = () => {
-  const models: ModelType[] = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'mock'];
+  const models = Object.keys(modelConfigs);
   const currentIndex = models.indexOf(currentModel);
   currentModel = models[(currentIndex + 1) % models.length];
   notifyThemeChange();
 };
 
 export const getModelDisplayName = (model: ModelType = currentModel) => {
-  return modelConfigs[model].name;
+  return (modelConfigs[model] || modelConfigs[currentModel]).name;
 };
 
 export const getModelConfig = (model: ModelType = currentModel) => {
-  return modelConfigs[model];
+  return modelConfigs[model] || modelConfigs[currentModel];
 };
 
 // Stable tag helpers (pure functions that don't read reactive/global state)
-const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC' } as const;
+const modeMapping = { haywire: 'GW', jd: 'JD', lore: 'MGS', bitcoin: 'BTC', rick: 'RICK' } as const;
 export const modeToAbbr = (m: string) =>
   modeMapping[m as keyof typeof modeMapping] ?? 'JD';
 
-const modelMapping = { 'gpt-4o': 'gpt-4o', 'gpt-4o-mini': 'gpt-4o-mini', 'gpt-3.5-turbo': 'gpt-3.5-turbo', mock: 'mock' } as const;
+const modelMapping = { 'gpt-4.1': 'gpt-4.1', 'gpt-4.1-mini': 'gpt-4.1-mini', 'gpt-4o-mini': 'gpt-4o-mini', mock: 'mock' } as const;
 export const modelToAbbr = (m: string) =>
-  modelMapping[m as keyof typeof modelMapping] ?? 'gpt-4o-mini';
+  modelMapping[m as keyof typeof modelMapping] ?? (m in modelConfigs ? m : 'gpt-5.4-mini');
 
 export const makeTag = (modeKey: string, modelKey: string) =>
   `[${modeToAbbr(modeKey)}]:[${modelToAbbr(modelKey)}]:`;
@@ -442,6 +510,7 @@ export const initializeModel = () => {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const savedModel = window.localStorage.getItem('codecModelSelection');
+      if (savedModel === 'gpt-4o') currentModel = 'gpt-4.1';
       if (savedModel && savedModel in modelConfigs) {
         currentModel = savedModel as ModelType;
       }

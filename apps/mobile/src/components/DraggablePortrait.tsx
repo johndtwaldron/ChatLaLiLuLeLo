@@ -3,7 +3,7 @@ import { ViewStyle, View, Text } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-import { Portrait } from '@/components/Portrait';
+import { Portrait, subscribeToRickAudio } from '@/components/Portrait';
 import { LightningQR } from '@/components/LightningQR';
 import { cycleColonelPortrait, getCodecTheme, getCurrentMode, subscribeToThemeChanges } from '@/lib/theme';
 import { playRandomUserSound, subscribeToUserSfx } from '@/lib/audio';
@@ -54,6 +54,9 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
   // UI overlay for current SFX file name while playing
   const [currentSfxFile, setCurrentSfxFile] = useState<string | null>(null);
   const [sfxPlaying, setSfxPlaying] = useState(false);
+  // Rick audio overlay for colonel portrait
+  const [currentRickAudioFile, setCurrentRickAudioFile] = useState<string | null>(null);
+  const [rickAudioPlaying, setRickAudioPlaying] = useState(false);
 
   // Subscribe to mode/theme changes
   useEffect(() => {
@@ -86,6 +89,21 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
       } else {
         setSfxPlaying(false);
         setCurrentSfxFile(null);
+      }
+    });
+    return () => { if (off) { off(); } };
+  }, [type]);
+
+  // Subscribe to Rick audio events for colonel portrait in Rick mode
+  useEffect(() => {
+    if (type !== 'colonel') return;
+    const off = subscribeToRickAudio((e) => {
+      if (e.type === 'start') {
+        setCurrentRickAudioFile(e.fileName);
+        setRickAudioPlaying(true);
+      } else {
+        setRickAudioPlaying(false);
+        setCurrentRickAudioFile(null);
       }
     });
     return () => { if (off) { off(); } };
@@ -339,6 +357,30 @@ export const DraggablePortrait: React.FC<DraggablePortraitProps> = ({
               }}
             >
               {currentSfxFile}
+            </Text>
+          </View>
+        )}
+
+        {/* Rick audio filename overlay above the colonel box while playing */}
+        {type === 'colonel' && rickAudioPlaying && currentRickAudioFile && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: -18,
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: getCodecTheme().colors.primary,
+                fontFamily: 'monospace',
+                fontSize: 10,
+              }}
+            >
+              {currentRickAudioFile}
             </Text>
           </View>
         )}

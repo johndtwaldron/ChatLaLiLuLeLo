@@ -407,6 +407,12 @@ async function runDevWithValidation() {
     logAndSave(`🔗 Backend API already running at: http://localhost:${backendPort}`, 'magenta');
     logAndSave('', 'reset');
     logAndSave('💡 To stop servers: Ctrl+C', 'gray');
+    logAndSave('', 'reset');
+    logAndSave('🔧 Quick Kill Commands:', 'cyan');
+    logAndSave(`   lsof -ti:${frontendPort},${backendPort} | xargs kill -9   # Kill by ports`, 'gray');
+    logAndSave('   pkill -f "expo start"                      # Kill Expo', 'gray');
+    logAndSave('   pkill -f "wrangler dev"                    # Kill Wrangler', 'gray');
+    logAndSave('', 'reset');
     logAndSave('📝 This session logged to: ' + logFile, 'gray');
     logAndSave('', 'reset');
 

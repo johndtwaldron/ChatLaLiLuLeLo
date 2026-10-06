@@ -1,6 +1,6 @@
 {
   "name": "@chatlalilulelo/mobile",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -28,7 +28,7 @@
     "@types/qrcode": "^1.5.5",
     "caniuse-lite": "^1.0.30001746",
     "expo": "~54.0.10",
-    "expo-av": "~14.0.0",
+    "expo-av": "~16.0.8",
     "expo-clipboard": "^8.0.7",
     "expo-constants": "~15.4.0",
     "expo-document-picker": "^14.0.7",
@@ -47,6 +47,7 @@
     "react-native-reanimated": "~3.8.1",
     "react-native-safe-area-context": "4.8.2",
     "react-native-screens": "~3.29.0",
+    "react-native-svg": "^15.13.0",
     "react-native-web": "^0.19.13",
     "zustand": "^4.4.7"
   },

@@ -1,3 +1,4 @@
+import { VersionLabel } from '@/components/VersionLabel';
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -183,6 +184,8 @@ export const CodecStandby: React.FC<CodecStandbyProps> = ({ onReactivate, playCl
             MHz
           </Text>
         </Animated.View>
+
+        <VersionLabel />
 
         {/* Status indicators */}
         <View style={styles.statusContainer}>

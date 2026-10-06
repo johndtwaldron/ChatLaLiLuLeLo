@@ -4,6 +4,9 @@ export interface LogContext {
   sessionId?: string;
   appVersion?: string;
   timestamp?: number;
+  
+  // Allow arbitrary extra context fields (errors, reason, model, tokenCount, etc.)
+  [key: string]: unknown;
 }
 
 export function logInfo(message: string, context?: LogContext) {

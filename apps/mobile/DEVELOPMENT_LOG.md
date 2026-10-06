@@ -1,3 +1,13 @@
+<!-- Current cross-project record: ../../docs/devlog.md -->
+
+## 2026-10-06 — VRMF and session-profile work
+
+The complete record of today's Google profile linking, activation/audio changes,
+instance diagnostics, profile vision, larger-photo retrieval, model catalogue,
+Cloudflare/Pages deployments and remaining work is in [the project devlog](../../docs/devlog.md).
+Product versioning now uses **1.0.0.0**, with **M** for implemented specifications
+and **F** for defect iterations; see [VERSIONING.md](../../VERSIONING.md).
+
 # ChatLaLiLuLeLo Development Log
 
 ## Session 31 - iPhone Safari Audio Compatibility Fix

@@ -8,6 +8,14 @@ jest.doMock('react-native/Libraries/Utilities/Dimensions', () => ({
   removeEventListener: jest.fn(),
 }));
 
+// Mock PixelRatio for StyleSheet operations
+jest.doMock('react-native/Libraries/Utilities/PixelRatio', () => ({
+  get: jest.fn(() => 2),
+  getFontScale: jest.fn(() => 1),
+  getPixelSizeForLayoutSize: jest.fn((layoutSize) => Math.round(layoutSize * 2)),
+  roundToNearestPixel: jest.fn((layoutSize) => Math.round(layoutSize)),
+}));
+
 // Simple Reanimated mock that works with React Native preset
 jest.doMock('react-native-reanimated', () => {
   return {

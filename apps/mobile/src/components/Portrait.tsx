@@ -4,6 +4,8 @@ import {
   Text,
   Image,
   View,
+  Pressable,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -16,6 +18,9 @@ import Animated, {
 
 import { getCodecTheme, subscribeToThemeChanges, codecTheme, getCurrentColonelPortrait, getCurrentBitcoinColonelPortrait, getCurrentMode } from '@/lib/theme';
 import { asImg } from '@/lib/asset';
+import { recordSessionLog } from '@/lib/sessionLogs';
+import { useGoogleProfile } from '@/lib/googleProfile';
+import { getNextRickImage, getNextRickAudio, getCurrentRickImage } from '@/lib/rickAssets';
 
 // Import colonel portraits - unified compatibility for local and web
 // Renamed for clarity: GW mode uses haywire, JD mode uses normal
@@ -34,6 +39,25 @@ const bitcoinColonelImages = [
   asImg(require('../../assets/images/btc_mode/MGBitcoin.GPT.png')), // 4 - GPT (General Bitcoin maximalist)
 ];
 
+// Rick mode audio playback state (module level to prevent stacking)
+let isRickAudioPlaying = false;
+let currentRickAudio: HTMLAudioElement | null = null;
+
+// Event system for Rick audio (similar to user SFX)
+const rickAudioListeners = new Set<(e: { type: 'start' | 'stop'; fileName: string }) => void>();
+const emitRickAudio = (e: { type: 'start' | 'stop'; fileName: string }) => {
+  rickAudioListeners.forEach((fn) => {
+    try { fn(e); } catch (err) {
+      console.error('[RICK] Listener error:', err);
+    }
+  });
+};
+
+export const subscribeToRickAudio = (listener: (e: { type: 'start' | 'stop'; fileName: string }) => void) => {
+  rickAudioListeners.add(listener);
+  return () => rickAudioListeners.delete(listener);
+};
+
 interface PortraitProps {
   type: 'colonel' | 'user';
   isActive?: boolean;
@@ -48,6 +72,11 @@ export const Portrait: React.FC<PortraitProps> = ({
   // mouthFrame = 0, // Future use for mouth animation
 }) => {
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
+  const profile = useGoogleProfile();
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useEffect(() => { setPhotoFailed(false); }, [profile?.picture]);
+  const photoError = () => { recordSessionLog('warn', '[GOOGLE PROFILE] Photo failed to load; silhouette fallback'); setPhotoFailed(true); };
+  const photoLoaded = () => recordSessionLog('info', '[GOOGLE PROFILE] Photo loaded');
   const idleAnimation = useSharedValue(0);
   const glowIntensity = useSharedValue(0);
   
@@ -110,24 +139,102 @@ export const Portrait: React.FC<PortraitProps> = ({
   const renderColonelPortrait = () => {
     const currentMode = getCurrentMode();
     const isBitcoinMode = currentMode === 'bitcoin';
+    const isRickMode = currentMode === 'rick';
     
-    // Select appropriate image set and index based on mode
-    const currentPortraitIndex = isBitcoinMode 
-      ? getCurrentBitcoinColonelPortrait() 
-      : getCurrentColonelPortrait();
-    const imageSet = isBitcoinMode ? bitcoinColonelImages : colonelImages;
-    const currentColonelImage = imageSet[currentPortraitIndex];
-    const labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
+    // Rick mode: use cycler for portrait images
+    let currentColonelImage: any;
+    let labelText: string;
+    
+    if (isRickMode) {
+      currentColonelImage = getCurrentRickImage();
+      labelText = 'BOGART';
+    } else {
+      // Select appropriate image set and index based on mode
+      const currentPortraitIndex = isBitcoinMode 
+        ? getCurrentBitcoinColonelPortrait() 
+        : getCurrentColonelPortrait();
+      const imageSet = isBitcoinMode ? bitcoinColonelImages : colonelImages;
+      currentColonelImage = imageSet[currentPortraitIndex];
+      labelText = isBitcoinMode ? 'BITCOIN BOSS' : 'COLONEL';
+    }
     
     // Add dev log to verify portrait source
     if (__DEV__) {
       console.log('[PORTRAIT] colonel source =', currentColonelImage, 'mode =', currentMode);
     }
     
+    // Handle portrait click for Rick mode
+    const handlePortraitClick = async () => {
+      // Guard: Only active in Rick mode
+      if (!isRickMode) {
+        return;
+      }
+      
+      // Guard: Prevent audio stacking
+      if (isRickAudioPlaying) {
+        console.log('[RICK] Audio already playing, ignoring click');
+        return;
+      }
+      
+      // Cycle to next image
+      getNextRickImage();
+      
+      // Get next audio and play
+      const audioSource = getNextRickAudio();
+      if (audioSource) {
+        // Extract filename from URL for display
+        const fileName = audioSource.split('/').pop()?.split('.')[0] || 'unknown';
+        
+        isRickAudioPlaying = true;
+        emitRickAudio({ type: 'start', fileName });
+        
+        try {
+          // Stop any existing audio
+          if (currentRickAudio) {
+            currentRickAudio.pause();
+            currentRickAudio = null;
+          }
+          
+          // Create and play new audio
+          currentRickAudio = new Audio(audioSource);
+          currentRickAudio.volume = 0.8;
+          
+          currentRickAudio.onended = () => {
+            isRickAudioPlaying = false;
+            currentRickAudio = null;
+            emitRickAudio({ type: 'stop', fileName });
+            console.log('[RICK] Audio playback finished');
+          };
+          
+          currentRickAudio.onerror = (error) => {
+            console.error('[RICK] Audio playback error:', error);
+            isRickAudioPlaying = false;
+            currentRickAudio = null;
+            emitRickAudio({ type: 'stop', fileName });
+          };
+          
+          await currentRickAudio.play();
+          console.log(`[RICK] Playing audio: ${fileName}`);
+          
+        } catch (error) {
+          console.error('[RICK] Failed to play audio:', error);
+          isRickAudioPlaying = false;
+          currentRickAudio = null;
+          emitRickAudio({ type: 'stop', fileName });
+        }
+      }
+      
+      // Force re-render to show new image
+      setCurrentTheme(getCodecTheme());
+    };
+    
     return (
       <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
         {/* Colonel portrait image */}
-        <View style={[styles.spriteContainer, styles.colonelImageContainer]}>
+        <Pressable 
+          style={[styles.spriteContainer, styles.colonelImageContainer]}
+          onPress={handlePortraitClick}
+        >
           <Image 
             source={currentColonelImage}
             style={[
@@ -151,7 +258,7 @@ export const Portrait: React.FC<PortraitProps> = ({
           {isSpeaking && (
             <View style={[styles.speakingIndicator, { borderColor: currentTheme.colors.primary }]} />
           )}
-        </View>
+        </Pressable>
         
         {/* ID Label - changes based on mode */}
         <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
@@ -161,21 +268,41 @@ export const Portrait: React.FC<PortraitProps> = ({
     );
   };
 
-  const renderUserPortrait = () => (
-    <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
-      {/* User silhouette */}
-      <View style={[styles.spriteContainer, styles.userSprite]}>
-        <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
-          <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>USER</Text>
+  const renderUserPortrait = () => {
+    const currentMode = getCurrentMode();
+    
+    // User label changes based on conversation mode
+    const USER_LABEL_BY_MODE: Record<string, string> = {
+      haywire: 'SOLDIER',
+      jd: 'AGENT',
+      lore: 'SOLDIER',
+      bitcoin: 'STACKER',
+      rick: 'PATRON',
+    };
+    
+    const userLabel = profile?.firstName || USER_LABEL_BY_MODE[currentMode] || 'SOLDIER';
+    
+    return (
+      <View style={[styles.portraitContent, { backgroundColor: currentTheme.colors.surface }]}>
+        {/* User silhouette */}
+        <View style={[styles.spriteContainer, styles.userSprite]}>
+          {profile?.picture && !photoFailed ? (
+            Platform.OS === 'web' ? React.createElement('img', { src: profile.picture, referrerPolicy: 'no-referrer', alt: `${profile.firstName} profile picture`, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }, onLoad: photoLoaded, onError: photoError }) : <Image source={{ uri: profile.picture }} style={styles.colonelImage} resizeMode="cover" accessibilityLabel={`${profile.firstName} profile picture`} onLoad={photoLoaded} onError={photoError} />
+          ) : (
+          <View style={[styles.silhouette, { backgroundColor: currentTheme.colors.tertiary }]}>
+            <Text style={[styles.silhouetteText, { color: currentTheme.colors.textSecondary }]}>{profile?.firstName || 'USER'}</Text>
+            {photoFailed && <Pressable accessibilityRole="button" accessibilityLabel="Retry Google profile photo" onPress={() => setPhotoFailed(false)}><Text style={{ color: currentTheme.colors.primary, fontSize: 10 }}>RETRY PHOTO</Text></Pressable>}
+          </View>
+          )}
+        </View>
+        
+        {/* ID Label */}
+        <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
+          <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]} numberOfLines={1} accessibilityLabel={`Codec profile: ${userLabel}`}>{userLabel}</Text>
         </View>
       </View>
-      
-      {/* ID Label */}
-      <View style={[styles.idLabel, { backgroundColor: currentTheme.colors.surface, borderTopColor: currentTheme.colors.border }]}>
-        <Text style={[styles.idText, { color: currentTheme.colors.textSecondary }]}>SOLDIER</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { margin: currentTheme.spacing.sm }]}>
@@ -234,47 +361,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  colonelSprite: {
-    // Placeholder styling for colonel sprite
-  },
-  
   userSprite: {
     // Placeholder styling for user sprite
-  },
-  
-  face: {
-    width: 60,
-    height: 80,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: codecTheme.spacing.sm,
-  },
-  
-  eye: {
-    width: 8,
-    height: 8,
-    backgroundColor: codecTheme.colors.primary,
-    borderRadius: 4,
-    marginHorizontal: codecTheme.spacing.xs,
-  },
-  
-  mouth: {
-    width: 20,
-    height: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  mouthShape: {
-    width: 12,
-    height: 4,
-    backgroundColor: codecTheme.colors.primary,
-    borderRadius: 2,
-  },
-  
-  mouthOpen: {
-    height: 8,
-    backgroundColor: codecTheme.colors.secondary,
   },
   
   silhouette: {

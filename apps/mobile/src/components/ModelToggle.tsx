@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 
 import { 
@@ -15,6 +16,7 @@ import {
   modelConfigs,
   saveModelSelection,
   initializeModel,
+  refreshModelCatalog,
   type ModelType
 } from '@/lib/theme';
 
@@ -29,6 +31,12 @@ export const ModelToggle: React.FC<ModelToggleProps> = ({
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   const [currentModel, setCurrentModelState] = useState<ModelType>(getCurrentModel());
   const [showDropdown, setShowDropdown] = useState(false);
+  const [catalogStatus, setCatalogStatus] = useState('');
+  const refresh = () => {
+    setCatalogStatus('Refreshing…');
+    refreshModelCatalog().then(() => setCatalogStatus('Catalogue updated')).catch(() => setCatalogStatus('Offline · showing bundled choices'));
+  };
+  useEffect(() => { refresh(); }, []);
 
   // Subscribe to theme changes
   useEffect(() => {
@@ -89,6 +97,7 @@ export const ModelToggle: React.FC<ModelToggleProps> = ({
       {/* Dropdown menu */}
       {showDropdown && (
         <View style={[staticStyles.dropdown, themeStyles.dropdown]}>
+          <ScrollView style={{ maxHeight: 270 }}>
           {(Object.keys(modelConfigs) as ModelType[]).map((modelKey) => {
             const config = modelConfigs[modelKey];
             const isSelected = modelKey === currentModel;
@@ -138,6 +147,11 @@ export const ModelToggle: React.FC<ModelToggleProps> = ({
             );
           })}
           
+          </ScrollView>
+          <TouchableOpacity accessibilityRole="button" onPress={refresh} style={staticStyles.closeDropdown}>
+            <Text style={themeStyles.closeText}>REFRESH MODELS</Text>
+            <Text style={[themeStyles.closeText, { fontSize: 9 }]}>{catalogStatus}</Text>
+          </TouchableOpacity>
           {/* Close button for dropdown */}
           <TouchableOpacity
             onPress={() => setShowDropdown(false)}
@@ -199,7 +213,7 @@ const staticStyles = StyleSheet.create({
     marginTop: 4,
     borderRadius: 4,
     borderWidth: 1,
-    maxHeight: 300,
+    maxHeight: 380,
   },
 
   dropdownItem: {
@@ -231,7 +245,7 @@ const staticStyles = StyleSheet.create({
 
   dropdownItemCost: {
     alignItems: 'flex-end',
-    minWidth: 80,
+    width: 125,
   },
 
   dropdownItemCostText: {

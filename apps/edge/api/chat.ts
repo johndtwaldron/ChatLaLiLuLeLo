@@ -1,3 +1,5 @@
+import { version } from '../../../version.json';
+import { modelCatalog, DEFAULT_MODEL } from '../lib/models';
 import { createOpenAIClient, streamChat, validateModel } from '../lib/openai';
 import { buildSystemPrompt } from '../lib/composer';
 import { webSearch, formatResearchContext, buildSearchQuery } from '../lib/search';
@@ -5,6 +7,7 @@ import { ChatRequestSchema } from '../lib/schema';
 import { logInfo, logError, logWarning, generateRequestId, redactApiKey } from '../lib/logger';
 import { RateLimiter, createBudgetWarning, DEFAULT_CONFIG } from '../lib/rate-limiter';
 import { validateAndSanitizeInput, SAFE_ERROR_MESSAGES, logSecurityEvent } from '../lib/security';
+import { validateOpenAIKey, getKeyPreview } from '../lib/config';
 
 // Global rate limiter instance
 const rateLimiter = new RateLimiter(DEFAULT_CONFIG);
@@ -50,16 +53,61 @@ export default {
       return new Response(null, { status: 200, headers: corsHeaders });
     }
     
+    // Ephemeral image probe: private URL stays in the POST body, never in access-log URLs.
+    if (req.method === 'POST' && url.pathname === '/profile-photo') {
+      const headers = { ...corsHeaders, 'Cache-Control': 'no-store, private' };
+      let stage = 'parse';
+      let upstreamStatus: number | undefined;
+      try {
+        const body = await req.json() as { picture?: unknown };
+        const parsed = ChatRequestSchema.safeParse({ mode: 'JD', profile: { firstName: 'photo', picture: body.picture } });
+        if (!parsed.success || !parsed.data.profile?.picture) return Response.json({ error: 'Invalid Google photo' }, { status: 400, headers });
+        stage = 'fetch';
+        let photoUrl = parsed.data.profile.picture;
+        let photo: Response | undefined;
+        const signal = AbortSignal.timeout(8000);
+        for (let attempt = 0; attempt < 3; attempt++) {
+          photo = await fetch(photoUrl, { redirect: 'manual', headers: { 'Cache-Control': 'no-store' }, signal });
+          if (![301, 302, 303, 307, 308].includes(photo.status)) break;
+          const location = photo.headers.get('Location');
+          if (!location) throw new Error('Invalid photo redirect');
+          photoUrl = new URL(location, photoUrl).href;
+          const redirectCheck = ChatRequestSchema.safeParse({ mode: 'JD', profile: { firstName: 'photo', picture: photoUrl } });
+          if (!redirectCheck.success) throw new Error('Invalid photo redirect');
+        }
+        if (!photo) throw new Error('Photo unavailable');
+        upstreamStatus = photo.status;
+        stage = 'validate';
+        const type = photo.headers.get('Content-Type')?.split(';')[0] || '';
+        if (!photo.ok || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(type)) throw new Error('Photo unavailable');
+        if (Number(photo.headers.get('Content-Length')) > 8 * 1024 * 1024) throw new Error('Photo too large');
+        const blob = await photo.blob();
+        if (blob.size > 8 * 1024 * 1024) throw new Error('Photo too large');
+        return new Response(blob, { headers: { ...headers, 'Content-Type': type, 'X-Content-Type-Options': 'nosniff' } });
+      } catch (error) {
+        return Response.json({ error: 'Google photo unavailable', stage, upstreamStatus, errorKind: error instanceof Error ? error.name : 'unknown' }, { status: 502, headers });
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/models') {
+      try {
+        return Response.json({ defaultModel: DEFAULT_MODEL, models: modelCatalog(env) }, { headers: { ...corsHeaders, 'Cache-Control': 'no-store' } });
+      } catch {
+        return Response.json({ error: 'Model catalogue unavailable' }, { status: 503, headers: corsHeaders });
+      }
+    }
+
     // Health check endpoint
     if (url.pathname === '/health') {
       const health = {
         status: 'ok',
+        capabilities: { sessionProfile: true, profileVision: true },
         timestamp: Date.now(),
-        version: '1.0.0',
+        version,
         environment: {
           openai_key_present: !!env.OPENAI_API_KEY,
           tavily_key_present: !!env.TAVILY_API_KEY,
-          model: env.OPENAI_MODEL ?? 'gpt-4o-mini'
+          model: env.OPENAI_MODEL ?? DEFAULT_MODEL
         }
       };
       
@@ -123,18 +171,40 @@ export default {
 
     try {
       // Parse and validate request
+      console.log('[CHAT] Received request at', new Date().toISOString());
+      console.log('[CHAT] Request method:', req.method);
+      console.log('[CHAT] Request URL:', req.url);
+      
       const body = await req.json();
+      // Never log request bodies: they may contain private conversation/profile data.
       const parseResult = ChatRequestSchema.safeParse(body);
       
       if (!parseResult.success) {
         logWarning('Invalid request format', { 
           requestId, 
-          errors: parseResult.error.errors 
+          errors: parseResult.error.errors,
+          invalidRequest: true
         });
-        return new Response('Invalid request format', { status: 400 });
+        
+        // Return structured JSON error with validation details
+        return new Response(JSON.stringify({
+          error: 'Invalid request format',
+          details: parseResult.error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message,
+            code: err.code
+          })),
+          requestId
+        }), { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
       }
 
-      const { mode, messages = [], options = {}, client = {} } = parseResult.data;
+      const { mode, messages = [], options = {}, client = {}, profile } = parseResult.data;
       
       // Get client IP for security logging
       const clientIP = req.headers.get('CF-Connecting-IP') || 
@@ -204,15 +274,21 @@ export default {
         .find(m => m.role === 'user')?.content ?? '';
       
       // Validate and determine model to use
-      const requestedModel = options.model || env.OPENAI_MODEL || 'gpt-4o-mini';
-      const validatedModel = validateModel(requestedModel);
+      const requestedModel = options.model || env.OPENAI_MODEL || DEFAULT_MODEL;
+      const catalog = modelCatalog(env);
+      const validatedModel = validateModel(requestedModel, catalog);
+      const selectedConfig = catalog.find(entry => entry.id === validatedModel)!;
+      if (options.model && options.model !== validatedModel && !['gpt-4o', 'gpt-3.5-turbo'].includes(options.model)) {
+        return Response.json({ error: 'Selected model is unavailable. Refresh the model catalogue.' }, { status: 400, headers: corsHeaders });
+      }
       
       // Check rate limits and budget before processing
       const rateLimitResult = rateLimiter.checkRateLimit(
         req,
         lastUserMessage,
         client.sessionId,
-        validatedModel
+        validatedModel,
+        Math.max(selectedConfig.inputPrice, selectedConfig.outputPrice) / 1_000_000
       );
       
       if (!rateLimitResult.allowed) {
@@ -257,11 +333,29 @@ export default {
         appVersion: client.appVersion
       });
 
-      // Check for required API key
+      // Validate OpenAI API key format
       const openaiKey = env.OPENAI_API_KEY;
-      if (!openaiKey) {
-        logError('Missing OpenAI API key', undefined, { requestId });
-        return new Response('Service configuration error', { status: 500 });
+      const keyValidation = validateOpenAIKey(openaiKey);
+      
+      if (!keyValidation.valid) {
+        logError('Invalid OpenAI API key', undefined, {
+          requestId,
+          error: keyValidation.error,
+          keyPreview: getKeyPreview(openaiKey)
+        });
+        
+        return new Response(JSON.stringify({
+          error: 'Service configuration error',
+          message: keyValidation.error,
+          requestId,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
       }
 
       // Initialize OpenAI client
@@ -304,6 +398,8 @@ export default {
         openai,
         systemPrompt,
         messages: sanitizedMessages,
+        profile,
+        adapter: selectedConfig.adapter,
         model: validatedModel,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.max_tokens ?? 600,
@@ -334,7 +430,8 @@ export default {
             req,
             tokenCount,
             client.sessionId,
-            validatedModel
+            validatedModel,
+            Math.max(selectedConfig.inputPrice, selectedConfig.outputPrice) / 1_000_000
           );
           
           // Get updated stats and budget warning
@@ -345,6 +442,7 @@ export default {
           await writer.write(encoder.encode(
             `data: ${JSON.stringify({ 
               type: 'done', 
+              profileContext: { nameProvided: !!profile, imageAttached: !!profile?.picture && validatedModel !== 'mock', model: validatedModel },
               usage: { completion_tokens: tokenCount },
               budgetWarning,
               stats: updatedStats
@@ -358,7 +456,7 @@ export default {
           });
           
         } catch (error) {
-          logError('Stream processing error', error as Error, { requestId });
+          logError('Stream processing error', new Error('Stream failed'), { requestId });
           await writer.write(encoder.encode(
             `data: ${JSON.stringify({ type: 'error', message: 'Stream processing error' })}\n\n`
           ));
@@ -380,10 +478,22 @@ export default {
       });
 
     } catch (error) {
-      logError('Chat request error', error as Error, { requestId });
-      return new Response('Internal server error', { 
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Provider errors can contain image URLs or echoed request data.
+      logError('Chat request error', new Error('Provider request failed'), { requestId });
+
+      // Return structured JSON error for 500s too
+      return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: errorMessage,
+        requestId,
+        timestamp: new Date().toISOString()
+      }), { 
         status: 500,
-        headers: corsHeaders
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
       });
     }
   }

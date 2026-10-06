@@ -154,11 +154,11 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.DEMO_API_URL }}
           EXPO_PUBLIC_DEBUG_MODE: "0"
-          # Voice/TTS Configuration for web deployment
-          EXPO_PUBLIC_VOICE_ENABLED: "true"
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          # Paid voice stays disabled until a server-side proxy protects the API key
+          EXPO_PUBLIC_VOICE_ENABLED: "false"
           EXPO_PUBLIC_VOICE_ENGINE: "elevenlabs"
-          EXPO_PUBLIC_ELEVENLABS_ENABLED: "true"
-          EXPO_PUBLIC_ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          EXPO_PUBLIC_ELEVENLABS_ENABLED: "false"
           EXPO_PUBLIC_VOICE_AUTOPLAY: "true"
           EXPO_PUBLIC_VOICE_VOLUME: "0.7"
           EXPO_PUBLIC_VOICE_PRESET: "colonel-neutral"
@@ -288,7 +288,7 @@ jobs:
           cd apps/mobile/dist
           
           # Create security headers file using echo commands
-          echo '<meta http-equiv="Content-Security-Policy" content="default-src '\''self'\'' https: data:; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' https: data:; style-src '\''self'\'' '\''unsafe-inline'\'' https: data:; img-src '\''self'\'' https: data: blob:; font-src '\''self'\'' https: data:; connect-src '\''self'\'' https: wss: ws:; media-src '\''self'\'' https: data: blob:; object-src '\''none'\'' frame-src '\''none'\''">' > security_headers.html
+          echo '<meta http-equiv="Content-Security-Policy" content="default-src '\''self'\'' https: data:; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\'' https: data:; style-src '\''self'\'' '\''unsafe-inline'\'' https: data:; img-src '\''self'\'' https: data: blob:; font-src '\''self'\'' https: data:; connect-src '\''self'\'' https: wss: ws:; media-src '\''self'\'' https: data: blob:; object-src '\''none'\''; frame-src https://accounts.google.com">' > security_headers.html
           echo '<meta http-equiv="X-Content-Type-Options" content="nosniff">' >> security_headers.html
           echo '<meta http-equiv="X-Frame-Options" content="DENY">' >> security_headers.html
           echo '<meta http-equiv="X-XSS-Protection" content="1; mode=block">' >> security_headers.html

@@ -1,15 +1,16 @@
 {
   "name": "chatlalilulelo",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A codec-style entertainment companion for intellectual sparring",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "sync-env": "bash scripts/sync-env.sh",
     "prod": "concurrently -n EDGE,MOBILE -c blue,green \"cd apps/edge && npx wrangler dev --local --env=development --port=8787\" \"cd apps/mobile && npx expo start --web --port=14085\"",
-    "dev": "node scripts/dev-with-ci.js",
+    "dev": "npm run sync-env && node scripts/dev-with-ci.js",
     "ci-check": "node scripts/test-ci.js",
     "typecheck": "cd apps/mobile && npm run typecheck",
     "lint": "cd apps/mobile && npm run lint",
@@ -25,15 +26,17 @@
     "e2e:lightning": "node scripts/test-lightning-e2e.js",
     "e2e:lightning:headed": "node scripts/test-lightning-e2e.js --headed",
     "e2e:lightning:chrome": "node scripts/test-lightning-e2e.js --browser chromium",
+    "test:voice-errors": "node scripts/test-voice-error-display.js",
     "bdd": "npx cucumber-js tests/bdd/features --require-module ts-node/register --require tests/bdd/steps/**/*.ts --format-options '{\"snippetInterface\": \"async-await\"}'",
     "build:mobile": "cd apps/mobile && npm run build",
     "build:edge": "cd edge/api && npm run build",
     "build-launcher": "powershell -ExecutionPolicy Bypass -Command \"Import-Module ps2exe; ps2exe -InputFile './scripts/launcher.ps1' -OutputFile './dist/ChatLaLiLuLeLo-Launcher.exe' -Title 'ChatLaLiLuLeLo MGS2 Codec System' -Description 'MGS2 Codec Interface - Desktop Launcher v3' -Company 'JDW Development' -Product 'ChatLaLiLuLeLo Codec Interface' -Version '3.0.0.0' -STA\"",
     "deploy": "cd apps/edge && npx wrangler deploy",
     "deploy:production": "cd apps/edge && npx wrangler deploy --env=production",
-    "deploy:staging": "cd apps/edge && npx wrangler deploy --env=staging"
+    "deploy:staging": "cd apps/edge && npx wrangler deploy --env=staging",
+    "version:vrmf": "node scripts/bump-vrmf.cjs"
   },
-"devDependencies": {
+  "devDependencies": {
     "ts-node": "^10.9.1",
     "@cucumber/cucumber": "^10.0.0",
     "@playwright/test": "^1.40.0",

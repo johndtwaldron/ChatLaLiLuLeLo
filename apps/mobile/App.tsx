@@ -1,7 +1,10 @@
+import './src/lib/sessionLogs';
 // Dev-only: immediate console spam relief
 import './src/debug/quietRNW';
 
 import React, { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
+import { GoogleProfileLink } from './src/components/GoogleProfileLink';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
 
@@ -21,6 +24,8 @@ import { initializeCodecAudio } from './src/lib/audio';
 import { parseUrlParams } from './src/lib/basePath';
 
 export default function App() {
+  const [showSyncChoice, setShowSyncChoice] = useState(false);
+  const [syncChoiceMade, setSyncChoiceMade] = useState(false);
   const [showStartup, setShowStartup] = useState(false);
   const [isAudioReady, setIsAudioReady] = useState(false);
   const [isInStandby, setIsInStandby] = useState(true); // Start in standby as splash screen
@@ -61,11 +66,27 @@ export default function App() {
     setIsInStandby(true);
   };
 
-  const handleReactivateFromStandby = () => {
+  const startCodec = () => {
+    setShowSyncChoice(false);
+    setSyncChoiceMade(true);
     setShouldPlayCloseSound(false); // Reset close sound flag
     setIsInStandby(false);
     setShowStartup(true); // Show startup animation when reactivating
   };
+
+  const handleReactivateFromStandby = () => {
+    if (Platform.OS === 'web' && !syncChoiceMade) setShowSyncChoice(true);
+    else startCodec();
+  };
+
+  // Resolve the optional profile choice before mounting the main Codec.
+  if (showSyncChoice) {
+    return <>
+      <StatusBar style="light" backgroundColor="#000000" />
+      <CodecStandby onReactivate={() => {}} />
+      <GoogleProfileLink activation onComplete={startCodec} />
+    </>;
+  }
 
   // Show startup animation first
   if (showStartup) {

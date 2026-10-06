@@ -59,6 +59,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+
   const handleConfigUpdate = (updates: Partial<VoiceConfig>) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
@@ -283,7 +284,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
 
   if (compact) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { position: 'relative' }]}>
         {/* Voice Toggle */}
         <Pressable
           style={[
@@ -338,7 +339,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   // Full controls
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { position: 'relative' }]}>
         {/* Voice Status */}
         <View style={styles.statusContainer}>
           <View 

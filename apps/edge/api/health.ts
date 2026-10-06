@@ -1,3 +1,4 @@
+import { version } from '../../../version.json';
 export default {
   async fetch(req: Request, env: any): Promise<Response> {
     const url = new URL(req.url);
@@ -10,11 +11,11 @@ export default {
     const health = {
       status: 'ok',
       timestamp: Date.now(),
-      version: '1.0.0',
+      version,
       environment: {
         openai_key_present: !!env.OPENAI_API_KEY,
         tavily_key_present: !!env.TAVILY_API_KEY,
-        model: env.OPENAI_MODEL ?? 'gpt-4o-mini'
+        model: env.OPENAI_MODEL ?? 'gpt-4.1-mini'
       }
     };
 

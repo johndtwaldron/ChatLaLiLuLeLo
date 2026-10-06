@@ -31,7 +31,7 @@ export async function webSearch(query: string, apiKey?: string): Promise<SearchR
       return [];
     }
     
-    const data = await response.json();
+    const data = await response.json() as { results?: any[] };
     return (data.results ?? []).map((r: any) => ({
       title: r.title,
       url: r.url,

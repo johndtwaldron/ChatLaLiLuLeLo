@@ -1,3 +1,6 @@
+import { VersionLabel } from '@/components/VersionLabel';
+import { currentChatProfile, useGoogleProfile } from '@/lib/googleProfile';
+import { GoogleProfileLink } from '@/components/GoogleProfileLink';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -10,7 +13,7 @@ import {
 
 import { CodecFrame } from '@/components/CodecFrame';
 import { DraggablePortrait, Rect } from '@/components/DraggablePortrait';
-import { DraggableVoicePanel } from '@/components/DraggableVoicePanel';
+import { VoiceBox } from '@/components/VoiceBox';
 import { ConnectionDebug } from '@/components/debug/ConnectionDebug';
 import { SubtitleStream } from '@/components/SubtitleStream';
 import { CRTToggle } from '@/components/CRTToggle';
@@ -22,6 +25,10 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { ConnectionDebugToggle } from '@/components/ConnectionDebugToggle';
 import { TextInput } from '@/components/TextInput';
 import { BudgetIndicator } from '@/components/BudgetIndicator';
+import TopControlsMobile from '@/components/TopControlsMobile';
+import { FunctionsPanel, DebugPanel as MobileDebugPanel } from '@/components/mobile/MobilePanels';
+import { shouldUseMobileUI } from '@/lib/uiMode';
+import { getScreenInfo } from '@/lib/platform';
 import { getCodecTheme, subscribeToThemeChanges, getCurrentMode, getCurrentModel, isDebugEnabled, setDebug } from '@/lib/theme';
 import { streamReply, type ChatRequest, type ChatMessage } from '@/lib/api';
 import { type Message, type MsgMeta, type ModeTag, type ModelTag } from '@/types/chat';
@@ -33,6 +40,8 @@ import { initializeVoiceService, processMessageForTTS } from '@/lib/voice/VoiceS
 import { AudioDebugOverlay } from '@/components/AudioDebugOverlay';
 import { CodecWaveform } from '@/components/CodecWaveform';
 import { useVoicePlayingState } from '@/hooks/useVoicePlayingState';
+import { handleSecretCommand } from '@/lib/secretCommands';
+import { CodecVideoPlayer } from '@/components/CodecVideoPlayer';
 
 interface ChatScreenProps {
   onEnterStandby?: () => void;
@@ -40,12 +49,13 @@ interface ChatScreenProps {
 
 // Snapshot meta helper functions
 const modeToTag = (m: string): ModeTag =>
-  m === 'jd' ? 'JD' : m === 'bitcoin' ? 'BTC' : m === 'haywire' ? 'GW' : 'MGS';
+  m === 'jd' ? 'JD' : 
+  m === 'bitcoin' ? 'BTC' : 
+  m === 'haywire' ? 'GW' : 
+  m === 'rick' ? 'RICK' : 
+  'MGS';
 
-const modelToTag = (m: string): ModelTag =>
-  m === 'gpt-4o' ? 'gpt-4o' :
-  m === 'gpt-3.5-turbo' ? 'gpt-3.5-turbo' :
-  m === 'mock' ? 'mock' : 'gpt-4o-mini';
+const modelToTag = (m: string): ModelTag => m;
 
 function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
   return {
@@ -57,6 +67,7 @@ function snapshotMeta(kind: 'system' | 'user' | 'ai'): MsgMeta {
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
+  const profile = useGoogleProfile();
   const [currentTheme, setCurrentTheme] = useState(getCodecTheme());
   
   // Voice playing state for waveform animation
@@ -84,7 +95,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
       },
       {
         id: '2', 
-        text: 'MGS2 MEME Philosophy, Bitcoin, Haywire, or MGS Lore?',
+        text: 'Choose mode: Philosophy (JD), Bitcoin (BTC), Haywire (GW), MGS Lore, or Rick (Bogart)?',
         speaker: 'colonel',
         timestamp: Date.now() - 30000,
         meta: systemMeta,
@@ -114,6 +125,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
   const [debugEnabled, setDebugEnabled] = useState(isDebugEnabled());
   const [connectionDebugEnabled, setConnectionDebugEnabled] = useState(false);
   const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
+  const [videoPlayerPath, setVideoPlayerPath] = useState('');
   const portraitSectionRef = useRef<View>(null);
   const [layoutReady, setLayoutReady] = useState(false);
   const [portraitSectionLayout, setPortraitSectionLayout] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
@@ -179,11 +192,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     if (portraitSectionRef.current) {
       portraitSectionRef.current.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
         // Calculate waveform boundary relative to portrait section
-        // When voice is enabled, portraits should start below the waveform
-        // Waveform container: top: 70px, height: 40px + 16px padding = 56px total
-        // So waveform bottom is at 126px from screen top
-        // Portrait section starts at pageY, so boundary is 126 - pageY
-        const waveformBottomFromScreen = voiceState.enabled ? 126 : 70; // Include waveform height when voice enabled
+        // Mobile UI has different top layout than desktop UI
+        const topControlsHeight = useMobileUI ? 60 : 70; // Mobile controls are more compact
+        const waveformBottomFromScreen = voiceState.enabled ? (topControlsHeight + 56) : topControlsHeight; // Include waveform height when voice enabled
         const waveformBoundaryInPortrait = Math.max(0, waveformBottomFromScreen - pageY);
         
         // Store the calculated boundary for use in DraggablePortrait components
@@ -257,6 +268,75 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
 
   // Handle new message from text input
   const handleSendMessage = async (messageText: string) => {
+    // Check for secret commands BEFORE normal processing
+    const currentMode = getCurrentMode();
+    const secretResult = handleSecretCommand({
+      rawInput: messageText,
+      uiMode: currentMode,
+    });
+    
+    if (secretResult.handled) {
+      // Handle secret command action
+      if (secretResult.action === 'play_video') {
+        // Check if file exists by trying to fetch HEAD
+        const checkFileExists = async () => {
+          try {
+            const response = await fetch(secretResult.videoPath, {
+              method: 'HEAD',
+              signal: AbortSignal.timeout(2000),
+            });
+            return response.ok;
+          } catch {
+            return false;
+          }
+        };
+        
+        const fileExists = await checkFileExists();
+        
+        if (!fileExists) {
+          // Show error message instead of opening player
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(7);
+          const meta = snapshotMeta('ai');
+          
+          const errorMessage: Message = {
+            id: `colonel-error-${timestamp}-${randomSuffix}`,
+            text: `[ERROR] Video file not found: ${secretResult.videoPath.split('/').pop()}. Check that the symlink exists in /material directory.`,
+            speaker: 'colonel',
+            timestamp,
+            meta,
+          };
+          
+          setMessages(prev => [...prev, errorMessage]);
+          return; // Exit without opening player
+        }
+        
+        // File exists, open player
+        setVideoPlayerPath(secretResult.videoPath);
+        setVideoPlayerVisible(true);
+        
+        // Inject local assistant message if provided
+        if (secretResult.localAssistantText) {
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(7);
+          const meta = snapshotMeta('ai');
+          
+          const secretMessage: Message = {
+            id: `colonel-secret-${timestamp}-${randomSuffix}`,
+            text: secretResult.localAssistantText,
+            speaker: 'colonel',
+            timestamp,
+            meta,
+          };
+          
+          setMessages(prev => [...prev, secretMessage]);
+        }
+      }
+      
+      // Exit early - don't send to backend
+      return;
+    }
+    
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(7);
     
@@ -275,7 +355,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     
     const userMessage: Message = {
       id: `user-${timestamp}-${randomSuffix}`,
-      text: `USER: ${messageText}`,
+      text: `${profile?.firstName || 'USER'}: ${messageText}`,
       speaker: 'user',
       timestamp,
       meta, // stamp meta!
@@ -299,13 +379,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     setIsStreaming(true);
     setCurrentStreamText('');
     
-    // Convert mode mapping
-    const currentMode = getCurrentMode();
+    // Convert mode mapping (currentMode already declared above for secret commands)
     const modeMap = {
       'haywire': 'GW',
       'jd': 'JD', 
       'lore': 'MGS',
-      'bitcoin': 'BTC'
+      'bitcoin': 'BTC',
+      'rick': 'RICK'
     } as const;
     
     const apiMode = modeMap[currentMode] || 'JD';
@@ -313,7 +393,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     // Build conversation history for API
     const conversationHistory: ChatMessage[] = messages.map(msg => ({
       role: msg.speaker === 'user' ? 'user' : 'assistant',
-      content: msg.text.replace(/^USER: /, ''), // Remove USER: prefix for API
+      content: msg.speaker === 'user' ? msg.text.replace(/^[^:]{1,40}: /, '') : msg.text, // Remove USER: prefix for API
     }));
     
     // Add the current user message
@@ -327,6 +407,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     
     const chatRequest: ChatRequest = {
       mode: apiMode,
+      profile: currentChatProfile(),
       messages: conversationHistory,
       options: {
         research: false, // TODO: Make this configurable
@@ -400,74 +481,104 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
     }
   };
 
+  // Check if we should use mobile UI
+  const useMobileUI = shouldUseMobileUI();
+  
   const themeStyles = getThemeStyles(currentTheme);
 
   return (
     <SafeAreaView style={[staticStyles.container, { backgroundColor: currentTheme.colors.background }]}>
       <CodecFrame haywireMode={haywireMode}>
-        {/* Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */}
-        <View style={staticStyles.controlButtonsContainer}>
-          <ModelToggle />
-          
-          <Pressable 
-            onPress={handleClosePress}
-            style={[
-              staticStyles.controlButton,
-              { 
-                borderColor: currentTheme.colors.primary,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              }
-            ]}
-          >
-            <Text style={[staticStyles.controlButtonText, { color: currentTheme.colors.primary }]}>
-              CLOSE
-            </Text>
-          </Pressable>
-          
-          <BudgetIndicator 
-            sessionId={sessionId}
-            compact={true}
-            refreshTrigger={budgetRefreshTrigger}
+        {/* Mobile UI vs Desktop UI Controls */}
+        {useMobileUI ? (
+          <TopControlsMobile 
+            onClose={handleClosePress}
+            FunctionsPanel={
+              <FunctionsPanel 
+                sessionId={sessionId}
+                budgetRefreshTrigger={budgetRefreshTrigger}
+              />
+            }
+            DebugPanel={
+              <MobileDebugPanel 
+                sessionId={sessionId}
+                budgetRefreshTrigger={budgetRefreshTrigger}
+                onToggleDebug={handleDebugToggle}
+                onToggleConnectionDebug={handleConnectionDebugToggle}
+                debugEnabled={debugEnabled}
+                connectionDebugEnabled={connectionDebugEnabled}
+              />
+            }
           />
-          
-          <VoiceControls compact={true} />
-          <CRTToggle />
-          <ThemeCycleToggle />
-          <ModeToggle />
-          <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
-          <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
-          
-          <Pressable 
-            onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
-            style={[
-              staticStyles.controlButton,
-              { 
-                borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
-                backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
-              }
-            ]}
-          >
-            <Text style={[staticStyles.controlButtonText, { 
-              color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
-            }]}>
-              🔊
-            </Text>
-          </Pressable>
-        </View>
+        ) : (
+          /* Desktop Control Buttons - MODEL → CLOSE → BUDGET → CRT → THEME → MODE → DEBUG → CONN → AUDIO */
+          <View style={staticStyles.controlButtonsContainer}>
+            <ModelToggle />
+            
+            <Pressable 
+              onPress={handleClosePress}
+              style={[
+                staticStyles.controlButton,
+                { 
+                  borderColor: currentTheme.colors.primary,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                }
+              ]}
+            >
+              <Text style={[staticStyles.controlButtonText, { color: currentTheme.colors.primary }]}>
+                CLOSE
+              </Text>
+            </Pressable>
+            
+            <BudgetIndicator 
+              sessionId={sessionId}
+              compact={true}
+              refreshTrigger={budgetRefreshTrigger}
+            />
+            
+            <VoiceControls compact={true} />
+            <CRTToggle />
+            <ThemeCycleToggle />
+            <ModeToggle />
+            <DebugToggle onToggle={handleDebugToggle} enabled={debugEnabled} />
+            <ConnectionDebugToggle onToggle={handleConnectionDebugToggle} enabled={connectionDebugEnabled} />
+            
+            <Pressable 
+              onPress={() => handleAudioDebugToggle(!audioDebugEnabled)}
+              style={[
+                staticStyles.controlButton,
+                { 
+                  borderColor: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary,
+                  backgroundColor: audioDebugEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.7)',
+                }
+              ]}
+            >
+              <Text style={[staticStyles.controlButtonText, { 
+                color: audioDebugEnabled ? currentTheme.colors.tertiary : currentTheme.colors.primary
+              }]}>
+                🔊
+              </Text>
+            </Pressable>
+          </View>
+        )}
         
-        {/* Fixed MGS2-style Codec Waveform - positioned at top center under toggle buttons */}
+        {/* Fixed MGS2-style Voice Box - positioned at top center under toggle buttons */}
         {voiceState.enabled && (
-          <View style={staticStyles.topWaveformContainer}>
-            <CodecWaveform
+          <View style={[
+            staticStyles.topWaveformContainer,
+            useMobileUI && staticStyles.topWaveformContainerMobile
+          ]}>
+            <VoiceBox
               isPlaying={voiceState.isPlaying && voiceState.enabled}
               volume={voiceState.volume}
               height={40}
-              variant="codec"
+              width={300}
             />
           </View>
         )}
         
         <View style={themeStyles.content}>
+          <View style={{ alignItems: 'flex-end', marginTop: useMobileUI ? 48 : 104, marginBottom: 8, zIndex: 101 }}><GoogleProfileLink /></View>
           {/* Portrait Section with dual draggable portraits */}
           <View 
             ref={portraitSectionRef}
@@ -542,7 +653,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onEnterStandby }) => {
             onClose={() => handleAudioDebugToggle(false)} 
           />
         )}
+        
+        {/* Secret Command Video Player */}
+        <CodecVideoPlayer
+          visible={videoPlayerVisible}
+          videoPath={videoPlayerPath}
+          onClose={() => setVideoPlayerVisible(false)}
+        />
       </CodecFrame>
+      <VersionLabel />
     </SafeAreaView>
   );
 };
@@ -618,6 +737,10 @@ const staticStyles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)', // Subtle background for visibility
     borderRadius: 8,
     marginHorizontal: 16,
+  },
+  
+  topWaveformContainerMobile: {
+    top: 60, // Mobile controls are more compact
   },
 });
 

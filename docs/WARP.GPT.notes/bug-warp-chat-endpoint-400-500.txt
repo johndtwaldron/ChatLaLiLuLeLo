@@ -1,0 +1,228 @@
+Title: /chat endpoint returns 400 for curl + 500 from UI
+
+Owner: Warp
+Status: Open
+Priority: Medium (blocks nice local testing and confidence in Rick mode)
+
+---
+
+## 1. Context
+
+- Local dev server running at: http://localhost:8787
+- Frontend calls POST /chat and sometimes gets 500.
+- Direct curl call to POST /chat returns 400 "Invalid request format".
+- Observed while testing new "Rick mode" work and general chat flow.
+- Likely unrelated to new GPT modes themselves; more likely request schema / validation + backend error handling.
+
+---
+
+## 2. Observed behaviour
+
+### 2.1 curl
+
+Command:
+
+  curl -v http://localhost:8787/chat \
+    -H "Content-Type: application/json" \
+    -d '{
+      "mode": "jd",
+      "messages": [
+        { "role": "user", "content": "test ping from curl" }
+      ]
+    }'
+
+Response:
+
+  HTTP/1.1 400 Bad Request
+  Invalid request format
+
+Notes:
+- The 400 is coming from our Worker (custom response body "Invalid request format"), not from a reverse proxy.
+- So the Worker’s /chat handler is explicitly rejecting this JSON.
+
+### 2.2 Frontend (browser)
+
+- POST http://localhost:8787/chat → 500 (Internal Server Error) in DevTools.
+- Frontend logs:
+
+  - `api.ts:70 POST http://localhost:8787/chat 500 (Internal Server Error)`
+  - `quietRNW.ts:12 API request failed: Error: API error: 500`
+
+- So: UI request *sometimes* passes initial validation (no 400) but fails deeper in the handler and throws.
+
+### 2.3 Other noise (probably not the root cause)
+
+- Lots of `[PORTRAIT] colonel source=... mode=haywire` logs — just noisy re-renders.
+- `content_script.js: Cannot read properties of undefined (reading 'control')`  
+  → This is coming from a browser extension (not our code).
+- Voice warnings:
+
+  - `EXPO_PUBLIC_VOICE_ENABLED is not set`
+  - `EXPO_PUBLIC_VOICE_ENGINE is not set`
+
+  Voice config defaults to `enabled: false`, `engine: 'disabled'`. This is expected while voice is off.
+
+Conclusion: The real bugs are:
+1. Request validation schema mismatch → 400 with curl.
+2. Unhandled exception inside /chat handler → 500 from UI.
+
+Likely **not** caused by new GPT modes themselves, but by how we build/validate the body we send to OpenAI.
+
+---
+
+## 3. Suspected root causes
+
+### 3.1 400 "Invalid request format" for curl
+
+- Our Worker’s /chat handler likely has a validation step like:
+
+  - zod schema (`schema.parse(body)`)  
+  - or some manual checks that return `new Response("Invalid request format", { status: 400 })`.
+
+- The curl payload used was:
+
+  {
+    "mode": "jd",
+    "messages": [
+      { "role": "user", "content": "test ping from curl" }
+    ]
+  }
+
+- Very possible that the schema actually expects something like:
+
+  - A `model` field (e.g. `"model": "gpt-4.1-mini"`)  
+  - `content` as an array of structured items:
+
+    "content": [
+      { "type": "input_text", "text": "..." }
+    ]
+
+  - or other required properties we’re not setting from curl.
+
+So: curl body ≠ schema → Worker returns 400.
+
+### 3.2 500 from UI
+
+- The UI call is presumably sending a “correct” shape (or closer to it), so it passes validation.
+- Then something inside the handler throws:
+  - Missing env (`OPENAI_API_KEY`, `VOICE_*`, etc.).
+  - Unexpected shape of `messages` / `mode`.
+  - Error from OpenAI (bad request, etc.) not being caught.
+  - Streaming code assuming fields that aren’t present.
+
+---
+
+## 4. Steps to reproduce
+
+1. Start the dev server (workerd/wrangler) exposing `/chat` on port 8787.
+2. In browser:
+   - Use the main UI to send a message.
+   - Observe in DevTools → Network: `POST /chat` returns 500.
+3. In terminal:
+   - Run the curl above.
+   - Observe: `HTTP/1.1 400 Bad Request` with body: `Invalid request format`.
+
+---
+
+## 5. Proposed debugging actions (for Warp)
+
+1. **Inspect /chat request schema**
+   - Open the Worker code where `/chat` is handled.
+   - Find the zod schema or manual validation that triggers `"Invalid request format"`.
+   - Document the expected shape in a comment or a shared `types.ts`.
+
+2. **Make curl match the schema**
+   - Once the schema is known, create a “golden” curl example that passes validation, e.g.:
+
+     {
+       "mode": "jd",
+       "model": "gpt-4.1-mini",
+       "messages": [
+         {
+           "role": "user",
+           "content": [
+             { "type": "input_text", "text": "test ping from curl" }
+           ]
+         }
+       ]
+     }
+
+   - Adjust as needed to match the real schema.
+
+3. **Add better logging and error handling around /chat**
+   - Wrap handler logic in try/catch:
+
+     - Log the parsed body.
+     - Log any OpenAI errors.
+     - Return a JSON error payload with a useful message and correlation id (even in dev).
+
+4. **Check environment variables**
+   - Verify all required env vars are present in dev (OPENAI_API_KEY, any model keys, etc.).
+   - Make the handler fail fast with a clear 500 + message if a critical env var is missing, instead of blowing up mid-stream.
+
+5. **Confirm GPT mode usage**
+   - Verify that `mode` field (`"jd"`, `"rick"`, etc.) is only used in our app logic (persona selection, system prompt setup) and not passed blindly to OpenAI in a way that breaks the request.
+   - Confirm that the bug persists even if we use a simple, known-good OpenAI payload → If yes, it’s the app, not GPT modes.
+
+---
+
+## 6. Regression / testing plan
+
+Once fixed, we want a few simple but reliable tests:
+
+### 6.1 Contract tests for /chat schema
+
+- Add a small test suite (Jest / Vitest / whatever) for the Worker code that:
+
+  - Sends a minimal **valid** payload and expects 200 + some JSON structure.
+  - Sends a deliberately malformed payload (missing `messages`, wrong `content` structure) and expects 400 "Invalid request format".
+
+- This ensures we never silently change the request shape without noticing.
+
+### 6.2 CLI smoke test (for dev)
+
+- Keep a `scripts/test-chat.sh` in the repo:
+
+  curl -sS http://localhost:8787/chat \
+    -H "Content-Type: application/json" \
+    -d @./fixtures/chat-valid-request.json
+
+- Returns non-zero exit code if HTTP status != 200.
+- This can be run:
+  - locally as a quick sanity check
+  - in CI after Worker build (optional).
+
+### 6.3 Frontend sanity check
+
+- Add a small “Dev Tools” panel or hidden route where:
+  - You can send a fixed payload to `/chat` (e.g., "ping") and show status code/response.
+  - This helps confirm that UI → API pipeline is wired correctly before layering any fancy mode logic.
+
+### 6.4 Logging/monitoring
+
+- In dev: keep `console.log("CHAT REQUEST", body)` and `console.error("CHAT ERROR", err)` around.
+- In production: use a structured logger (if we have one) and capture:
+  - request id
+  - endpoint
+  - error type
+  - HTTP status
+
+This will make future 500s painless to debug.
+
+---
+
+Notes:
+- The 400 → 500 investigation is now updated.
+- Schema mismatch has been resolved (uppercase modes enforced).
+- RICK mode has been fully added to schema and composer configuration.
+- Remaining issue is a backend 500 error (internal) that now includes structured JSON error responses and full logging.
+- ENTRY LOGGING, VALIDATION LOGGING, STREAM LOGGING, and FULL ERROR LOGGING have been inserted into apps/edge/api/chat.ts.
+- A complete fix plan and test procedure is now documented in TESTING-500-ERROR-FIX.md.
+- test-chat-endpoint.sh added for verifying all modes (JD/BTC/GW/MGS/RICK).
+
+Action Items:
+- Continue validating handler stability after RICK prompt integration.
+- Capture any new CHAT ERROR - Full details blocks from wrangler/workerd terminal for follow-up debugging.
+- Ensure npm run dev is launched fresh after killing existing workerd processes.
+- Confirm model config in requests: use "model": "mock" during local dev for stable testing.
+- Validate that the UI populates uppercase modes before sending payload to backend.
