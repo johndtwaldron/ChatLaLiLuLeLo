@@ -171,6 +171,6 @@ if (typeof window !== 'undefined') {
 
 export function currentChatProfile(message: string): { firstName: string; picture?: string } | undefined {
   if (!profile) return undefined;
-  const mentionsPhoto = /\b(?:my|the)\s+(?:(?:google|profile)\s+)?(?:pfp|profile\s+(?:pic(?:ture)?|photo|image)|pic(?:ture)?|photo|avatar)\b|\bpfp\b/i.test(message);
+  const mentionsPhoto = /\b(?:my|the)\s+(?:(?:google|profile)\s+)?(?:pfp|profile\s+(?:pic(?:ture)?|photo|image)|pic(?:ture)?|photo|avatar)\b|\bpfp\b|\b(?:can|could)\s+you\s+see\s+me\b|\bwhat\s+do\s+i\s+look\s+like\b/i.test(message);
   return { firstName: profile.firstName, ...(mentionsPhoto && profile.picture ? { picture: profile.picture } : {}) };
 }

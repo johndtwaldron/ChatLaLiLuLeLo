@@ -10,6 +10,8 @@ describe('session profile for chat', () => {
     saveGoogleProfile({ firstName: 'John', picture: 'https://lh3.googleusercontent.com/photo' });
     expect(currentChatProfile('Hello')).toEqual({ firstName: 'John' });
     expect(currentChatProfile('What do you see in my profile picture?')?.picture).toBeTruthy();
+    expect(currentChatProfile('and can you see me? on the other end of this codec call?')?.picture).toBeTruthy();
+    expect(currentChatProfile('What do I look like?')?.picture).toBeTruthy();
     disconnectGoogleProfile();
     expect(currentChatProfile('my pfp')).toBeUndefined();
   });
@@ -26,6 +28,7 @@ describe('session profile for chat', () => {
     expect(payload.messages[1].content).toBe('hello');
     expect(payload.messages[3].content).toEqual([{ type: 'text', text: 'my pfp?' }, { type: 'image_url', image_url: { url: 'https://lh3.googleusercontent.com/photo', detail: 'low' } }]);
     expect(JSON.stringify(payload.messages[4])).toContain('John');
+    expect(payload.messages[5].content).toContain('not a live camera feed');
   });
 });
 
